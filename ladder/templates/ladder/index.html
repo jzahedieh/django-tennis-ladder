@@ -1,0 +1,10 @@
+{% if season_list %}
+	<ul>
+	{% for season in season_list %}
+		<li><a href="{% url 'ladder:season' season.id%}">{{ season.name }}</a></li>
+	{% endfor %}
+	</ul>
+{% else %}
+	<p>No seasons are available.</p>
+{% endif %}
+

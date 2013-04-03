@@ -1,0 +1,18 @@
+<h1> {{ ladder }} </h1>
+
+<table>
+<tr><td></td><td>Name</td>
+{% for i in ladder.position_set.all %}
+	<td> {{ i.position }}</td>
+{% endfor %}
+</tr>
+{% for position in ladder.position_set.all %}
+	<tr>
+	<td> {{position.position}} </td>
+	<td> {{ position.player }} </td>
+	{% for i in ladder.position_set.all %}
+		<td> </td>
+	{% endfor %}
+	</tr>
+{% endfor %}
+</table>

@@ -1,0 +1,40 @@
+{% load ladder_extras %}
+<link rel="stylesheet" type="text/css" href="/static/css/ladder.css" />
+
+<h1>{{ season.name }}</h1>
+
+{% for ladder in ladders %}
+
+	<a href="{% url 'ladder:ladder' ladder.id %}"> Division:  {{ ladder.division }} </a>
+	<table>
+	<tr><td></td><td>Name</td>
+	{% for i in ladder.players.all %}
+		<td><strong> {{ forloop.counter }} </strong></td>
+	{% endfor %}
+	</tr>
+
+	{% for player in ladder.players.all %}
+		{% with player_counter=forloop.counter %}
+			<tr>
+			<td class="player_position"><strong> {{ player_counter }} </strong></td>
+			<td class="player_name"> {{ player }} </td>
+			{% for opponent in ladder.players.all %}
+				{% with column_counter=forloop.counter %}
+					{% if column_counter == player_counter %}
+					<td class="box_grey score_field"></td>
+					{% else %}
+					<td class="score_field">
+						{% for result in results_dict|getkey:player.id %}
+							{% if player = result.player and opponent = result.opponent %}
+								{{ result.result }}
+							{% endif %}
+						{% endfor %}
+					</td>
+					{% endif %}
+				{% endwith %}
+			{% endfor %}
+		{% endwith %}
+		</tr>
+	{% endfor %}
+	</table>
+{% endfor %}
