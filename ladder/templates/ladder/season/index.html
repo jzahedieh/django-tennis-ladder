@@ -9,8 +9,9 @@
 	<table>
 	<tr><td></td><td>Name</td>
 	{% for i in ladder.players.all %}
-		<td><strong> {{ forloop.counter }} </strong></td>
+		<td class="score_field"><strong> {{ forloop.counter }} </strong></td>
 	{% endfor %}
+    <td class="score_field">Prev</td>
 	</tr>
 
 	{% for player in ladder.players.all %}
@@ -25,7 +26,7 @@
 					{% else %}
 					<td class="score_field">
 						{% for result in results_dict|getkey:player.id %}
-							{% if player = result.player and opponent = result.opponent %}
+							{% if player == result.player and opponent == result.opponent %}
 								{{ result.result }}
 							{% endif %}
 						{% endfor %}
@@ -34,7 +35,8 @@
 				{% endwith %}
 			{% endfor %}
 		{% endwith %}
-		</tr>
+    <td class="score_field"> {{ prev_results_dict|getkey:player.id }}</td>
+    </tr>
 	{% endfor %}
 	</table>
 {% endfor %}

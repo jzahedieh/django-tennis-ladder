@@ -29,6 +29,7 @@ td, th
 
 td.score_field {
 	min-width:30px;
+    text-align: center;
 }
 
 td.player_position {

@@ -1,6 +1,8 @@
 from django.http import HttpResponse, Http404
 from django.shortcuts import render, get_object_or_404
 from collections import defaultdict
+import datetime
+
 
 from ladder.models import Season, Ladder, Result
 
@@ -14,6 +16,20 @@ def index(request):
 def season(request, season_id):
     season = get_object_or_404(Season, pk=season_id)
     ladders = Ladder.objects.filter(season=season)
+    season_before_date = season.start_date - datetime.timedelta(days=31)
+    prev_results_dict = {}
+    try:
+        prev_season = Season.objects.get(start_date__lte=season_before_date, end_date__gte=season_before_date)
+        prev_results = Result.objects.filter(ladder__season=prev_season)
+        for result in prev_results:
+            try:
+                count = prev_results_dict[result.player_id]
+                prev_results_dict[result.player_id] = count + result.result
+            except KeyError:
+                prev_results_dict[result.player_id] = result.result
+    except season.DoesNotExist:
+        prev_season = False
+
     results = Result.objects.filter(ladder__season=season)
     results_dict = {}
 
@@ -21,7 +37,8 @@ def season(request, season_id):
         results_dict.setdefault(result.player.id, []).append(result)
 
     return render(request, 'ladder/season/index.html',
-                  {'season': season, 'ladders': ladders, 'results_dict': results_dict})
+                  dict(season=season, ladders=ladders, results_dict=results_dict, prev_results_dict=prev_results_dict)
+    )
 
 
 def ladder(request, ladder_id):
