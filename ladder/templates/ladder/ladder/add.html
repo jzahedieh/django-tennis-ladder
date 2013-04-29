@@ -1,0 +1,41 @@
+{% load ladder_extras %}
+<h1> {{ ladder }} </h1>
+
+{% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
+
+<form action="{% url 'ladder:add_result' ladder.id %}" method="post">
+    {% csrf_token %}
+    <select  name="player">
+        {% for player in ladder.players.all %}
+            <option value="{{ player.id }}"> {{ player }} </option>
+        {% endfor %}
+    </select>
+    <select name="player_score">
+        {% for point in points %}
+            {% if point == 9 %}
+                <option selected value="{{ point }}"> {{ point }} </option>
+            {% else %}
+                <option value="{{ point }}"> {{ point }} </option>
+            {% endif %}
+        {% endfor %}
+    </select>
+    <br /> Vs <br />
+    <select name="opponent">
+        {% for player in ladder.players.all %}
+            <option value="{{ player.id }}"> {{ player }} </option>
+        {% endfor %}
+    </select>
+
+    <select name="opponent_score">
+        {% for point in points %}
+            {% if point == 9 %}
+                <option selected value="{{ point }}"> {{ point }} </option>
+            {% else %}
+                <option value="{{ point }}"> {{ point }} </option>
+            {% endif %}
+        {% endfor %}
+    </select>
+
+    <br />
+    <input type="submit" value="Add Result" />
+</form>
