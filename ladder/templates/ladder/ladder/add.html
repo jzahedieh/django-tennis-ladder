@@ -1,11 +1,37 @@
 {% load ladder_extras %}
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.0/jquery.min.js" ></script>
+ <script type="text/javascript">
+
+    $(document).ready(function() {
+       var up = {{ unplayed_matches|safe }}
+               console.log(up);
+       $('#opp').hide();
+
+        $('#player').change(function()  {
+            console.log('changed');
+            $('#opp').hide('slow');
+            $('#opponent').find('option').remove();
+            $('#opp').show('slow');
+
+            $.each(up[$('#player').val()], function(key, value){
+
+                 $('#opponent')
+                      .append($('<option>', { value : key })
+                      .text(value.first_name + ' ' + value.last_name));
+            });
+        });
+     });
+ </script>
+
+
 <h1> {{ ladder }} </h1>
 
 {% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
 
 <form action="{% url 'ladder:add_result' ladder.id %}" method="post">
     {% csrf_token %}
-    <select  name="player">
+    <select id='player' name="player">
+        <option value='FALSE'>.. choose a player ..</option>
         {% for player in ladder.players.all %}
             <option value="{{ player.id }}"> {{ player }} </option>
         {% endfor %}
@@ -19,10 +45,11 @@
             {% endif %}
         {% endfor %}
     </select>
-    <br /> Vs <br />
-    <select name="opponent">
+    <div id="opp">
+    Vs <br />
+    <select id="opponent" name="opponent">
         {% for player in ladder.players.all %}
-            <option value="{{ player.id }}"> {{ player }} </option>
+
         {% endfor %}
     </select>
 
@@ -35,7 +62,7 @@
             {% endif %}
         {% endfor %}
     </select>
-
+    </div>
     <br />
     <input type="submit" value="Add Result" />
 </form>

@@ -3,28 +3,32 @@ from ladder.models import Season, Player, Ladder, Result
 
 
 class SeasonAdmin(admin.ModelAdmin):
-    pass
+    list_display = ('name', 'start_date', 'end_date')
+    date_hierarchy = 'start_date'
 
 
-admin.site.register(Season)
+admin.site.register(Season, SeasonAdmin)
 
 
 class PlayerAdmin(admin.ModelAdmin):
-    pass
+    search_fields = ('first_name', 'last_name')
 
 
-admin.site.register(Player)
+admin.site.register(Player, PlayerAdmin)
 
 
 class LadderAdmin(admin.ModelAdmin):
-    pass
+    list_filter = ['season']
+    list_display = ('season', 'division')
 
 
-admin.site.register(Ladder)
+admin.site.register(Ladder, LadderAdmin)
 
 
 class ResultAdmin(admin.ModelAdmin):
-    pass
+    search_fields = ['player__first_name', 'player__last_name']
+    list_display = ('ladder', 'player', 'opponent', 'result', 'date_added')
+    date_hierarchy = 'date_added'
 
 
-admin.site.register(Result)
+admin.site.register(Result, ResultAdmin)
