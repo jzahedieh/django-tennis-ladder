@@ -29,47 +29,47 @@ def index(request):
 def season(request, season_id):
     season = get_object_or_404(Season, pk=season_id)
     ladders = Ladder.objects.filter(season=season)
-    season_before_date = season.start_date - datetime.timedelta(days=31)
-    prev_results_dict = {}
-    try:
-        prev_season = Season.objects.get(start_date__lte=season_before_date, end_date__gte=season_before_date)
-        prev_results = Result.objects.filter(ladder__season=prev_season)
-        for result in prev_results:
-            try:
-                result_count = prev_results_dict[result.player_id]['total']
-                played_count = prev_results_dict[result.player_id]['played']
-                won_count = prev_results_dict[result.player_id]['won']
-                if result.result == 9:
-                    prev_results_dict[result.player_id] = {
-                        'div': result.ladder.division,
-                        'total': result_count + (result.result + 1 + 2),
-                        'played': (played_count + 1),
-                        'won': (won_count + 1)
-                    }
-                else:
-                    prev_results_dict[result.player_id] = {
-                        'div': result.ladder.division,
-                        'total': result_count + (result.result + 1),
-                        'played': (played_count + 1),
-                        'won': won_count
-                    }
-            except KeyError:
-                if result.result == 9:
-                    prev_results_dict[result.player_id] = {
-                        'div': result.ladder.division,
-                        'total': (result.result + 1 + 2),
-                        'played': 1,
-                        'won': 1
-                    }
-                else:
-                    prev_results_dict[result.player_id] = {
-                        'div': result.ladder.division,
-                        'total': (result.result + 1),
-                        'played': 1,
-                        'won': 0
-                    }
-    except season.DoesNotExist:
-        pass
+    # season_before_date = season.start_date - datetime.timedelta(days=31)
+    # prev_results_dict = {}
+    # try:
+    #     prev_season = Season.objects.get(start_date__lte=season_before_date, end_date__gte=season_before_date)
+    #     prev_results = Result.objects.filter(ladder__season=prev_season)
+    #     for result in prev_results:
+    #         try:
+    #             result_count = prev_results_dict[result.player_id]['total']
+    #             played_count = prev_results_dict[result.player_id]['played']
+    #             won_count = prev_results_dict[result.player_id]['won']
+    #             if result.result == 9:
+    #                 prev_results_dict[result.player_id] = {
+    #                     'div': result.ladder.division,
+    #                     'total': result_count + (result.result + 1 + 2),
+    #                     'played': (played_count + 1),
+    #                     'won': (won_count + 1)
+    #                 }
+    #             else:
+    #                 prev_results_dict[result.player_id] = {
+    #                     'div': result.ladder.division,
+    #                     'total': result_count + (result.result + 1),
+    #                     'played': (played_count + 1),
+    #                     'won': won_count
+    #                 }
+    #         except KeyError:
+    #             if result.result == 9:
+    #                 prev_results_dict[result.player_id] = {
+    #                     'div': result.ladder.division,
+    #                     'total': (result.result + 1 + 2),
+    #                     'played': 1,
+    #                     'won': 1
+    #                 }
+    #             else:
+    #                 prev_results_dict[result.player_id] = {
+    #                     'div': result.ladder.division,
+    #                     'total': (result.result + 1),
+    #                     'played': 1,
+    #                     'won': 0
+    #                 }
+    # except season.DoesNotExist:
+    #     pass
 
     results = Result.objects.filter(ladder__season=season)
     results_dict = {}
@@ -78,13 +78,24 @@ def season(request, season_id):
         results_dict.setdefault(result.player.id, []).append(result)
 
     return render(request, 'ladder/season/index.html',
+                  dict(season=season, ladders=ladders, results_dict=results_dict)
+    )
+
+    return render(request, 'ladder/season/index.html',
                   dict(season=season, ladders=ladders, results_dict=results_dict, prev_results_dict=prev_results_dict)
     )
 
 
 def ladder(request, ladder_id):
     ladder = get_object_or_404(Ladder, pk=ladder_id)
-    return render(request, 'ladder/ladder/index.html', {'ladder': ladder})
+
+    results = Result.objects.filter(ladder=ladder)
+    results_dict = {}
+
+    for result in results:
+        results_dict.setdefault(result.player.id, []).append(result)
+
+    return render(request, 'ladder/ladder/index.html', {'ladder': ladder, 'results_dict': results_dict})
 
 @login_required
 def add(request, ladder_id):

@@ -26,11 +26,11 @@ $(document).ready(function()
 	{% for i in ladder.players.all %}
 		<th class="score_field {sorter: false}"><strong> {{ forloop.counter }} </strong></th>
 	{% endfor %}
-    <th class="score_field">CS</th>
-    <th class="score_field {sorter: false}">Div</th>
+    <th class="score_field">Total</th>
+    <!--<th class="score_field {sorter: false}">Div</th>
     <th class="score_field {sorter: false}" >Played</th>
     <th class="score_field {sorter: false}">Won</th>
-    <th class="score_field {sorter: false}">Total</th>
+    <th class="score_field {sorter: false}">Total</th>-->
 	</tr>
     </thead>
 
@@ -57,10 +57,10 @@ $(document).ready(function()
 			{% endfor %}
 		{% endwith %}
     <td class="score_field"> {{ results_dict|gettotal:player.id }} </td>
-    <td class="score_field"> {{ prev_results_dict|getkey:player.id|getkey:'div' }}</td>
+    <!--<td class="score_field"> {{ prev_results_dict|getkey:player.id|getkey:'div' }}</td>
     <td class="score_field"> {{ prev_results_dict|getkey:player.id|getkey:'played' }}</td>
     <td class="score_field"> {{ prev_results_dict|getkey:player.id|getkey:'won' }}</td>
-    <td class="score_field"> {{ prev_results_dict|getkey:player.id|getkey:'total' }}</td>
+    <td class="score_field"> {{ prev_results_dict|getkey:player.id|getkey:'total' }}</td>-->
     </tr>
 	{% endfor %}
     </tbody>
