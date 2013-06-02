@@ -9,7 +9,7 @@ admin.autodiscover()
 urlpatterns = patterns('',
                        url(r'^static/(?P<path>.*)$', 'django.views.static.serve',
                            {'document_root', settings.STATIC_ROOT}),
-                       url(r'^ladder/', include('ladder.urls', namespace="ladder")),
+                       url(r'', include('ladder.urls', namespace="ladder")),
                        url(r'^admin/', include(admin.site.urls)),
 
 )

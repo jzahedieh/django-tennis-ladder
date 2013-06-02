@@ -1,68 +1,71 @@
+{% extends 'base.html' %}
 {% load ladder_extras %}
-<link rel="stylesheet" type="text/css" href="/static/css/style.css" />
-<link rel="stylesheet" type="text/css" href="/static/css/ladder.css" />
-<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.0/jquery.min.js" ></script>
-<script type="text/javascript" src="/static/js/jquery.tablesorter.js"></script>
-<script type="text/javascript" src="/static/js/jquery.metadata.js"></script>
 
-<script type="text/javascript">
-$(document).ready(function()
-    {
-        $(".tablesorter").tablesorter();
-    }
-);
+{% block container %}
+    <link rel="stylesheet" type="text/css" href="/static/css/style.css" />
+    <link rel="stylesheet" type="text/css" href="/static/css/ladder.css" />
+    <!--<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.0/jquery.min.js" ></script>-->
+    <script type="text/javascript" src="/static/js/jquery.tablesorter.js"></script>
+    <script type="text/javascript" src="/static/js/jquery.metadata.js"></script>
 
-</script>
+    <h1>{{ season.name }}</h1>
 
-<h1>{{ season.name }}</h1>
+    {% for ladder in ladders %}
 
-{% for ladder in ladders %}
+        <a href="{% url 'ladder:ladder' ladder.id %}"> Division:  {{ ladder.division }} </a>
+        <table cellspacing="1" id="ladderTable{{ ladder.id }}" class="tablesorter">
+        <thead>
+        <tr>
+        <th></th><th class="{sorter: false}">Name</th>
+        {% for i in ladder.players.all %}
+            <th class="score_field {sorter: false}"><strong> {{ forloop.counter }} </strong></th>
+        {% endfor %}
+        <th class="score_field">Total</th>
+        <!--<th class="score_field {sorter: false}">Div</th>
+        <th class="score_field {sorter: false}" >Played</th>
+        <th class="score_field {sorter: false}">Won</th>
+        <th class="score_field {sorter: false}">Total</th>-->
+        </tr>
+        </thead>
 
-	<a href="{% url 'ladder:ladder' ladder.id %}"> Division:  {{ ladder.division }} </a>
-	<table cellspacing="1" id="ladderTable{{ ladder.id }}" class="tablesorter">
-    <thead>
-	<tr>
-    <th></th><th class="{sorter: false}">Name</th>
-	{% for i in ladder.players.all %}
-		<th class="score_field {sorter: false}"><strong> {{ forloop.counter }} </strong></th>
-	{% endfor %}
-    <th class="score_field">Total</th>
-    <!--<th class="score_field {sorter: false}">Div</th>
-    <th class="score_field {sorter: false}" >Played</th>
-    <th class="score_field {sorter: false}">Won</th>
-    <th class="score_field {sorter: false}">Total</th>-->
-	</tr>
-    </thead>
+        <tbody>
+        {% for player in ladder.players.all %}
+            {% with player_counter=forloop.counter %}
+                <tr>
+                <td class="player_position"><strong> {{ player_counter }} </strong></td>
+                <td class="player_name"> {{ player }} </td>
+                {% for opponent in ladder.players.all %}
+                    {% with column_counter=forloop.counter %}
+                        {% if column_counter == player_counter %}
+                        <td class="box_grey score_field"></td>
+                        {% else %}
+                        <td class="score_field">
+                            {% for result in results_dict|getkey:player.id %}
+                                {% if player == result.player and opponent == result.opponent %}
+                                    {{ result.result }}
+                                {% endif %}
+                            {% endfor %}
+                        </td>
+                        {% endif %}
+                    {% endwith %}
+                {% endfor %}
+            {% endwith %}
+        <td class="score_field"> {{ results_dict|gettotal:player.id }} </td>
+        <!--<td class="score_field"> {{ prev_results_dict|getkey:player.id|getkey:'div' }}</td>
+        <td class="score_field"> {{ prev_results_dict|getkey:player.id|getkey:'played' }}</td>
+        <td class="score_field"> {{ prev_results_dict|getkey:player.id|getkey:'won' }}</td>
+        <td class="score_field"> {{ prev_results_dict|getkey:player.id|getkey:'total' }}</td>-->
+        </tr>
+        {% endfor %}
+        </tbody>
+        </table>
+    {% endfor %}
+        <script type="text/javascript">
+    $(document).ready(function()
+        {
+            $(".tablesorter").tablesorter();
+        }
+    );
 
-    <tbody>
-	{% for player in ladder.players.all %}
-		{% with player_counter=forloop.counter %}
-			<tr>
-			<td class="player_position"><strong> {{ player_counter }} </strong></td>
-			<td class="player_name"> {{ player }} </td>
-			{% for opponent in ladder.players.all %}
-				{% with column_counter=forloop.counter %}
-					{% if column_counter == player_counter %}
-					<td class="box_grey score_field"></td>
-					{% else %}
-					<td class="score_field">
-						{% for result in results_dict|getkey:player.id %}
-							{% if player == result.player and opponent == result.opponent %}
-								{{ result.result }}
-							{% endif %}
-						{% endfor %}
-					</td>
-					{% endif %}
-				{% endwith %}
-			{% endfor %}
-		{% endwith %}
-    <td class="score_field"> {{ results_dict|gettotal:player.id }} </td>
-    <!--<td class="score_field"> {{ prev_results_dict|getkey:player.id|getkey:'div' }}</td>
-    <td class="score_field"> {{ prev_results_dict|getkey:player.id|getkey:'played' }}</td>
-    <td class="score_field"> {{ prev_results_dict|getkey:player.id|getkey:'won' }}</td>
-    <td class="score_field"> {{ prev_results_dict|getkey:player.id|getkey:'total' }}</td>-->
-    </tr>
-	{% endfor %}
-    </tbody>
-	</table>
-{% endfor %}
+    </script>
+{% endblock %}
