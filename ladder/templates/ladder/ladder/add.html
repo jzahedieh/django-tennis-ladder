@@ -1,68 +1,72 @@
+{% extends 'base.html' %}
 {% load ladder_extras %}
-<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.0/jquery.min.js" ></script>
- <script type="text/javascript">
 
-    $(document).ready(function() {
-       var up = {{ unplayed_matches|safe }}
-               console.log(up);
-       $('#opp').hide();
+{% block container %}
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.0/jquery.min.js" ></script>
+     <script type="text/javascript">
 
-        $('#player').change(function()  {
-            console.log('changed');
-            $('#opp').hide('slow');
-            $('#opponent').find('option').remove();
-            $('#opp').show('slow');
+        $(document).ready(function() {
+           var up = {{ unplayed_matches|safe }}
+                   console.log(up);
+           $('#opp').hide();
 
-            $.each(up[$('#player').val()], function(key, value){
+            $('#player').change(function()  {
+                console.log('changed');
+                $('#opp').hide('slow');
+                $('#opponent').find('option').remove();
+                $('#opp').show('slow');
 
-                 $('#opponent')
-                      .append($('<option>', { value : key })
-                      .text(value.first_name + ' ' + value.last_name));
+                $.each(up[$('#player').val()], function(key, value){
+
+                     $('#opponent')
+                          .append($('<option>', { value : key })
+                          .text(value.first_name + ' ' + value.last_name));
+                });
             });
-        });
-     });
- </script>
+         });
+     </script>
 
 
-<h1> {{ ladder }} </h1>
+    <h1> {{ ladder }} </h1>
 
-{% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
+    {% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
 
-<form action="{% url 'ladder:add_result' ladder.id %}" method="post">
-    {% csrf_token %}
-    <select id='player' name="player">
-        <option value='FALSE'>.. choose a player ..</option>
-        {% for player in ladder.players.all %}
-            <option value="{{ player.id }}"> {{ player }} </option>
-        {% endfor %}
-    </select>
-    <select name="player_score">
-        {% for point in points %}
-            {% if point == 9 %}
-                <option selected value="{{ point }}"> {{ point }} </option>
-            {% else %}
-                <option value="{{ point }}"> {{ point }} </option>
-            {% endif %}
-        {% endfor %}
-    </select>
-    <div id="opp">
-    Vs <br />
-    <select id="opponent" name="opponent">
-        {% for player in ladder.players.all %}
+    <form action="{% url 'ladder:add_result' ladder.id %}" method="post">
+        {% csrf_token %}
+        <select id='player' name="player">
+            <option value='FALSE'>.. choose a player ..</option>
+            {% for player in ladder.players.all %}
+                <option value="{{ player.id }}"> {{ player }} </option>
+            {% endfor %}
+        </select>
+        <select name="player_score">
+            {% for point in points %}
+                {% if point == 9 %}
+                    <option selected value="{{ point }}"> {{ point }} </option>
+                {% else %}
+                    <option value="{{ point }}"> {{ point }} </option>
+                {% endif %}
+            {% endfor %}
+        </select>
+        <div id="opp">
+        Vs <br />
+        <select id="opponent" name="opponent">
+            {% for player in ladder.players.all %}
 
-        {% endfor %}
-    </select>
+            {% endfor %}
+        </select>
 
-    <select name="opponent_score">
-        {% for point in points %}
-            {% if point == 9 %}
-                <option selected value="{{ point }}"> {{ point }} </option>
-            {% else %}
-                <option value="{{ point }}"> {{ point }} </option>
-            {% endif %}
-        {% endfor %}
-    </select>
-    </div>
-    <br />
-    <input type="submit" value="Add Result" />
-</form>
+        <select name="opponent_score">
+            {% for point in points %}
+                {% if point == 9 %}
+                    <option selected value="{{ point }}"> {{ point }} </option>
+                {% else %}
+                    <option value="{{ point }}"> {{ point }} </option>
+                {% endif %}
+            {% endfor %}
+        </select>
+        </div>
+        <br />
+        <input type="submit" value="Add Result" />
+    </form>
+{% endblock %}

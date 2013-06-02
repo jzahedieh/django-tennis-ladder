@@ -1,4 +1,7 @@
+{% extends 'base.html' %}
 {% load ladder_extras %}
+
+{% block container %}
 <link rel="stylesheet" type="text/css" href="/static/css/style.css" />
 <link rel="stylesheet" type="text/css" href="/static/css/ladder.css" />
 <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.0/jquery.min.js" ></script>
@@ -13,8 +16,6 @@ $(document).ready(function()
 );
 
 </script>
-
-
 
 <h1> {{ ladder }} </h1>
 
@@ -54,3 +55,4 @@ $(document).ready(function()
     <td class="score_field"> {{ results_dict|gettotal:player.id }} </td>
     </tr>
 	{% endfor %}
+{% endblock %}

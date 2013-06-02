@@ -1,10 +1,39 @@
-{% if season_list %}
-	<ul>
-	{% for season in season_list %}
-		<li><a href="{% url 'ladder:season' season.id%}">{{ season.name }}</a></li>
-	{% endfor %}
-	</ul>
-{% else %}
-	<p>No seasons are available.</p>
-{% endif %}
+{% extends 'base.html' %}
+{% block container %}
+    {% if season_list %}
+        <ul>
+        {% for season in season_list %}
+            <li><a href="{% url 'ladder:season' season.id%}">{{ season.name }}</a></li>
+        {% endfor %}
+        </ul>
+    {% else %}
+        <p>No seasons are available.</p>
+    {% endif %}
 
+            <!-- Main hero unit for a primary marketing message or call to action -->
+            <div class="hero-unit">
+                <h1>Hello, Highgate!</h1>
+                <p>This is a website that tracks the current ladders progress and keeps a history of previous ladders,
+                    I try to keep current ladder data as up to date as possible and have lots of ideas in the pipeline.</p>
+                <p><a class="btn btn-primary btn-large">View Current Season &raquo;</a></p>
+            </div>
+
+            <!-- Example row of columns -->
+            <div class="row">
+                <div class="span4">
+                    <h2>Current Stats Stats</h2>
+                    <p>Donec id elit non mi porta gravida at eget metus. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Etiam porta sem malesuada magna mollis euismod. Donec sed odio dui. </p>
+                    <p><a class="btn" href="#">View details &raquo;</a></p>
+                </div>
+                <div class="span4">
+                    <h2>Current Leaders</h2>
+                    <p>Donec id elit non mi porta gravida at eget metus. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Etiam porta sem malesuada magna mollis euismod. Donec sed odio dui. </p>
+                    <p><a class="btn" href="#">View details &raquo;</a></p>
+               </div>
+                <div class="span4">
+                    <h2>Historical Stats</h2>
+                    <p>Donec sed odio dui. Cras justo odio, dapibus ac facilisis in, egestas eget quam. Vestibulum id ligula porta felis euismod semper. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus.</p>
+                    <p><a class="btn" href="#">View details &raquo;</a></p>
+                </div>
+            </div>
+{% endblock %}
