@@ -20,9 +20,10 @@ def multi_dimensions(n, type):
 from ladder.models import Season, Ladder, Result
 
 
+
 def index(request):
-    season_list = Season.objects.order_by('-start_date')
-    context = {'season_list': season_list}
+    current_season = Season.objects.order_by('-start_date')[0]
+    context = {'current_season': current_season}
     return render(request, 'ladder/index.html', context)
 
 

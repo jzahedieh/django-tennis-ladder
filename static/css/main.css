@@ -4,10 +4,19 @@
    Author's custom styles
    ========================================================================== */
 
+.navbar-inverse .nav li.dropdown.open > .dropdown-toggle,
+.navbar-inverse .nav li.dropdown.active > .dropdown-toggle,
+.navbar-inverse .nav li.dropdown.open.active > .dropdown-toggle {
+  color: #ffffff;
 
-
-
-
+  background-color: #a2b5d7;
+  background-image: -moz-linear-gradient(top, #a2b5d7, #b4c3df);
+  background-image: -webkit-gradient(linear, 0 0, 0 100%, from(#a2b5d7), to(#b4c3df));
+  background-image: -webkit-linear-gradient(top, #a2b5d7, #b4c3df);
+  background-image: -o-linear-gradient(top, #a2b5d7, #b4c3df);
+  background-image: linear-gradient(to bottom, #a2b5d7, #b4c3df);
+  background-repeat: repeat-x;
+}
 
 
 
