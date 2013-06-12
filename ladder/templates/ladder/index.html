@@ -13,9 +13,14 @@
             <!-- Example row of columns -->
             <div class="row">
                 <div class="span4">
-                    <h2>Current Stats Stats</h2>
-                    <p>Donec id elit non mi porta gravida at eget metus. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Etiam porta sem malesuada magna mollis euismod. Donec sed odio dui. </p>
-                    <p><a class="btn" href="#">View details &raquo;</a></p>
+                    <h2>{{ current_season }} Stats</h2>
+                    <ul>
+                        <li>Total Divisions: {{ current_season.ladder_set.all.count }} </li>
+                        <li>Total Players: {{ player_count }}</li>
+                        <li>Total Games in Season: {{ total_games_count|floatformat:"0" }}</li>
+                        <li>Total Games Played: {{ results_count }}</li>
+                        <li>Percentage Games Played: {{ percentage_played|floatformat:"2" }}%</li>
+                    </ul>
                 </div>
                 <div class="span4">
                     <h2>Current Leaders</h2>
