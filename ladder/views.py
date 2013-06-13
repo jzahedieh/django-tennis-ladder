@@ -20,15 +20,19 @@ def multi_dimensions(n, type):
 
 def index(request):
     current_season = Season.objects.order_by('-start_date')[0]
+    #current_season = get_object_or_404(Season, pk=2)
     ladders = Ladder.objects.filter(season=current_season)
     results = Result.objects.filter(ladder__season=current_season)
     player_count = 0
     results_count = results.count() / 2
     total_games_count = 0.0
+    test = {}
 
     for ladder in ladders:
         player_count += ladder.players.count()
         total_games_count += (ladder.players.count() * (ladder.players.count()-1)) / 2
+        test[ladder.division] = ladder.get_leader()
+
 
     percentage_played = (results_count / total_games_count) * 100
 
@@ -37,7 +41,8 @@ def index(request):
         'percentage_played': percentage_played,
         'total_games_count': total_games_count,
         'results_count': results_count,
-        'player_count': player_count
+        'player_count': player_count,
+        'test': test.items()
     }
     return render(request, 'ladder/index.html', context)
 

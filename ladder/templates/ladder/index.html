@@ -13,24 +13,37 @@
             <!-- Example row of columns -->
             <div class="row">
                 <div class="span4">
-                    <h2>{{ current_season }} Stats</h2>
-                    <ul>
-                        <li>Total Divisions: {{ current_season.ladder_set.all.count }} </li>
-                        <li>Total Players: {{ player_count }}</li>
-                        <li>Total Games in Season: {{ total_games_count|floatformat:"0" }}</li>
-                        <li>Total Games Played: {{ results_count }}</li>
-                        <li>Percentage Games Played: {{ percentage_played|floatformat:"2" }}%</li>
-                    </ul>
+                    <h2>Current Leaders</h2>
+                    <table class="table table-condensed">
+                    <th>Div</th>
+                    <th>Player</th>
+                    <th>Total</th>
+                    {% for a, b in test %}
+                        <tr>
+                            <td>{{ a }}</td><td>{{ b.player }}</td><td>{{ b.total }}</td>
+                        </tr>
+                    {% endfor %}
+                    </table>
                 </div>
                 <div class="span4">
-                    <h2>Current Leaders</h2>
-                    <p>Donec id elit non mi porta gravida at eget metus. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Etiam porta sem malesuada magna mollis euismod. Donec sed odio dui. </p>
-                    <p><a class="btn" href="#">View details &raquo;</a></p>
-               </div>
-                <div class="span4">
-                    <h2>Historical Stats</h2>
-                    <p>Donec sed odio dui. Cras justo odio, dapibus ac facilisis in, egestas eget quam. Vestibulum id ligula porta felis euismod semper. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus.</p>
-                    <p><a class="btn" href="#">View details &raquo;</a></p>
+                    <h2>{{ current_season }} Stats</h2>
+                    <table class="table">
+                            <tr><td>Total Divisions</td><td> {{ current_season.ladder_set.all.count }}</td></tr>
+                            <tr><td>Total Players</td><td> {{ player_count }}</td></tr>
+                            <tr><td>Total Games in Season</td><td> {{ total_games_count|floatformat:"0" }}</td></tr>
+                            <tr><td>Total Games Played</td><td> {{ results_count }}</td></tr>
+                            <tr><td>Percentage Games Played</td><td> {{ percentage_played|floatformat:"2" }}%</td></tr>
+                    </table>
+                </div>
+            <div class="span4">
+                <h2>Historical Stats</h2>
+                    <table class="table">
+                            <tr><td>Total Seasons</td><td></td></tr>
+                            <tr><td>Total Games Played</td><td></td></tr>
+                            <tr><td>Highest Score</td><td></td></tr>
+                            <tr><td>Highest Completion</td><td></td></tr>
+                            <tr><td>Percentage Games Played</td><td></td></tr>
+                    </table>
                 </div>
             </div>
 {% endblock %}

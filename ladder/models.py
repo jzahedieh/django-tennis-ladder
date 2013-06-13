@@ -1,5 +1,6 @@
 from django.db import models
 from django import forms
+import operator
 
 
 class Season(models.Model):
@@ -31,6 +32,24 @@ class Ladder(models.Model):
 
     def __unicode__(self):
         return self.season.name + ' division: ' + str(self.division)
+
+    def get_leader(self):
+        totals = {}
+        for result in self.result_set.filter(ladder=self):
+            try:
+                if result.result == 9:
+                    totals[result.player] += int(result.result) + 3
+                else:
+                    totals[result.player] += int(result.result) + 1
+            except KeyError:
+                if result.result == 9:
+                    totals[result.player] = int(result.result) + 3
+                else:
+                    totals[result.player] = int(result.result) + 1
+
+        player = max(totals.iteritems(), key=operator.itemgetter(1))[0]
+
+        return {'player':player,  'total':totals[player]}
 
 
 class Result(models.Model):
