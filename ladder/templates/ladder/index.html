@@ -12,7 +12,17 @@
 
             <!-- Example row of columns -->
             <div class="row">
-                <div class="span4">
+                <div class="span6">
+                    <h2>{{ current_season }} Stats</h2>
+                    <table class="table">
+                            <tr><td>Total Divisions</td><td> {{ current_season.ladder_set.all.count }}</td></tr>
+                            <tr><td>Total Players</td><td> {{ player_count }}</td></tr>
+                            <tr><td>Total Games in Season</td><td> {{ total_games_count|floatformat:"0" }}</td></tr>
+                            <tr><td>Total Games Played</td><td> {{ results_count }}</td></tr>
+                            <tr><td>Percentage Games Played</td><td> {{ percentage_played|floatformat:"2" }}%</td></tr>
+                    </table>
+                </div>
+                <div class="span6">
                     <h2>Current Leaders</h2>
                     <table class="table table-condensed">
                     <th>Div</th>
@@ -23,26 +33,6 @@
                             <td>{{ a }}</td><td>{{ b.player }}</td><td>{{ b.total }}</td>
                         </tr>
                     {% endfor %}
-                    </table>
-                </div>
-                <div class="span4">
-                    <h2>{{ current_season }} Stats</h2>
-                    <table class="table">
-                            <tr><td>Total Divisions</td><td> {{ current_season.ladder_set.all.count }}</td></tr>
-                            <tr><td>Total Players</td><td> {{ player_count }}</td></tr>
-                            <tr><td>Total Games in Season</td><td> {{ total_games_count|floatformat:"0" }}</td></tr>
-                            <tr><td>Total Games Played</td><td> {{ results_count }}</td></tr>
-                            <tr><td>Percentage Games Played</td><td> {{ percentage_played|floatformat:"2" }}%</td></tr>
-                    </table>
-                </div>
-            <div class="span4">
-                <h2>Historical Stats</h2>
-                    <table class="table">
-                            <tr><td>Total Seasons</td><td></td></tr>
-                            <tr><td>Total Games Played</td><td></td></tr>
-                            <tr><td>Highest Score</td><td></td></tr>
-                            <tr><td>Highest Completion</td><td></td></tr>
-                            <tr><td>Percentage Games Played</td><td></td></tr>
                     </table>
                 </div>
             </div>
