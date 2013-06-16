@@ -78,15 +78,18 @@ $(document).ready(function()
                 <th></th>
                 <th>Result</th>
                 <th>Player</th>
-
-                <tr>
-                    <td>Toby</td>
-                    <td>5</td>
-                    <td>vs</td>
-                    <td>5</td>
-                    <td>Complete</td>
-                </tr>
+                {% for key, value in ladder.get_latest_results %}
+                    <tr>
+                        <td>{{ value.player }}</td>
+                        <td style="text-align: center;">{{ value.player_result }}</td>
+                        <td>vs</td>
+                        <td style="text-align: center;">{{ value.opponent_result }}</td>
+                        <td>{{ value.opponent }}</td>
+                    </tr>
+                {% endfor %}
             </table>
         </div>
     </div>
+
+
 {% endblock %}
