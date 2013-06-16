@@ -55,4 +55,10 @@ $(document).ready(function()
     <td class="score_field"> {{ results_dict|gettotal:player.id }} </td>
     </tr>
 	{% endfor %}
+    </tbody>
+    </table>
+    {% for result in ladder.get_latest_results %}
+        {{ result.player }} {{ result.result }}
+    {% endfor %}
 {% endblock %}
+

@@ -49,8 +49,13 @@ class Ladder(models.Model):
 
         player = max(totals.iteritems(), key=operator.itemgetter(1))[0]
 
-        return {'player':player,  'total':totals[player]}
+        return {'player': player,  'total': totals[player]}
 
+    def get_latest_results(self):
+        last5 = {}
+        for result in self.result_set.filter(ladder=self):
+            last5[result] = result
+        return last5
 
 class Result(models.Model):
     ladder = models.ForeignKey(Ladder)
