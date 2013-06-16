@@ -2,57 +2,91 @@
 {% load ladder_extras %}
 
 {% block container %}
-<link rel="stylesheet" type="text/css" href="/static/css/style.css" />
+<link rel="stylesheet" type="text/css" href="/static/css/theme.ice.css" />
 <link rel="stylesheet" type="text/css" href="/static/css/ladder.css" />
-<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.0/jquery.min.js" ></script>
-<script type="text/javascript" src="/static/js/jquery.tablesorter.js"></script>
+<script type="text/javascript" src="/static/js/jquery.tablesorter.min.js"></script>
 <script type="text/javascript" src="/static/js/jquery.metadata.js"></script>
 
 <script type="text/javascript">
 $(document).ready(function()
     {
-        $(".tablesorter").tablesorter();
+        $("#ladderTable").tablesorter({
+            theme: 'ice'
+        });
     }
 );
-
 </script>
 
 <h1> {{ ladder }} </h1>
 
-	<table cellspacing="1" id="ladderTable{{ ladder.id }}" class="tablesorter">
-    <thead>
-	<tr>
-    <th></th><th class="{sorter: false}">Name</th>
-	{% for i in ladder.players.all %}
-		<th class="score_field {sorter: false}"><strong> {{ forloop.counter }} </strong></th>
-	{% endfor %}
-    <th class="score_field">Total</th>
-	</tr>
-    </thead>
 
-   <tbody>
-	{% for player in ladder.players.all %}
-		{% with player_counter=forloop.counter %}
-			<tr>
-			<td class="player_position"><strong> {{ player_counter }} </strong></td>
-			<td class="player_name"> {{ player }} </td>
-			{% for opponent in ladder.players.all %}
-				{% with column_counter=forloop.counter %}
-					{% if column_counter == player_counter %}
-					<td class="box_grey score_field"></td>
-					{% else %}
-					<td class="score_field">
-						{% for result in results_dict|getkey:player.id %}
-							{% if player == result.player and opponent == result.opponent %}
-								{{ result.result }}
-							{% endif %}
-						{% endfor %}
-					</td>
-					{% endif %}
-				{% endwith %}
-			{% endfor %}
-		{% endwith %}
-    <td class="score_field"> {{ results_dict|gettotal:player.id }} </td>
-    </tr>
-	{% endfor %}
+	<table id="ladderTable" class="tablesorter">
+        <thead>
+       	    <tr>
+                <th></th>
+                <th class="{sorter: false}">Name</th>
+                {% for i in ladder.players.all %}
+                    <th class="score_field {sorter: false}"><strong> {{ forloop.counter }} </strong></th>
+                {% endfor %}
+                <th class="score_field">Total</th>
+            </tr>
+        </thead>
+
+       <tbody>
+        {% for player in ladder.players.all %}
+            {% with player_counter=forloop.counter %}
+                <tr>
+                    <td class="player_position"><strong> {{ player_counter }} </strong></td>
+                    <td class="player_name"> {{ player }} </td>
+                        {% for opponent in ladder.players.all %}
+                            {% with column_counter=forloop.counter %}
+                                {% if column_counter == player_counter %}
+                                    <td class="box_grey score_field"></td>
+                                {% else %}
+                                    <td class="score_field">
+                                    {% for result in results_dict|getkey:player.id %}
+                                        {% if player == result.player and opponent == result.opponent %}
+                                            {{ result.result }}
+                                        {% endif %}
+                                    {% endfor %}
+                                    </td>
+                                {% endif %}
+                            {% endwith %}
+                        {% endfor %}
+
+                    <td class="score_field"> {{ results_dict|gettotal:player.id }} </td>
+                </tr>
+            {% endwith %}
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="row">
+        <div class="span6">
+            <h2>{{ current_season }} Stats</h2>
+            <table class="table">
+                    <tr><td>Total Matches in Ladder</td><td></td></tr>
+                    <tr><td>Total Matches Played</td><td></td></tr>
+                    <tr><td>Percentage Matches Played</td><td></td></tr>
+            </table>
+        </div>
+        <div class="span6">
+            <h2>Latest Results</h2>
+            <table class="table table-condensed">
+                <th>Player</th>
+                <th>Result</th>
+                <th></th>
+                <th>Result</th>
+                <th>Player</th>
+
+                <tr>
+                    <td>Toby</td>
+                    <td>5</td>
+                    <td>vs</td>
+                    <td>5</td>
+                    <td>Complete</td>
+                </tr>
+            </table>
+        </div>
+    </div>
 {% endblock %}

@@ -20,8 +20,8 @@ def gettotal(value, arg):
             else:
                 total = total + result.result + 1
         return total
-    except:
-        return
+    except KeyError:
+        return total
 
 @register.filter(name='unplayed')
 def unplayed(value, arg):

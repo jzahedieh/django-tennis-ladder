@@ -9,38 +9,34 @@ a:active { color: #000; text-decoration: none }
 a:visited { color: #000; text-decoration: none }
 a:hover { color: #ggg; text-decoration: underline }
 
-table
+table.tablesorter
 {
 	width:100%;
 	margin-bottom:20px;
-    border-width: 0 0 1px 1px;
-    border-spacing: 0;
-    border-collapse: collapse;
-    border-style: solid;
     font-family: 'Open Sans', sans-serif;
 }
 
-td, th
+table.tablesorter td, table.tablesorter th
 {
     margin: 0;
-    border-width: 1px 1px 0 0;
+    border-width: 1px;
     border-style: solid;
 }
 
-td.score_field {
+table.tablesorter td.score_field {
 	min-width:30px;
     text-align: center;
 }
 
-td.player_position {
+table.tablesorter td.player_position {
 	width:28px;
 }
 
-td.player_name {
+table.tablesorter td.player_name {
 	min-width:200px;
 	width:200px;
 }
 
-td.box_grey {
+table.tablesorter td.box_grey {
 	background-color:grey;
 }
