@@ -26,13 +26,12 @@ def index(request):
     player_count = 0
     results_count = results.count() / 2
     total_games_count = 0.0
-    test = {}
+    current_leaders = {}
 
     for ladder in ladders:
         player_count += ladder.players.count()
         total_games_count += (ladder.players.count() * (ladder.players.count()-1)) / 2
-        test[ladder.division] = ladder.get_leader()
-
+        current_leaders[ladder.division] = ladder.get_leader()
 
     percentage_played = (results_count / total_games_count) * 100
 
@@ -42,7 +41,7 @@ def index(request):
         'total_games_count': total_games_count,
         'results_count': results_count,
         'player_count': player_count,
-        'test': test.items()
+        'current_leaders': current_leaders.items()
     }
     return render(request, 'ladder/index.html', context)
 

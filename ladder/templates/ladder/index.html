@@ -17,9 +17,9 @@
                     <table class="table">
                             <tr><td>Total Divisions</td><td> {{ current_season.ladder_set.all.count }}</td></tr>
                             <tr><td>Total Players</td><td> {{ player_count }}</td></tr>
-                            <tr><td>Total Games in Season</td><td> {{ total_games_count|floatformat:"0" }}</td></tr>
-                            <tr><td>Total Games Played</td><td> {{ results_count }}</td></tr>
-                            <tr><td>Percentage Games Played</td><td> {{ percentage_played|floatformat:"2" }}%</td></tr>
+                            <tr><td>Total Matches in Season</td><td> {{ total_games_count|floatformat:"0" }}</td></tr>
+                            <tr><td>Total Matches Played</td><td> {{ results_count }}</td></tr>
+                            <tr><td>Percentage Matches Played</td><td> {{ percentage_played|floatformat:"2" }}%</td></tr>
                     </table>
                 </div>
                 <div class="span6">
@@ -28,9 +28,9 @@
                     <th>Div</th>
                     <th>Player</th>
                     <th>Total</th>
-                    {% for a, b in test %}
+                    {% for division, leader in current_leaders %}
                         <tr>
-                            <td>{{ a }}</td><td>{{ b.player }}</td><td>{{ b.total }}</td>
+                            <td>{{ division }}</td><td>{{ leader.player }}</td><td>{{ leader.total }}</td>
                         </tr>
                     {% endfor %}
                     </table>
