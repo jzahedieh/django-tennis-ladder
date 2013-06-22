@@ -1,6 +1,6 @@
-from django.db import models
-from django import forms
 import operator
+
+from django.db import models
 
 
 class Season(models.Model):
@@ -53,7 +53,8 @@ class Ladder(models.Model):
 
     def get_latest_results(self):
         results = {}
-        for result in self.result_set.filter(ladder=self).order_by('-date_added'): # [:10] to limit to 5
+        for result in self.result_set.filter(ladder=self).order_by('-date_added')[:10]:  # [:10] to limit to 5
+
             opponent = self.result_set.filter(ladder=self, player=result.opponent, opponent=result.player)[0]
             player_opponent_index = ''.join(str(e) for e in sorted([result.player.id, opponent.player.id]))
             try:
@@ -61,8 +62,16 @@ class Ladder(models.Model):
                     continue
             except KeyError:
                 results[player_opponent_index] = {'player': result.player, 'player_result': result.result,
-                                                  'opponent_result': opponent.result, 'opponent': opponent.player}
-        return results.iteritems()
+                                                  'opponent_result': opponent.result, 'opponent': opponent.player,
+                                                  'date_added': result.date_added}
+
+        ordered_results = {}
+        i = 0
+        for key in sorted(results, key=lambda x: (results[x]['date_added']), reverse=True):
+            ordered_results[i] = results[key]
+            i += 1
+
+        return ordered_results.items()
 
 
 class Result(models.Model):

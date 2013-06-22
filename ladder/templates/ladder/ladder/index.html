@@ -78,6 +78,7 @@ $(document).ready(function()
                 <th></th>
                 <th>Result</th>
                 <th>Player</th>
+                <th>Date Added</th>
                 {% for key, value in ladder.get_latest_results %}
                     <tr>
                         <td>{{ value.player }}</td>
@@ -85,6 +86,7 @@ $(document).ready(function()
                         <td>vs</td>
                         <td style="text-align: center;">{{ value.opponent_result }}</td>
                         <td>{{ value.opponent }}</td>
+                        <td>{{ value.date_added }}</td>
                     </tr>
                 {% endfor %}
             </table>
