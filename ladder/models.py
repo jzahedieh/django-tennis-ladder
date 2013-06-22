@@ -73,6 +73,18 @@ class Ladder(models.Model):
 
         return ordered_results.items()
 
+    def get_stats(self):
+        total_matches_played = 0.00
+        total_matches = self.players.count() * (self.players.count() - 1) / 2
+        total_matches_played += self.result_set.count() / 2
+        perc_matches_played = (total_matches_played / total_matches) * 100
+
+        return {
+            'total_matches_played': total_matches_played,
+            'total_matches': total_matches,
+            'perc_matches_played': perc_matches_played
+            }
+
 
 class Result(models.Model):
     ladder = models.ForeignKey(Ladder)
