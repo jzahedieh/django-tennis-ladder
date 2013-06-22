@@ -16,10 +16,10 @@
                     <h2>{{ current_season }} Stats</h2>
                     <table class="table">
                             <tr><td>Total Divisions</td><td> {{ current_season.ladder_set.all.count }}</td></tr>
-                            <tr><td>Total Players</td><td> {{ player_count }}</td></tr>
-                            <tr><td>Total Matches in Season</td><td> {{ total_games_count|floatformat:"0" }}</td></tr>
-                            <tr><td>Total Matches Played</td><td> {{ results_count }}</td></tr>
-                            <tr><td>Percentage Matches Played</td><td> {{ percentage_played|floatformat:"2" }}%</td></tr>
+                            <tr><td>Total Players</td><td> {{ current_season.get_stats.player_count }}</td></tr>
+                            <tr><td>Total Matches in Season</td><td> {{ current_season.get_stats.total_games_count|floatformat:"0" }}</td></tr>
+                            <tr><td>Total Matches Played</td><td> {{ current_season.get_stats.results_count }}</td></tr>
+                            <tr><td>Percentage Matches Played</td><td> {{ current_season.get_stats.percentage_played|floatformat:"2" }}%</td></tr>
                     </table>
                 </div>
                 <div class="span6">
@@ -28,7 +28,7 @@
                     <th>Div</th>
                     <th>Player</th>
                     <th>Total</th>
-                    {% for division, leader in current_leaders %}
+                    {% for division, leader in current_season.get_stats.current_leaders %}
                         <tr>
                             <td>{{ division }}</td><td>{{ leader.player }}</td><td>{{ leader.total }}</td>
                         </tr>
