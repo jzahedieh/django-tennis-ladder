@@ -17,9 +17,9 @@ class Season(models.Model):
         total_games_count = 0.0
         current_leaders = {}
         for ladder in self.ladder_set.all():
-            player_count += ladder.players.count()
+            player_count += ladder.league_set.count()
             results_count += ladder.result_set.count() / 2
-            total_games_count += (ladder.players.count() * (ladder.players.count()-1)) / 2
+            total_games_count += (ladder.league_set.count() * (ladder.league_set.count()-1)) / 2
             current_leaders[ladder.division] = ladder.get_leader()
 
         percentage_played = (results_count / total_games_count) * 100
@@ -49,7 +49,7 @@ class Ladder(models.Model):
     season = models.ForeignKey(Season)
     division = models.IntegerField(default=0)
     ladder_type = models.CharField(max_length=100)
-    players = models.ManyToManyField(Player)
+
 
     def __unicode__(self):
         return self.season.name + ' division: ' + str(self.division)
@@ -96,7 +96,7 @@ class Ladder(models.Model):
 
     def get_stats(self):
         total_matches_played = 0.00
-        total_matches = self.players.count() * (self.players.count() - 1) / 2
+        total_matches = self.league_set.count() * (self.result_set.count() - 1) / 2
         total_matches_played += self.result_set.count() / 2
         perc_matches_played = (total_matches_played / total_matches) * 100
 
@@ -104,7 +104,16 @@ class Ladder(models.Model):
             'total_matches_played': total_matches_played,
             'total_matches': total_matches,
             'perc_matches_played': perc_matches_played
-            }
+        }
+
+
+class League(models.Model):
+    ladder = models.ForeignKey(Ladder)
+    player = models.ForeignKey(Player)
+    sort_order = models.IntegerField(default=0)
+
+    def __unicode__(self):
+        return 'hello'
 
 
 class Result(models.Model):

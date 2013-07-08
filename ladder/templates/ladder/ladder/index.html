@@ -25,7 +25,7 @@ $(document).ready(function()
        	    <tr>
                 <th></th>
                 <th class="{sorter: false}">Name</th>
-                {% for i in ladder.players.all %}
+                {% for i in ladder.league_set.all %}
                     <th class="score_field {sorter: false}"><strong> {{ forloop.counter }} </strong></th>
                 {% endfor %}
                 <th class="score_field">Total</th>
@@ -33,19 +33,19 @@ $(document).ready(function()
         </thead>
 
        <tbody>
-        {% for player in ladder.players.all %}
+        {% for league in ladder.league_set.all %}
             {% with player_counter=forloop.counter %}
                 <tr>
                     <td class="player_position"><strong> {{ player_counter }} </strong></td>
-                    <td class="player_name"> {{ player }} </td>
-                        {% for opponent in ladder.players.all %}
+                    <td class="player_name"> {{ league.player }} </td>
+                        {% for opponent in ladder.league_set.all %}
                             {% with column_counter=forloop.counter %}
                                 {% if column_counter == player_counter %}
                                     <td class="box_grey score_field"></td>
                                 {% else %}
                                     <td class="score_field">
-                                    {% for result in results_dict|getkey:player.id %}
-                                        {% if player == result.player and opponent == result.opponent %}
+                                    {% for result in results_dict|getkey:league.player.id %}
+                                        {% if league.player == result.player and opponent.player == result.opponent %}
                                             {{ result.result }}
                                         {% endif %}
                                     {% endfor %}
@@ -54,7 +54,7 @@ $(document).ready(function()
                             {% endwith %}
                         {% endfor %}
 
-                    <td class="score_field"> {{ results_dict|gettotal:player.id }} </td>
+                    <td class="score_field"> {{ results_dict|gettotal:league.player.id }} </td>
                 </tr>
             {% endwith %}
         {% endfor %}

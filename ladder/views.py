@@ -1,7 +1,7 @@
 from django.http import HttpResponseRedirect
 from django.shortcuts import render, get_object_or_404
 from django.core.urlresolvers import reverse
-from ladder.models import Ladder, Player, Result, Season
+from ladder.models import Ladder, Player, Result, Season, League
 from django.contrib.auth.decorators import login_required
 import datetime, json
 from collections import defaultdict
@@ -28,6 +28,7 @@ def index(request):
 def season(request, season_id):
     season = get_object_or_404(Season, pk=season_id)
     ladders = Ladder.objects.filter(season=season)
+    #ladders = Result.objects.filter(season=group__ladder)
     # season_before_date = season.start_date - datetime.timedelta(days=31)
     # prev_results_dict = {}
     # try:
@@ -71,13 +72,16 @@ def season(request, season_id):
     #     pass
 
     results = Result.objects.filter(ladder__season=season)
+    league = League.objects.filter(ladder__season=season)
+
+
     results_dict = {}
 
     for result in results:
         results_dict.setdefault(result.player.id, []).append(result)
 
     return render(request, 'ladder/season/index.html',
-                  dict(season=season, ladders=ladders, results_dict=results_dict)
+                  dict(season=season, ladders=ladders, results_dict=results_dict, league=league)
     )
 
     return render(request, 'ladder/season/index.html',
@@ -89,6 +93,7 @@ def ladder(request, ladder_id):
     ladder = get_object_or_404(Ladder, pk=ladder_id)
 
     results = Result.objects.filter(ladder=ladder)
+
     results_dict = {}
 
     for result in results:
