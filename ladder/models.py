@@ -19,7 +19,7 @@ class Season(models.Model):
         for ladder in self.ladder_set.all():
             player_count += ladder.league_set.count()
             results_count += ladder.result_set.count() / 2
-            total_games_count += (ladder.league_set.count() * (ladder.league_set.count()-1)) / 2
+            total_games_count += (ladder.league_set.count() * (ladder.league_set.count() - 1)) / 2
             current_leaders[ladder.division] = ladder.get_leader()
 
         percentage_played = (results_count / total_games_count) * 100
@@ -68,9 +68,12 @@ class Ladder(models.Model):
                 else:
                     totals[result.player] = int(result.result) + 1
 
-        player = max(totals.iteritems(), key=operator.itemgetter(1))[0]
+        if totals:
+            player = max(totals.iteritems(), key=operator.itemgetter(1))[0]
+        else:
+            player = {}
 
-        return {'player': player,  'total': totals[player]}
+        return {'player': player, 'total': totals[player]}
 
     def get_latest_results(self):
         results = {}
@@ -124,4 +127,5 @@ class Result(models.Model):
     date_added = models.DateField('Date added')
 
     def __unicode__(self):
-        return self.player.first_name + ' ' + self.player.last_name + ' vs ' + self.opponent.first_name + ' ' + self.opponent.last_name
+        return self.player.first_name + ' ' + self.player.last_name + ' vs ' + self.opponent.first_name + ' ' + self.opponent.last_name + ' score: ' + str(
+            self.result)

@@ -7,34 +7,34 @@ __author__ = 'jon'
 import os
 
 with open('/home/jon/workspace/python_projects/tennis/ladder_import_scripts/add_season/data/output') as f:
-	names = f.readlines()
+    names = f.readlines()
 
 w = open('/home/jon/workspace/python_projects/tennis/ladder_import_scripts/add_season/data/prepared', 'w')
 
 for name in names:
-	split = name.split()
-	flag = 0
-	i = 0
-	ret = ''
+    split = name.split()
+    flag = 0
+    i = 0
+    ret = ''
 
-	for part in split:
-		i = i + 1
-		if part.isalnum():
-			flag = flag + 1
+    for part in split:
+        i = i + 1
+        if part.isalnum():
+            flag = flag + 1
 
-		if flag == 3:
-			break
+        if flag == 3:
+            break
 
-	for count in range(i):
-		if split[count] != 'LAST':
-			ret = ret + ' ' + split[count]
+    for count in range(i):
+        if split[count] != 'LAST':
+            ret = ret + ' ' + split[count]
 
-	if ret != ' NAME 1 2':
-		if ret != '':
-			w.write(ret + os.linesep)
+    if ret != ' NAME 1 2':
+        if ret != '':
+            w.write(ret + os.linesep)
 
-	flag = 0
-	i = 0
-	ret = ''
+    flag = 0
+    i = 0
+    ret = ''
 
 w.close()
