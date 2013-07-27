@@ -19,7 +19,7 @@ class Season(models.Model):
             #Only set the slug when the object is created.
             self.slug = slugify(self.name)
         super(Season, self).save()
-#autumn-2013
+
     def get_stats(self):
         player_count = 0
         results_count = 0
@@ -61,7 +61,7 @@ class Ladder(models.Model):
 
 
     def __unicode__(self):
-        return self.season.name + ' division: ' + str(self.division)
+        return self.season.name + ' Division: ' + str(self.division)
 
     def get_leader(self):
         totals = {}
