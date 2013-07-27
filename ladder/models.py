@@ -36,9 +36,9 @@ class Season(models.Model):
 class Player(models.Model):
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
-    home_phone = models.CharField(max_length=100)
-    mobile_phone = models.CharField(max_length=100)
-    email = models.CharField(max_length=100)
+    home_phone = models.CharField(max_length=100, blank=True)
+    mobile_phone = models.CharField(max_length=100, blank=True)
+    email = models.CharField(max_length=100, blank=True)
     junior = models.BooleanField(default=False)
 
     def __unicode__(self):
