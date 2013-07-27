@@ -8,23 +8,54 @@
 <script type="text/javascript" src="/static/js/jquery.metadata.js"></script>
 
 <script type="text/javascript">
+var can_submit = false;
 $(document).ready(function()
     {
         $("#ladderTable").tablesorter({
             theme: 'ice'
         });
 
-        $(".selectable").click(function () {
+        $(".selectable").click(function (e) {
             var player = $(this).attr('data-player');
             var opponent = $(this).attr('data-opp');
 
+
+            if ($('.score_field').find('.loser_input').length && !$(this).find('.loser_input').length) {
+                $('.loser_input').remove();
+            }
+
+            if (!$(this).find('.loser_input').length) {
+                $(this).append("<input type='number' class='loser_input' onKeyUp='updateForm();' min='0' max='8' />");
+            }
+
             $('[name=player]').val(player);
             $('[name=opponent]').val(opponent);
+            e.preventDefault();
 
+            $('.loser_input').focus()
+
+            return false;
+
+        });
+
+        $(document).keypress(function (e) {
+            if (e.which == 13) {
+                if(can_submit){
+                    $('#add_result_form').submit();
+                }
+            }
         });
 
     }
 );
+
+function updateForm() {
+    var l_score = $('.score_field input').val();
+    console.log(l_score);
+    $('[name=player_score]').val(l_score);
+    can_submit = true;
+
+}
 
 function selectRecord() {
     var player = $(this).attr('data-player');
@@ -32,9 +63,7 @@ function selectRecord() {
     console.log(player);
 }
 
-
 </script>
-
 <h1> {{ ladder }} </h1>
 
 
@@ -81,7 +110,7 @@ function selectRecord() {
 
         {% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
 
-    <form action="{% url 'ladder:add_result' ladder.id %}" method="post">
+    <form id="add_result_form" action="{% url 'ladder:add_result' ladder.id %}" method="post">
         {% csrf_token %}
         <select id='player' name="player">
             <option value='FALSE'>.. choose a player ..</option>
