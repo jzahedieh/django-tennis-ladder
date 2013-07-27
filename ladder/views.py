@@ -96,8 +96,11 @@ def season(request, slug):
     )
 
 
-def ladder(request, ladder_id):
-    ladder = get_object_or_404(Ladder, pk=ladder_id)
+def ladder(request, slug, divison_id):
+    try:
+        ladder = Ladder.objects.get(season__slug=slug, division=divison_id)
+    except Ladder.DoesNotExist:
+        raise Http404
 
     results = Result.objects.filter(ladder=ladder)
 

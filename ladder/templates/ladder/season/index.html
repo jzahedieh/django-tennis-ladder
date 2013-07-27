@@ -11,7 +11,7 @@
 
     {% for ladder in ladders %}
 
-        <a href="{% url 'ladder:ladder' ladder.id %}"> Division:  {{ ladder.division }} </a>
+        <a href="{% url 'ladder:ladder' ladder.season.slug ladder.division %}"> Division:  {{ ladder.division }} </a>
         <table cellspacing="1" id="ladderTable{{ ladder.id }}" class="tablesorter ladder-table">
         <thead>
         <tr>
