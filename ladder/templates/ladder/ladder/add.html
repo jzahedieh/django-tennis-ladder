@@ -2,41 +2,91 @@
 {% load ladder_extras %}
 
 {% block container %}
-    <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.0/jquery.min.js" ></script>
-     <script type="text/javascript">
+<link rel="stylesheet" type="text/css" href="/static/css/theme.ice.css" />
+<link rel="stylesheet" type="text/css" href="/static/css/ladder.css" />
+<script type="text/javascript" src="/static/js/jquery.tablesorter.min.js"></script>
+<script type="text/javascript" src="/static/js/jquery.metadata.js"></script>
 
-        $(document).ready(function() {
-           var up = {{ unplayed_matches|safe }}
-                   console.log(up);
-           $('#opp').hide();
+<script type="text/javascript">
+$(document).ready(function()
+    {
+        $("#ladderTable").tablesorter({
+            theme: 'ice'
+        });
 
-            $('#player').change(function()  {
-                console.log('changed');
-                $('#opp').hide('slow');
-                $('#opponent').find('option').remove();
-                $('#opp').show('slow');
+        $(".selectable").click(function () {
+            var player = $(this).attr('data-player');
+            var opponent = $(this).attr('data-opp');
 
-                $.each(up[$('#player').val()], function(key, value){
+            $('[name=player]').val(player);
+            $('[name=opponent]').val(opponent);
 
-                     $('#opponent')
-                          .append($('<option>', { value : key })
-                          .text(value.first_name + ' ' + value.last_name));
-                });
-            });
-         });
-     </script>
+        });
+
+    }
+);
+
+function selectRecord() {
+    var player = $(this).attr('data-player');
+    var opp = $(this).attr('data-opp');
+    console.log(player);
+}
 
 
-    <h1> {{ ladder }} </h1>
+</script>
 
-    {% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
+<h1> {{ ladder }} </h1>
+
+
+	<table id="ladderTable" class="tablesorter">
+        <thead>
+       	    <tr>
+                <th></th>
+                <th class="{sorter: false}">Name</th>
+                {% for i in ladder.league_set.all %}
+                    <th class="score_field {sorter: false}"><strong> {{ forloop.counter }} </strong></th>
+                {% endfor %}
+                <th class="score_field">Total</th>
+            </tr>
+        </thead>
+
+       <tbody>
+        {% for league in ladder.league_set.all %}
+            {% with player_counter=forloop.counter %}
+                <tr>
+                    <td class="player_position"><strong> {{ player_counter }} </strong></td>
+                    <td class="player_name"> {{ league.player }} </td>
+                        {% for opponent in ladder.league_set.all %}
+                            {% with column_counter=forloop.counter %}
+                                {% if column_counter == player_counter %}
+                                    <td class="box_grey score_field"></td>
+                                {% else %}
+                                    <td class="score_field selectable"  data-player="{{ league.player.id }}" data-opp="{{ opponent.player.id }}">
+                                    {% for result in results_dict|getkey:league.player.id %}
+                                        {% if league.player == result.player and opponent.player == result.opponent %}
+                                            {{ result.result }}
+                                        {% endif %}
+                                    {% endfor %}
+                                    </td>
+                                {% endif %}
+                            {% endwith %}
+                        {% endfor %}
+
+                    <td class="score_field"> {{ results_dict|gettotal:league.player.id }} </td>
+                </tr>
+            {% endwith %}
+        {% endfor %}
+        </tbody>
+    </table>
+
+        {% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
 
     <form action="{% url 'ladder:add_result' ladder.id %}" method="post">
         {% csrf_token %}
         <select id='player' name="player">
             <option value='FALSE'>.. choose a player ..</option>
-            {% for player in ladder.players.all %}
-                <option value="{{ player.id }}"> {{ player }} </option>
+            {% for league in ladder.league_set.all %}
+                <option value="{{ league.player.id }}"> {{ league.player }} </option>
             {% endfor %}
         </select>
         <select name="player_score">
@@ -50,9 +100,10 @@
         </select>
         <div id="opp">
         Vs <br />
-        <select id="opponent" name="opponent">
-            {% for player in ladder.players.all %}
-
+        <select id='opponent' name="opponent">
+        <option value='FALSE'>.. choose a player ..</option>
+            {% for league in ladder.league_set.all %}
+                <option value="{{ league.player.id }}"> {{ league.player }} </option>
             {% endfor %}
         </select>
 

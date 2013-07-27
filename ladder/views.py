@@ -104,17 +104,15 @@ def ladder(request, ladder_id):
 @login_required
 def add(request, ladder_id):
     ladder = get_object_or_404(Ladder, pk=ladder_id)
-    players = ladder.players.all()
-    unplayed_matches = defaultdict(lambda:defaultdict(list))
 
-    for player in players:
-        player_dict = {player: ladder.players.all()}
-        player_dict[player] = player_dict[player].exclude(first_name=player.first_name, last_name=player.last_name)
-        for result in ladder.result_set.filter(player=player):
-            player_dict[player] = player_dict[player].exclude(first_name=result.opponent.first_name, last_name=result.opponent.last_name)
+    results = Result.objects.filter(ladder=ladder)
 
-        for opponent in player_dict[player].all():
-            unplayed_matches[player.id][opponent.id] = {'first_name': opponent.first_name, 'last_name': opponent.last_name}
+    results_dict = {}
+
+    for result in results:
+        results_dict.setdefault(result.player.id, []).append(result)
+
+    return render(request, 'ladder/ladder/add.html', {'ladder': ladder, 'results_dict': results_dict, 'points': range(10)})
 
     return render(request, 'ladder/ladder/add.html', {'ladder': ladder, 'points': range(10), 'unplayed_matches': json.dumps(unplayed_matches)})
 
@@ -133,10 +131,30 @@ def add_result(request, ladder_id):
         if int(player_score) == 9 and int(opponent_score) == 9:
             raise Exception("Can't have two winners")
 
-        player_result_add = Result(ladder=ladder, player=player_object, opponent=opponent_object, result=int(player_score), date_added=datetime.date.today())
-        opponent_result_add = Result(ladder=ladder, opponent=player_object, player=opponent_object, result=int(opponent_score), date_added=datetime.date.today())
-        player_result_add.save()
-        opponent_result_add.save()
+        # player_result_add = Result(ladder=ladder, player=player_object, opponent=opponent_object, result=int(player_score), date_added=datetime.date.today())
+        # opponent_result_add = Result(ladder=ladder, opponent=player_object, player=opponent_object, result=int(opponent_score), date_added=datetime.date.today())
+        # player_result_add.save()
+        # opponent_result_add.save()
+        try:
+            result_object = Result.objects.get(ladder=ladder, player=player_object, opponent=opponent_object)
+            result_object.delete()
+            raise Exception("want to add all the time")
+        except:
+            player_result_object = Result(ladder=ladder, player=player_object, opponent=opponent_object,
+                                       result=player_score, date_added=datetime.datetime.now())
+            player_result_object.save()
+
+
+        try:
+            result_object = Result.objects.get(ladder=ladder, player=opponent_object, opponent=player_object)
+            result_object.delete()
+            raise Exception("want to add all the time")
+        except:
+            opp_result_object = Result(ladder=ladder, player=opponent_object, opponent=player_object,
+                                       result=opponent_score, date_added=datetime.datetime.now())
+            opp_result_object.save()
+
+
     except Exception as e:
         return render(request, 'ladder/ladder/add.html', {
             'ladder': ladder,

@@ -116,7 +116,7 @@ class League(models.Model):
     sort_order = models.IntegerField(default=0)
 
     def __unicode__(self):
-        return 'hello'
+        return self.player.first_name + ' ' +  self.player.last_name
 
 
 class Result(models.Model):

@@ -40,3 +40,8 @@ table.tablesorter td.player_name {
 table.tablesorter td.box_grey {
 	background-color:grey;
 }
+
+td.selectable:hover {
+    background-color: #eee;
+    cursor: pointer;
+}
