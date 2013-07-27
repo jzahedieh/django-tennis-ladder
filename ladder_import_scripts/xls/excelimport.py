@@ -4,9 +4,9 @@ from collections import defaultdict
 import datetime
 
 book = open_workbook(
-    '/home/jon/workspace/python_projects/tennis/ladder_import_scripts/xls/files/ladderJan-Apr2013Results.xls')
+    '/home/jon/workspace/python_projects/tennis/ladder_import_scripts/xls/files/ladderSep-Dec2009Results.xls')
 
-season = Season.objects.get(pk=5)  # hard code season as have to create manually
+season = Season.objects.get(pk=14)  # hard code season as have to create manually
 sh1 = book.sheet_by_index(0)  # sheet1, aways first sheet
 player_list = defaultdict(dict)  # initialize defaultdict for our player list.
 current_div = 0  # set the division counter to 0

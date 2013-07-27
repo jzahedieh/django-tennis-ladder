@@ -15,3 +15,6 @@ settings.py
 
 #Ignore and pycharm IDE stuff
 .idea/*
+
+#Libreoffice locks
+.~lock*
