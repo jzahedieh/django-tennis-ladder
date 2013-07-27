@@ -99,7 +99,7 @@ class Ladder(models.Model):
 
     def get_stats(self):
         total_matches_played = 0.00
-        total_matches = self.league_set.count() * (self.result_set.count() - 1) / 2
+        total_matches = self.league_set.count() * (self.league_set.count() - 1) / 2
         total_matches_played += self.result_set.count() / 2
         perc_matches_played = (total_matches_played / total_matches) * 100
 
