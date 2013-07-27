@@ -1,4 +1,4 @@
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, Http404
 from django.shortcuts import render, get_object_or_404
 from django.core.urlresolvers import reverse
 from django.views.decorators.cache import cache_page
@@ -28,8 +28,12 @@ def index(request):
 
 
 @cache_page(60 * 60 * 12)  # 12 hour page cache
-def season(request, season_id):
-    season = get_object_or_404(Season, pk=season_id)
+def season(request, slug):
+    try:
+        season = Season.objects.get(slug=slug)
+    except Season.DoesNotExist:
+        raise Http404
+
     ladders = Ladder.objects.filter(season=season)
     #ladders = Result.objects.filter(season=group__ladder)
     # season_before_date = season.start_date - datetime.timedelta(days=31)

@@ -1,16 +1,25 @@
 import operator
 
 from django.db import models
+from django.template.defaultfilters import slugify
 
 
 class Season(models.Model):
     name = models.CharField(max_length=150)
     start_date = models.DateField('Start date')
     end_date = models.DateField('End date')
+    slug = models.SlugField('slug', max_length=60, blank=True)
 
     def __unicode__(self):
         return self.name
 
+    #Override models save method to add season slug:
+    def save(self):
+        if not self.id:
+            #Only set the slug when the object is created.
+            self.slug = slugify(self.name)
+        super(Season, self).save()
+#autumn-2013
     def get_stats(self):
         player_count = 0
         results_count = 0

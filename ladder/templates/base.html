@@ -49,7 +49,7 @@
                                 <a href="#" class="dropdown-toggle" data-toggle="dropdown">Seasons<b class="caret"></b></a>
                                 <ul class="dropdown-menu">
                                     {% for season in navigation %}
-                                        <li><a href="{% url 'ladder:season' season.id%}">{{ season.name }}</a></li>
+                                        <li><a href="{% url 'ladder:season' season.slug%}">{{ season.name }}</a></li>
                                     {% endfor %}
                                 </ul>
                             </li>
