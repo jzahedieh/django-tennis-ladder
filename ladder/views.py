@@ -27,6 +27,15 @@ def index(request):
     return render(request, 'ladder/index.html', context)
 
 
+@cache_page(60 * 60 * 24 * 30)  # 30 day page cache, this is a really expensive query
+def list(request):
+    seasons = Season.objects.order_by('-start_date')
+    context = {
+        'seasons': seasons,
+    }
+    return render(request, 'ladder/season/list.html', context)
+
+
 @cache_page(60 * 60 * 12)  # 12 hour page cache
 def season(request, slug):
     try:

@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block container %}
+    <div class="span12">
+        <table cellspacing="1" id="seasons-table" class="table">
+            <thead>
+            <tr>
+                <th>Season</th>
+                <th>Divisions</th>
+                <th>Players</th>
+                <th>Matches</th>
+                <th>Played</th>
+                <th>Percentage</th>
+            </tr>
+            </thead>
+
+            <tbody>
+            {% for season in seasons %}
+                <tr>
+                    <td><a href="{% url 'ladder:season' season.slug %}">{{ season.name }}</a></td>
+                    <td>{{ season.ladder_set.all.count }}</td>
+                    <td>{{ season.get_stats.player_count }}</td>
+                    <td>{{ season.get_stats.total_games_count|floatformat:"0" }}</td>
+                    <td>{{ season.get_stats.results_count }}</td>
+                    <td>{{ season.get_stats.percentage_played|floatformat:"2" }}%</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}

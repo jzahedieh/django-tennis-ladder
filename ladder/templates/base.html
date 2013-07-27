@@ -51,6 +51,9 @@
                                     {% for season in navigation %}
                                         <li><a href="{% url 'ladder:season' season.slug%}">{{ season.name }}</a></li>
                                     {% endfor %}
+                                    {% if season_count > 0 %}
+                                        <li><a href="{% url 'ladder:list'%}">.. view all {{ season_count }} seasons ..</a></li>
+                                    {% endif %}
                                 </ul>
                             </li>
                             <li>{{ request.path }}</li>
