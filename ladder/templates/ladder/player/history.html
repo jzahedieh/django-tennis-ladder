@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block container %}
+
+    <h1>{{ player }}</h1>
+    <div class="span12">
+        <table cellspacing="1" id="seasons-table" class="table">
+            <thead>
+            <tr>
+                <th>Ladder</th>
+                <th>Divisions</th>
+                <th>Players</th>
+                <th>Matches</th>
+                <th>Played</th>
+                <th>Percentage</th>
+            </tr>
+            </thead>
+
+            <tbody>
+            {% for ladder, v in ladder_set %}
+                <tr>
+                    <td>{{ v }}</td>
+                    <td>{{ v }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock container %}

@@ -183,3 +183,21 @@ def add_result(request, ladder_id):
         #return HttpResponseRedirect(reverse('ladder:add', args=(ladder.id,)))
     else:
         return HttpResponseRedirect(reverse('ladder:add', args=(ladder.id,)))
+
+
+def player_history(request, player_id):
+    ladder = {}
+    try:
+        player = Player.objects.get(pk=player_id)  #.order_by('-league__ladder__season_start_date')
+        league_set = player.league_set.order_by('-ladder__season__start_date')
+    except Player.DoesNotExist:
+        raise Http404
+
+    for league in league_set:
+        ladder[league.ladder.id] = {
+            'test': 'testa',
+            'player_results': league.ladder.result_set.filter(player_id=player_id)
+        }
+
+
+    return render(request, 'ladder/player/history.html', {'player': player, 'league_set': league_set, 'ladder_set':ladder})

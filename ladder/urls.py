@@ -5,6 +5,7 @@ from ladder import views
 urlpatterns = patterns('',
                        url(r'^$', views.index, name='index'),
                        url(r'^list/$', views.list, name='list'),
+                       url(r'^player/(?P<player_id>\d+)/$', views.player_history, name='player_history'),
                        # want: /summer-2013/
                        url(r'^(?P<slug>[-\w]+)/$', views.season, name='season'),
                        # want: /summer-2013/division/1-n/
