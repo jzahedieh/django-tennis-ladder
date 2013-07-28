@@ -18,6 +18,7 @@ $(document).ready(function()
 </script>
 
 <h1> {{ ladder }} </h1>
+<h3>{{ ladder.season.start_date }} to {{ ladder.season.end_date }}</h3>
 
 
 	<table id="ladderTable" class="tablesorter">
@@ -65,7 +66,7 @@ $(document).ready(function()
         <div class="span6">
             <h2>{{ current_season }} Stats</h2>
             <table class="table">
-                    <tr><td>Total Matches in Ladder</td><td>{{ ladder.get_stats.total_matches }}</td></tr>
+                    <tr><td>Total Matches in Division</td><td>{{ ladder.get_stats.total_matches }}</td></tr>
                     <tr><td>Total Matches Played</td><td>{{ ladder.get_stats.total_matches_played|floatformat:"0" }}</td></tr>
                     <tr><td>Percentage Matches Played</td><td>{{ ladder.get_stats.perc_matches_played|floatformat:"2" }}%</td></tr>
             </table>

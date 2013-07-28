@@ -7,7 +7,7 @@
                 <h1>Hello, Highgate!</h1>
                 <p>This is a website that tracks the current ladders progress and keeps a history of previous ladders,
                     I try to keep current ladder data as up to date as possible and have lots of ideas in the pipeline.</p>
-                <p><a class="btn btn-primary btn-large" href="{% url 'ladder:season' current_season.slug%}">View Current Season &raquo;</a></p>
+                <p><a class="btn btn-primary btn-large" href="{% url 'ladder:season' current_season.start_date|date:"Y" current_season.season_round %}">View Current Season &raquo;</a></p>
             </div>
 
             <!-- Example row of columns -->
@@ -17,7 +17,7 @@
                     <table class="table">
                             <tr><td>Total Divisions</td><td> {{ current_season.ladder_set.all.count }}</td></tr>
                             <tr><td>Total Players</td><td> {{ current_season.get_stats.player_count }}</td></tr>
-                            <tr><td>Total Matches in Season</td><td> {{ current_season.get_stats.total_games_count|floatformat:"0" }}</td></tr>
+                            <tr><td>Total Matches in Ladder</td><td> {{ current_season.get_stats.total_games_count|floatformat:"0" }}</td></tr>
                             <tr><td>Total Matches Played</td><td> {{ current_season.get_stats.results_count }}</td></tr>
                             <tr><td>Percentage Matches Played</td><td> {{ current_season.get_stats.percentage_played|floatformat:"2" }}%</td></tr>
                     </table>

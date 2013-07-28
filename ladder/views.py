@@ -28,7 +28,7 @@ def index(request):
 
 
 @cache_page(60 * 60 * 24 * 30)  # 30 day page cache, this is a really expensive query
-def list(request):
+def list_rounds(request):
     seasons = Season.objects.order_by('-start_date')
     context = {
         'seasons': seasons,
@@ -37,9 +37,9 @@ def list(request):
 
 
 @cache_page(60 * 60 * 12)  # 12 hour page cache
-def season(request, slug):
+def season(request, year, season_round):
     try:
-        season = Season.objects.get(slug=slug)
+        season = Season.objects.get(start_date__year=year, season_round=season_round)
     except Season.DoesNotExist:
         raise Http404
 
@@ -105,9 +105,10 @@ def season(request, slug):
     )
 
 
-def ladder(request, slug, divison_id):
+def ladder(request, year, season_round, division_id):
+    print year, season_round, division_id
     try:
-        ladder = Ladder.objects.get(season__slug=slug, division=divison_id)
+        ladder = Ladder.objects.get(division=division_id, season__start_date__year=year, season__season_round=season_round)
     except Ladder.DoesNotExist:
         raise Http404
 
