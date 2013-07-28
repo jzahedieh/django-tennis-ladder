@@ -88,7 +88,10 @@ class Ladder(models.Model):
         results = {}
         for result in self.result_set.filter(ladder=self).order_by('-date_added')[:10]:  # [:10] to limit to 5
 
-            opponent = self.result_set.filter(ladder=self, player=result.opponent, opponent=result.player)[0]
+            try:
+                opponent = self.result_set.filter(ladder=self, player=result.opponent, opponent=result.player)[0]
+            except IndexError:
+                continue  # this exception happens if result does not have opponent
             player_opponent_index = ''.join(str(e) for e in sorted([result.player.id, opponent.player.id]))
             try:
                 if results[player_opponent_index]:
