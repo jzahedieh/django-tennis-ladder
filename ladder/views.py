@@ -106,7 +106,6 @@ def season(request, year, season_round):
 
 
 def ladder(request, year, season_round, division_id):
-    print year, season_round, division_id
     try:
         ladder = Ladder.objects.get(division=division_id, season__start_date__year=year, season__season_round=season_round)
     except Ladder.DoesNotExist:
@@ -122,8 +121,11 @@ def ladder(request, year, season_round, division_id):
     return render(request, 'ladder/ladder/index.html', {'ladder': ladder, 'results_dict': results_dict})
 
 @login_required
-def add(request, ladder_id):
-    ladder = get_object_or_404(Ladder, pk=ladder_id)
+def add(request, year, season_round, division_id):
+    try:
+        ladder = Ladder.objects.get(division=division_id, season__start_date__year=year, season__season_round=season_round)
+    except Ladder.DoesNotExist:
+        raise Http404
 
     results = Result.objects.filter(ladder=ladder)
 
@@ -133,8 +135,6 @@ def add(request, ladder_id):
         results_dict.setdefault(result.player.id, []).append(result)
 
     return render(request, 'ladder/ladder/add.html', {'ladder': ladder, 'results_dict': results_dict, 'points': range(10)})
-
-    return render(request, 'ladder/ladder/add.html', {'ladder': ladder, 'points': range(10), 'unplayed_matches': json.dumps(unplayed_matches)})
 
 @login_required
 def add_result(request, ladder_id):
@@ -151,10 +151,6 @@ def add_result(request, ladder_id):
         if int(player_score) == 9 and int(opponent_score) == 9:
             raise Exception("Can't have two winners")
 
-        # player_result_add = Result(ladder=ladder, player=player_object, opponent=opponent_object, result=int(player_score), date_added=datetime.date.today())
-        # opponent_result_add = Result(ladder=ladder, opponent=player_object, player=opponent_object, result=int(opponent_score), date_added=datetime.date.today())
-        # player_result_add.save()
-        # opponent_result_add.save()
         try:
             result_object = Result.objects.get(ladder=ladder, player=player_object, opponent=opponent_object)
             result_object.delete()
@@ -181,6 +177,6 @@ def add_result(request, ladder_id):
             'error_message': e,
             'points': range(10)
         })
-        #return HttpResponseRedirect(reverse('ladder:add', args=(ladder.id,)))
     else:
-        return HttpResponseRedirect(reverse('ladder:add', args=(ladder.id,)))
+        return HttpResponseRedirect(
+            reverse('ladder:add', args=(ladder.season.start_date.year, ladder.season.season_round, ladder.division)))
