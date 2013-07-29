@@ -1,4 +1,5 @@
 from django.conf.urls import patterns, url
+from django.views.generic.base import RedirectView
 
 from ladder import views
 
@@ -16,4 +17,5 @@ urlpatterns = patterns('',
                        url(r'^player/(?P<player_id>\d+)/$', views.player_history, name='player_history'),
 
                        url(r'^add_result/(?P<ladder_id>\d+)$', views.add_result, name='add_result'),
+                       url(r'^favicon\.ico$', RedirectView.as_view(url='/static/img/favicon.ico')),
 )
