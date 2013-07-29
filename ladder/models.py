@@ -54,7 +54,7 @@ class Ladder(models.Model):
 
 
     def __unicode__(self):
-        return str(self.season.start_date.year) + ' Round ' + str(self.division)
+        return str(self.season.start_date.year) + ' Round ' + str(self.season.season_round) + ' - Division: ' + str(self.division)
 
     def get_leader(self):
         totals = {}
