@@ -1,11 +1,9 @@
 from django.conf.urls import patterns, url
-from django.views.generic.base import RedirectView
 
 from ladder import views
 
 urlpatterns = patterns('',
                        url(r'^$', views.index, name='index'),
-
                        url(r'^list/$', views.list_rounds, name='list'),
                        # ex: /2013/round/1/
                        url(r'^(?P<year>\d+)/round/(?P<season_round>\d+)/$', views.season, name='season'),
@@ -17,5 +15,4 @@ urlpatterns = patterns('',
                        url(r'^player/(?P<player_id>\d+)/$', views.player_history, name='player_history'),
 
                        url(r'^add_result/(?P<ladder_id>\d+)$', views.add_result, name='add_result'),
-                       url(r'^favicon\.ico$', RedirectView.as_view(url='/static/img/favicon.ico')),
 )
