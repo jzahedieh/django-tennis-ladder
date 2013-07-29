@@ -121,7 +121,34 @@ class League(models.Model):
     sort_order = models.IntegerField(default=0)
 
     def __unicode__(self):
-        return self.player.first_name + ' ' +  self.player.last_name
+        return self.player.first_name + ' ' + self.player.last_name
+
+    def player_stats(self):
+        total_points = 0.00
+        games = 0
+        won_count = 0
+        for result in self.player.result_player.filter(player=self.player, ladder=self.ladder):
+
+            if result.result == 9:
+                total_points += (result.result + 2 + 1)  # two for winning one for playing
+                won_count += 1
+            else:
+                total_points += (result.result + 1)  # one for playing
+
+            games += 1
+
+        # work out points per match
+        if games > 0:
+            pointsdivgames = total_points / games
+        else:
+            pointsdivgames = 0
+
+        return {
+            'total_points': total_points,
+            'games': games,
+            'pointsdivgames': pointsdivgames,
+            'won_count': won_count
+        }
 
 
 class Result(models.Model):

@@ -190,11 +190,6 @@ def player_history(request, player_id):
     except Player.DoesNotExist:
         raise Http404
 
-    for league in league_set:
-        ladder[league.ladder.id] = {
-            'test': 'testa',
-            'player_results': league.ladder.result_set.filter(player_id=player_id)
-        }
 
 
-    return render(request, 'ladder/player/history.html', {'player': player, 'league_set': league_set, 'ladder_set':ladder})
+    return render(request, 'ladder/player/history.html', {'player': player, 'league_set': league_set, 'ladder_set':league_set})

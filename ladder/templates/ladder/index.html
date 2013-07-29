@@ -30,7 +30,7 @@
                     <th>Total</th>
                     {% for division, leader in current_season.get_stats.current_leaders %}
                         <tr>
-                            <td>{{ division }}</td><td>{{ leader.player }}</td><td>{{ leader.total }}</td>
+                            <td>{{ division }}</td><td><a href="{% url 'ladder:player_history' leader.player.id %}"> {{ leader.player }} </a></td><td>{{ leader.total }}</td>
                         </tr>
                     {% endfor %}
                     </table>

@@ -8,18 +8,22 @@
             <tr>
                 <th>Ladder</th>
                 <th>Divisions</th>
-                <th>Players</th>
+                <th>Total Points</th>
                 <th>Matches</th>
-                <th>Played</th>
-                <th>Percentage</th>
+                <th>Won</th>
+                <th>Avg. Points</th>
             </tr>
             </thead>
 
             <tbody>
-            {% for ladder, v in ladder_set %}
+            {% for league in league_set %}
                 <tr>
-                    <td>{{ v }}</td>
-                    <td>{{ v }}</td>
+                    <td><a href="{% url 'ladder:ladder' league.ladder.season.start_date|date:"Y" league.ladder.season.season_round league.ladder.division %}"> Division:  {{ league.ladder }} </a></td>
+                    <td>{{ league.ladder.division }}</td>
+                    <td>{{ league.player_stats.total_points|floatformat:"0" }}</td>
+                    <td>{{ league.player_stats.games }}</td>
+                    <td>{{ league.player_stats.won_count }}</td>
+                    <td>{{ league.player_stats.pointsdivgames|floatformat:"2" }}</td>
                 </tr>
             {% endfor %}
             </tbody>
