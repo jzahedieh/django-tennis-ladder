@@ -125,7 +125,7 @@ class League(models.Model):
 
     def player_stats(self):
         total_points = 0.00
-        games = 0
+        games = 0.00
         won_count = 0
         for result in self.player.result_player.filter(player=self.player, ladder=self.ladder):
 
@@ -140,14 +140,16 @@ class League(models.Model):
         # work out points per match
         if games > 0:
             pointsdivgames = total_points / games
+            percplayed = games / (self.ladder.league_set.count() - 1) * 100
         else:
-            pointsdivgames = 0
+            percplayed = pointsdivgames = 0
 
         return {
             'total_points': total_points,
             'games': games,
             'pointsdivgames': pointsdivgames,
-            'won_count': won_count
+            'won_count': won_count,
+            'percplayed': percplayed
         }
 
 

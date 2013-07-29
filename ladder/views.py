@@ -183,9 +183,8 @@ def add_result(request, ladder_id):
 
 
 def player_history(request, player_id):
-    ladder = {}
     try:
-        player = Player.objects.get(pk=player_id)  #.order_by('-league__ladder__season_start_date')
+        player = Player.objects.get(pk=player_id)
         league_set = player.league_set.order_by('-ladder__season__start_date')
     except Player.DoesNotExist:
         raise Http404
