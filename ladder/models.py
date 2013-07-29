@@ -8,17 +8,10 @@ class Season(models.Model):
     name = models.CharField(max_length=150)
     start_date = models.DateField('Start date')
     end_date = models.DateField('End date')
-    slug = models.SlugField('slug', max_length=60, blank=True)
+    season_round = models.IntegerField(max_length=1)
 
     def __unicode__(self):
-        return self.name
-
-    #Override models save method to add season slug:
-    def save(self):
-        if not self.id:
-            #Only set the slug when the object is created.
-            self.slug = slugify(self.name)
-        super(Season, self).save()
+        return str(self.start_date.year) + ' Round ' + str(self.season_round)
 
     def get_stats(self):
         player_count = 0
@@ -61,7 +54,7 @@ class Ladder(models.Model):
 
 
     def __unicode__(self):
-        return self.season.name + ' Division: ' + str(self.division)
+        return str(self.season.start_date.year) + ' Round ' + str(self.season.season_round) + ' - Division: ' + str(self.division)
 
     def get_leader(self):
         totals = {}

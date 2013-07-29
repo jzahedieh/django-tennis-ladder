@@ -7,11 +7,12 @@
     <script type="text/javascript" src="/static/js/jquery.tablesorter.min.js"></script>
     <script type="text/javascript" src="/static/js/jquery.metadata.js"></script>
 
-    <h1>{{ season.name }}</h1>
+    <h1>{{ season }}</h1>
+    <h3>{{ season.start_date }} to {{ season.end_date }}</h3>
 
     {% for ladder in ladders %}
 
-        <a href="{% url 'ladder:ladder' ladder.season.slug ladder.division %}"> Division:  {{ ladder.division }} </a>
+        <a href="{% url 'ladder:ladder' ladder.season.start_date|date:"Y" ladder.season.season_round ladder.division %}"> Division:  {{ ladder.division }} </a>
         <table cellspacing="1" id="ladderTable{{ ladder.id }}" class="tablesorter ladder-table">
         <thead>
         <tr>

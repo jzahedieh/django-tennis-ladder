@@ -16,7 +16,7 @@
             <tbody>
             {% for season in seasons %}
                 <tr>
-                    <td><a href="{% url 'ladder:season' season.slug %}">{{ season.name }}</a></td>
+                    <td><a href="{% url 'ladder:season' season.start_date|date:"Y" season.season_round  %}">{{ season }}</a></td>
                     <td>{{ season.ladder_set.all.count }}</td>
                     <td>{{ season.get_stats.player_count }}</td>
                     <td>{{ season.get_stats.total_games_count|floatformat:"0" }}</td>

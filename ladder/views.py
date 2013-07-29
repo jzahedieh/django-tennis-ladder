@@ -28,7 +28,7 @@ def index(request):
 
 
 @cache_page(60 * 60 * 24 * 30)  # 30 day page cache, this is a really expensive query
-def list(request):
+def list_rounds(request):
     seasons = Season.objects.order_by('-start_date')
     context = {
         'seasons': seasons,
@@ -37,9 +37,9 @@ def list(request):
 
 
 @cache_page(60 * 60 * 12)  # 12 hour page cache
-def season(request, slug):
+def season(request, year, season_round):
     try:
-        season = Season.objects.get(slug=slug)
+        season = Season.objects.get(start_date__year=year, season_round=season_round)
     except Season.DoesNotExist:
         raise Http404
 
@@ -105,9 +105,9 @@ def season(request, slug):
     )
 
 
-def ladder(request, slug, divison_id):
+def ladder(request, year, season_round, division_id):
     try:
-        ladder = Ladder.objects.get(season__slug=slug, division=divison_id)
+        ladder = Ladder.objects.get(division=division_id, season__start_date__year=year, season__season_round=season_round)
     except Ladder.DoesNotExist:
         raise Http404
 
@@ -121,8 +121,11 @@ def ladder(request, slug, divison_id):
     return render(request, 'ladder/ladder/index.html', {'ladder': ladder, 'results_dict': results_dict})
 
 @login_required
-def add(request, ladder_id):
-    ladder = get_object_or_404(Ladder, pk=ladder_id)
+def add(request, year, season_round, division_id):
+    try:
+        ladder = Ladder.objects.get(division=division_id, season__start_date__year=year, season__season_round=season_round)
+    except Ladder.DoesNotExist:
+        raise Http404
 
     results = Result.objects.filter(ladder=ladder)
 
@@ -132,8 +135,6 @@ def add(request, ladder_id):
         results_dict.setdefault(result.player.id, []).append(result)
 
     return render(request, 'ladder/ladder/add.html', {'ladder': ladder, 'results_dict': results_dict, 'points': range(10)})
-
-    return render(request, 'ladder/ladder/add.html', {'ladder': ladder, 'points': range(10), 'unplayed_matches': json.dumps(unplayed_matches)})
 
 @login_required
 def add_result(request, ladder_id):
@@ -150,10 +151,6 @@ def add_result(request, ladder_id):
         if int(player_score) == 9 and int(opponent_score) == 9:
             raise Exception("Can't have two winners")
 
-        # player_result_add = Result(ladder=ladder, player=player_object, opponent=opponent_object, result=int(player_score), date_added=datetime.date.today())
-        # opponent_result_add = Result(ladder=ladder, opponent=player_object, player=opponent_object, result=int(opponent_score), date_added=datetime.date.today())
-        # player_result_add.save()
-        # opponent_result_add.save()
         try:
             result_object = Result.objects.get(ladder=ladder, player=player_object, opponent=opponent_object)
             result_object.delete()
@@ -180,9 +177,9 @@ def add_result(request, ladder_id):
             'error_message': e,
             'points': range(10)
         })
-        #return HttpResponseRedirect(reverse('ladder:add', args=(ladder.id,)))
     else:
-        return HttpResponseRedirect(reverse('ladder:add', args=(ladder.id,)))
+                return HttpResponseRedirect(
+            reverse('ladder:add', args=(ladder.season.start_date.year, ladder.season.season_round, ladder.division)))
 
 
 def player_history(request, player_id):

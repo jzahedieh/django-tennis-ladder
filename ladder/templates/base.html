@@ -45,14 +45,15 @@
                     <div class="nav-collapse collapse">
                         <ul class="nav">
                             <li><a href="/">Home</a></li>
+                            <li><a href="{% url 'ladder:season' season_first.start_date|date:"Y" season_first.season_round %}">Current Ladder</a></li>
                             <li class="dropdown">
-                                <a href="#" class="dropdown-toggle" data-toggle="dropdown">Seasons<b class="caret"></b></a>
+                                <a href="#" class="dropdown-toggle" data-toggle="dropdown">Previous Ladders<b class="caret"></b></a>
                                 <ul class="dropdown-menu">
                                     {% for season in navigation %}
-                                        <li><a href="{% url 'ladder:season' season.slug%}">{{ season.name }}</a></li>
+                                        <li><a href="{% url 'ladder:season' season.start_date|date:"Y" season.season_round %}">{{ season.start_date|date:"Y" }} Round {{ season.season_round }}</a></li>
                                     {% endfor %}
                                     {% if season_count > 0 %}
-                                        <li><a href="{% url 'ladder:list'%}">.. view all {{ season_count }} seasons ..</a></li>
+                                        <li><a href="{% url 'ladder:list'%}">.. view all {{ season_count }} ladders ..</a></li>
                                     {% endif %}
                                 </ul>
                             </li>
@@ -82,6 +83,15 @@
 
         <script src="{% static "js/main.js" %} "></script>
 
-        <!-- add google analytics -->
+        <script>
+          (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+          (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+          })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+          ga('create', 'UA-42770269-1', 'highgate-ladder.co.uk');
+          ga('send', 'pageview');
+
+        </script>
     </body>
 </html>
