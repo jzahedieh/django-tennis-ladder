@@ -1,9 +1,12 @@
-from django.http import HttpResponseRedirect, Http404
-from django.shortcuts import render, get_object_or_404
+from django.http import HttpResponseRedirect, Http404, HttpResponse
+from django.shortcuts import render, get_object_or_404, redirect
+from django.utils import simplejson as json
+from django.utils.html import escape
 from django.core.urlresolvers import reverse
 from django.views.decorators.cache import cache_page
 from ladder.models import Ladder, Player, Result, Season, League
 from django.contrib.auth.decorators import login_required
+from django.db.models import Q
 import datetime, json
 from collections import defaultdict
 from decimal import Decimal
@@ -189,6 +192,36 @@ def player_history(request, player_id):
     except Player.DoesNotExist:
         raise Http404
 
-
-
     return render(request, 'ladder/player/history.html', {'player': player, 'league_set': league_set, 'ladder_set':league_set})
+
+
+def player_result(request):
+    query = request.POST[u'player_name']
+
+    qs = Player.objects.all()
+
+    for term in query.split():
+        qs = qs.filter(Q(first_name__icontains=term) | Q(last_name__icontains=term))
+
+    results = [x for x in qs]
+
+    if len(results) == 1:
+        player = results[0]
+        return player_history(request, player.id)
+
+    return render(request, 'ladder/player/results.html', {'players': results, 'query': escape(query)})
+
+
+def player_search(request):
+    resultSet = {}
+    query = request.GET[u'query']
+
+    qs = Player.objects.all()
+
+    for term in query.split():
+        qs = qs.filter(Q(first_name__icontains=term) | Q(last_name__icontains=term))
+
+    results = [escape(x.first_name.strip() + ' ' + x.last_name.strip()) for x in qs]
+    resultSet["options"] = results
+
+    return HttpResponse(json.dumps(resultSet), content_type="application/json")

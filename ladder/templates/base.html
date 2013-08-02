@@ -25,6 +25,10 @@
         <script>window.jQuery || document.write('<script src="js/vendor/jquery-1.9.1.min.js"><\/script>')</script>
 
         <script src="{% static "js/vendor/modernizr-2.6.2-respond-1.1.0.min.js" %} "></script>
+        <script src="{% static "js/vendor/bootstrap.min.js" %} "></script>
+        <script src="{% static "js/vendor/bootstrap-typeahead.js" %} "></script>
+        <script src="{% static "js/main.js" %} "></script>
+
     </head>
     <body>
         <!--[if lt IE 7]>
@@ -59,15 +63,34 @@
                             </li>
                             <li>{{ request.path }}</li>
                         </ul>
-                        <!--<form class="navbar-form pull-right">
-                            <input class="span2" type="text" placeholder="Email">
-                            <input class="span2" type="password" placeholder="Password">
-                            <button type="submit" class="btn">Sign in</button>
-                        </form>-->
+                        <form class="navbar-form pull-right" id="find_player_form" action="{% url 'ladder:player_result' %}" method="post">
+                            {% csrf_token %}
+                            <input id="player-search" type="text" name="player_name" placeholder="Search Players" data-provide="typeahead"  autocomplete="off">
+                            <button type="submit" class="btn">Find</button>
+                        </form>
                     </div><!--/.nav-collapse -->
                 </div>
             </div>
         </div>
+        <script type="text/javascript">
+            (function () {
+                var timeout;
+
+                $('#player-search').typeahead({
+                    source: function (query, process) {
+                        if (timeout) {
+                            clearTimeout(timeout);
+                        }
+
+                        timeout = setTimeout(function () {
+                            return $.get('/player/search/', { query: query }, function (data) {
+                                return process(data.options);
+                            });
+                        }, 300);
+                    }
+                });
+            })();
+        </script>
 
         <div class="container">
             {% block container %} {% endblock %}
@@ -79,9 +102,6 @@
             </footer>
         </div> <!-- /container -->
 
-        <script src="{% static "js/vendor/bootstrap.min.js" %} " >></script>
-
-        <script src="{% static "js/main.js" %} "></script>
 
         <script>
           (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){

@@ -13,6 +13,9 @@ urlpatterns = patterns('',
                        url(r'^(?P<year>\d+)/round/(?P<season_round>\d+)/division/(?P<division_id>\d+)/add/$', views.add, name='add'),
                        # ex: /player/1/
                        url(r'^player/(?P<player_id>\d+)/$', views.player_history, name='player_history'),
+                       # ex: /player/
+                       url(r'^player/search/$', views.player_search, name='player_search'),
+                       url(r'^player/results/$', views.player_result, name='player_result'),
 
                        url(r'^add_result/(?P<ladder_id>\d+)$', views.add_result, name='add_result'),
 )
