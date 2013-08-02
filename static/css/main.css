@@ -19,15 +19,80 @@
 }
 
 
-.loser_input {
-    width:50px;
+.navbar-inverse .navbar-inner {
+  background-color: #a2b5d7;
+  background-image: -moz-linear-gradient(top, #a2b5d7, #b4c3df);
+  background-image: -webkit-gradient(linear, 0 0, 0 100%, from(#a2b5d7), to(#b4c3df));
+  background-image: -webkit-linear-gradient(top, #a2b5d7, #b4c3df);
+  background-image: -o-linear-gradient(top, #a2b5d7, #b4c3df);
+  background-image: linear-gradient(to bottom, #a2b5d7, #b4c3df);
+  background-repeat: repeat-x;
+  border-color: #6d8ac0;
+  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#666f78', endColorstr='#666678', GradientType=0);
+}
+
+.navbar-inverse .brand,
+.navbar-inverse .nav > li > a {
+  color: #111111;
+  text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.25);
+}
+
+.navbar-inverse .brand:hover,
+.navbar-inverse .nav > li > a:hover,
+.navbar-inverse .brand:focus,
+.navbar-inverse .nav > li > a:focus {
+  color: #111111;
+}
+
+.navbar-inverse .brand {
+  color: #000;
+}
+
+.navbar-inverse .navbar-text {
+  color: #111111;
+}
+
+
+.navbar-inverse .nav > li > a:focus,
+.navbar-inverse .nav > li > a:hover {
+  color: #fff;
+  background-color: transparent;
+}
+
+.navbar-inverse .nav .active > a,
+.navbar-inverse .nav .active > a:hover,
+.navbar-inverse .nav .active > a:focus {
+  color: #000000;
+  background-color: #a2b5d7;
+}
+
+.navbar-inverse .nav li.dropdown.open > .dropdown-toggle,
+.navbar-inverse .nav li.dropdown.active > .dropdown-toggle,
+.navbar-inverse .nav li.dropdown.open.active > .dropdown-toggle {
+  color: #ffffff;
+  background-color: #a2b5d7;
 }
 
 
 
+.loser_input {
+    width:50px;
+}
+
+@media (max-width: 979px) {
+    .navbar-inverse .nav-collapse .nav > li > a:hover,
+    .navbar-inverse .nav-collapse .nav > li > a:focus,
+    .navbar-inverse .nav-collapse .dropdown-menu a:hover,
+    .navbar-inverse .nav-collapse .dropdown-menu a:focus {
+    background-color: #ffffff;
+    }
 
 
-
+    .navbar-inverse .nav-collapse .nav > li > a,
+    .navbar-inverse .nav-collapse .dropdown-menu a {
+    color: #1a1a1a;
+    }
+}
 
 
 

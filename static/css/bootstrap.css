@@ -4403,7 +4403,6 @@ input[type="submit"].btn.btn-mini {
 }
 
 .navbar .brand {
-
   display: block;
   float: left;
   padding: 10px 20px 10px;
@@ -4783,20 +4782,20 @@ input[type="submit"].btn.btn-mini {
 }
 
 .navbar-inverse .navbar-inner {
-  background-color: #a2b5d7;
-  background-image: -moz-linear-gradient(top, #a2b5d7, #b4c3df);
-  background-image: -webkit-gradient(linear, 0 0, 0 100%, from(#a2b5d7), to(#b4c3df));
-  background-image: -webkit-linear-gradient(top, #a2b5d7, #b4c3df);
-  background-image: -o-linear-gradient(top, #a2b5d7, #b4c3df);
-  background-image: linear-gradient(to bottom, #a2b5d7, #b4c3df);
+  background-color: #1b1b1b;
+  background-image: -moz-linear-gradient(top, #222222, #111111);
+  background-image: -webkit-gradient(linear, 0 0, 0 100%, from(#222222), to(#111111));
+  background-image: -webkit-linear-gradient(top, #222222, #111111);
+  background-image: -o-linear-gradient(top, #222222, #111111);
+  background-image: linear-gradient(to bottom, #222222, #111111);
   background-repeat: repeat-x;
-  border-color: #6d8ac0;
-  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#666f78', endColorstr='#666678', GradientType=0);
+  border-color: #252525;
+  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#ff222222', endColorstr='#ff111111', GradientType=0);
 }
 
 .navbar-inverse .brand,
 .navbar-inverse .nav > li > a {
-  color: #111111;
+  color: #999999;
   text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.25);
 }
 
@@ -4804,28 +4803,28 @@ input[type="submit"].btn.btn-mini {
 .navbar-inverse .nav > li > a:hover,
 .navbar-inverse .brand:focus,
 .navbar-inverse .nav > li > a:focus {
-  color: #111111;
+  color: #ffffff;
 }
 
 .navbar-inverse .brand {
-  color: #000;
+  color: #999999;
 }
 
 .navbar-inverse .navbar-text {
-  color: #111111;
+  color: #999999;
 }
 
 .navbar-inverse .nav > li > a:focus,
 .navbar-inverse .nav > li > a:hover {
-  color: #fff;
+  color: #ffffff;
   background-color: transparent;
 }
 
 .navbar-inverse .nav .active > a,
 .navbar-inverse .nav .active > a:hover,
 .navbar-inverse .nav .active > a:focus {
-  color: #000000;
-  background-color: #a2b5d7;
+  color: #ffffff;
+  background-color: #111111;
 }
 
 .navbar-inverse .navbar-link {
@@ -4846,7 +4845,7 @@ input[type="submit"].btn.btn-mini {
 .navbar-inverse .nav li.dropdown.active > .dropdown-toggle,
 .navbar-inverse .nav li.dropdown.open.active > .dropdown-toggle {
   color: #ffffff;
-  background-color: #a2b5d7;
+  background-color: #111111;
 }
 
 .navbar-inverse .nav li.dropdown > a:hover .caret,
