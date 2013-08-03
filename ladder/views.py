@@ -196,7 +196,10 @@ def player_history(request, player_id):
 
 
 def player_result(request):
-    query = request.POST[u'player_name']
+    try:
+        query = request.GET[u'player_name']
+    except:
+        raise Http404
 
     qs = Player.objects.all()
 
