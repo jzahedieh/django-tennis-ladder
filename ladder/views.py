@@ -217,7 +217,10 @@ def player_result(request):
 
 def player_search(request):
     resultSet = {}
-    query = request.GET[u'query']
+    try:
+        query = request.GET[u'query']
+    except:
+        raise Http404
 
     qs = Player.objects.all()
 
