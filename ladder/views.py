@@ -30,7 +30,7 @@ def index(request):
     return render(request, 'ladder/index.html', context)
 
 
-@cache_page(60 * 60 * 24 * 30)  # 30 day page cache, this is a really expensive query
+@cache_page(60 * 60 * 24)  # 1 day page cache
 def list_rounds(request):
     seasons = Season.objects.order_by('-start_date')
     context = {
@@ -39,7 +39,7 @@ def list_rounds(request):
     return render(request, 'ladder/season/list.html', context)
 
 
-@cache_page(60 * 60 * 12)  # 12 hour page cache
+@cache_page(60 * 60 * 24)  # 1 day  page cache
 def season(request, year, season_round):
     try:
         season = Season.objects.get(start_date__year=year, season_round=season_round)
@@ -231,3 +231,28 @@ def player_search(request):
     resultSet["options"] = results
 
     return HttpResponse(json.dumps(resultSet), content_type="application/json")
+
+
+def season_ajax_stats(request):
+    try:
+        season_id = request.GET[u'id']
+    except:
+        raise Http404
+
+    try:
+        season = Season.objects.get(pk=season_id)
+    except Season.DoesNotExist:
+        raise Http404
+    except ValueError:
+        raise Http404
+
+    stats = season.get_stats()
+
+    try:
+        include_leader = request.GET[u'leader']
+        if include_leader:
+            stats.update(season.get_leader_stats())
+    except:
+        pass
+
+    return HttpResponse(json.dumps(stats), content_type="application/json")

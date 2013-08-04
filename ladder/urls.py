@@ -16,6 +16,7 @@ urlpatterns = patterns('',
                        # ex: /player/
                        url(r'^player/search/$', views.player_search, name='player_search'),
                        url(r'^player/results/$', views.player_result, name='player_result'),
+                       url(r'^season/ajax/stats/$', views.season_ajax_stats, name='season_ajax_stats'),
 
                        url(r'^add_result/(?P<ladder_id>\d+)$', views.add_result, name='add_result'),
 )

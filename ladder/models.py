@@ -22,18 +22,26 @@ class Season(models.Model):
             player_count += ladder.league_set.count()
             results_count += ladder.result_set.count() / 2
             total_games_count += (ladder.league_set.count() * (ladder.league_set.count() - 1)) / 2
-            current_leaders[ladder.division] = ladder.get_leader()
+            #current_leaders[ladder.division] = ladder.get_leader()
 
         percentage_played = (results_count / total_games_count) * 100
 
         return {
-            'percentage_played': percentage_played,
+            'percentage_played': "{0:.2f}".format(percentage_played),
             'total_games_count': total_games_count,
             'results_count': results_count,
-            'player_count': player_count,
-            'current_leaders': current_leaders.items()
+            'player_count': player_count
         }
 
+    def get_leader_stats(self):
+        current_leaders = {}
+
+        for ladder in self.ladder_set.all():
+            current_leaders[ladder.division] = ladder.get_leader()
+
+        return {
+            'current_leaders': current_leaders,
+        }
 
 class Player(models.Model):
     first_name = models.CharField(max_length=100)
@@ -75,7 +83,7 @@ class Ladder(models.Model):
         else:
             player = {}
 
-        return {'player': player, 'total': totals[player]}
+        return {'player': player.__str__(), 'player_id': player.id, 'total': totals[player], 'division': self.division}
 
     def get_latest_results(self):
         results = {}

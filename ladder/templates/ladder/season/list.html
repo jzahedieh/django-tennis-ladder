@@ -15,16 +15,28 @@
 
             <tbody>
             {% for season in seasons %}
-                <tr>
-                    <td><a href="{% url 'ladder:season' season.start_date|date:"Y" season.season_round  %}">{{ season }}</a></td>
+                <tr class="season" data-season={{ season.id }}>
+                <td><a href="{% url 'ladder:season' season.start_date|date:"Y" season.season_round  %}">{{ season }}</a></td>
                     <td>{{ season.ladder_set.all.count }}</td>
-                    <td>{{ season.get_stats.player_count }}</td>
-                    <td>{{ season.get_stats.total_games_count|floatformat:"0" }}</td>
-                    <td>{{ season.get_stats.results_count }}</td>
-                    <td>{{ season.get_stats.percentage_played|floatformat:"2" }}%</td>
                 </tr>
             {% endfor %}
             </tbody>
         </table>
     </div>
+    <script type="text/javascript">
+        $(document).ready(function () {
+            $(".season").each(function () {
+                var season_id = $(this).data('season');
+                $.get('/season/ajax/stats/', { id: season_id }, function (data) {
+                    $('#total_divs').text(data.player_count);
+                    $("tr[data-season='" + season_id + "']").append(
+                            "<td>" + data.player_count + "</td>" +
+                            "<td>" + data.total_games_count + "</td>" +
+                            "<td>" + data.results_count + "</td>" +
+                            "<td>" + data.percentage_played + " % </td>"
+                    );
+                });
+            });
+        });
+    </script>
 {% endblock %}

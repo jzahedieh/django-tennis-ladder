@@ -2,38 +2,68 @@
 {% block container %}
 
 
-            <!-- Main hero unit for a primary marketing message or call to action -->
-            <div class="hero-unit">
-                <h1>Hello, Highgate!</h1>
-                <p>This is a website that tracks the current ladders progress and keeps a history of previous ladders,
-                    I try to keep current ladder data as up to date as possible and have lots of ideas in the pipeline.</p>
-                <p><a class="btn btn-primary btn-large" href="{% url 'ladder:season' current_season.start_date|date:"Y" current_season.season_round %}">View Current Ladder &raquo;</a></p>
-            </div>
+    <!-- Main hero unit for a primary marketing message or call to action -->
+    <div class="hero-unit">
+        <h1>Hello, Highgate!</h1>
 
-            <!-- Example row of columns -->
-            <div class="row">
-                <div class="span6">
-                    <h2>{{ current_season }} Stats</h2>
-                    <table class="table">
-                            <tr><td>Total Divisions</td><td> {{ current_season.ladder_set.all.count }}</td></tr>
-                            <tr><td>Total Players</td><td> {{ current_season.get_stats.player_count }}</td></tr>
-                            <tr><td>Total Matches in Ladder</td><td> {{ current_season.get_stats.total_games_count|floatformat:"0" }}</td></tr>
-                            <tr><td>Total Matches Played</td><td> {{ current_season.get_stats.results_count }}</td></tr>
-                            <tr><td>Percentage Matches Played</td><td> {{ current_season.get_stats.percentage_played|floatformat:"2" }}%</td></tr>
-                    </table>
-                </div>
-                <div class="span6">
-                    <h2>Current Leaders</h2>
-                    <table class="table table-condensed">
-                    <th>Div</th>
-                    <th>Player</th>
-                    <th>Total</th>
-                    {% for division, leader in current_season.get_stats.current_leaders %}
-                        <tr>
-                            <td>{{ division }}</td><td><a href="{% url 'ladder:player_history' leader.player.id %}"> {{ leader.player }} </a></td><td>{{ leader.total }}</td>
-                        </tr>
-                    {% endfor %}
-                    </table>
-                </div>
-            </div>
+        <p>This is a website that tracks the current ladders progress and keeps a history of previous ladders,
+            I try to keep current ladder data as up to date as possible and have lots of ideas in the pipeline.</p>
+
+        <p><a class="btn btn-primary btn-large"
+              href="{% url 'ladder:season' current_season.start_date|date:"Y" current_season.season_round %}">View
+            Current Ladder &raquo;</a></p>
+    </div>
+
+    <!-- Example row of columns -->
+    <div class="row">
+        <div class="span6">
+            <h2>{{ current_season }} Stats</h2>
+            <table class="table">
+                <tr>
+                    <td>Total Divisions</td>
+                    <td id="total_divs"></td>
+                </tr>
+                <tr>
+                    <td>Total Players</td>
+                    <td id="total_players"></td>
+                </tr>
+                <tr>
+                    <td>Total Matches in Ladder</td>
+                    <td id="total_matches"></td>
+                </tr>
+                <tr>
+                    <td>Total Matches Played</td>
+                    <td id="total_played"></td>
+                </tr>
+                <tr>
+                    <td>Percentage Matches Played</td>
+                    <td id="perc_played"></td>
+                </tr>
+            </table>
+        </div>
+        <div class="span6">
+            <h2>Current Leaders</h2>
+            <table id="leader_table" class="table table-condensed">
+                <th>Div</th>
+                <th>Player</th>
+                <th>Total</th>
+
+            </table>
+        </div>
+    </div>
+    <script type="text/javascript">
+        $(document).ready(function () {
+            $.get('/season/ajax/stats/', { id: {{ current_season.id }}, leader: 1 }, function (data) {
+                $('#total_divs').text(data.player_count);
+                $('#total_players').text(data.player_count);
+                $('#total_matches').text(data.total_games_count);
+                $('#total_played').text(data.results_count);
+                $('#perc_played').text(data.percentage_played + ' %');
+
+                $.each(data.current_leaders, function (i, item) {
+                    $("#leader_table").append("<tr><td>" + item.division + "</td><td><a href='/player/" + item.player_id + "'>" + item.player + "</a></td><td>" + item.total + "</td></tr>");
+                })
+            });
+        });
+    </script>
 {% endblock %}
