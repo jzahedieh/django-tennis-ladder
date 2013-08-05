@@ -54,7 +54,7 @@
     <script type="text/javascript">
         $(document).ready(function () {
             $.get('/season/ajax/stats/', { id: {{ current_season.id }}, leader: 1 }, function (data) {
-                $('#total_divs').text(data.player_count);
+                $('#total_divs').text(data.divisions);
                 $('#total_players').text(data.player_count);
                 $('#total_matches').text(data.total_games_count);
                 $('#total_played').text(data.results_count);

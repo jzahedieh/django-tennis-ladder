@@ -27,6 +27,7 @@ class Season(models.Model):
         percentage_played = (results_count / total_games_count) * 100
 
         return {
+            'divisions': self.ladder_set.count(),
             'percentage_played': "{0:.2f}".format(percentage_played),
             'total_games_count': total_games_count,
             'results_count': results_count,
