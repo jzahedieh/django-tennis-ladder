@@ -168,6 +168,7 @@ class Result(models.Model):
     opponent = models.ForeignKey(Player, related_name='result_opponent')
     result = models.IntegerField()
     date_added = models.DateField('Date added')
+    inaccurate_flag = models.BooleanField()
 
     def __unicode__(self):
         return self.player.first_name + ' ' + self.player.last_name + ' vs ' + self.opponent.first_name + ' ' + self.opponent.last_name + ' score: ' + str(

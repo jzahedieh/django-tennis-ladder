@@ -143,6 +143,11 @@ def add(request, year, season_round, division_id):
 def add_result(request, ladder_id):
     ladder = get_object_or_404(Ladder, pk=ladder_id)
     try:
+        inaccurate = request.POST['checkbox_inaccurate']
+    except:
+        inaccurate = 0
+
+    try:
         player_object = Player.objects.get(id=request.POST['player'])
         opponent_object = Player.objects.get(id=request.POST['opponent'])
         player_score = request.POST['player_score']
@@ -160,7 +165,7 @@ def add_result(request, ladder_id):
             raise Exception("want to add all the time")
         except:
             player_result_object = Result(ladder=ladder, player=player_object, opponent=opponent_object,
-                                       result=player_score, date_added=datetime.datetime.now())
+                                       result=player_score, date_added=datetime.datetime.now(), inaccurate_flag=inaccurate)
             player_result_object.save()
 
 
@@ -170,7 +175,7 @@ def add_result(request, ladder_id):
             raise Exception("want to add all the time")
         except:
             opp_result_object = Result(ladder=ladder, player=opponent_object, opponent=player_object,
-                                       result=opponent_score, date_added=datetime.datetime.now())
+                                       result=opponent_score, date_added=datetime.datetime.now(), inaccurate_flag=inaccurate)
             opp_result_object.save()
 
 
