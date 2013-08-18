@@ -42,9 +42,15 @@
                         <td class="score_field">
 
                             {% for result in results_dict|getkey:league.player.id %}
-
                                 {% if league.player.id == result.player.id and opponent.player.id == result.opponent.id %}
-                                    {{ result.result }}
+                                            {% if result.inaccurate_flag %}
+                                                <span style="color:red; font-weight: bold"> {{ result.result }} *</span>
+                                                <script type="text/javascript">
+                                                    $('.score_error').show();
+                                                </script>
+                                            {% else %}
+                                                {{ result.result }}
+                                            {% endif %}
                                 {% endif %}
                             {% endfor %}
                         </td>
@@ -62,7 +68,7 @@
         </tbody>
         </table>
     {% endfor %}
-
+    <span class="score_error" style="color:red; font-weight: bold;">* Flagged as inaccurate, please double check physical copy.</span>
     <script type="text/javascript">
         $(document).ready(function()
             {

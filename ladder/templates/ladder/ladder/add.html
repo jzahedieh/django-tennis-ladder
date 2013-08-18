@@ -94,7 +94,14 @@ function selectRecord() {
                                     <td class="score_field selectable"  data-player="{{ league.player.id }}" data-opp="{{ opponent.player.id }}">
                                     {% for result in results_dict|getkey:league.player.id %}
                                         {% if league.player == result.player and opponent.player == result.opponent %}
-                                            {{ result.result }}
+                                           {% if result.inaccurate_flag %}
+                                                <span style="color:red; font-weight: bold"> {{ result.result }} *</span>
+                                                <script type="text/javascript">
+                                                    $('.score_error').show();
+                                                </script>
+                                            {% else %}
+                                                {{ result.result }}
+                                            {% endif %}
                                         {% endif %}
                                     {% endfor %}
                                     </td>

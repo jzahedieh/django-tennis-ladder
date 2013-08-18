@@ -20,8 +20,8 @@ $(document).ready(function()
 <h1> {{ ladder }} </h1>
 <h3>{{ ladder.season.start_date }} to {{ ladder.season.end_date }}</h3>
 
-
-	<table id="ladderTable" class="tablesorter">
+    <span class="score_error" style="color:red; font-weight: bold; display: none">* Flagged as inaccurate, please double check physical copy.</span>
+    <table id="ladderTable" class="tablesorter">
         <thead>
        	    <tr>
                 <th></th>
@@ -47,7 +47,14 @@ $(document).ready(function()
                                     <td class="score_field">
                                     {% for result in results_dict|getkey:league.player.id %}
                                         {% if league.player == result.player and opponent.player == result.opponent %}
-                                            {{ result.result }}
+                                            {% if result.inaccurate_flag %}
+                                                <span style="color:red; font-weight: bold"> {{ result.result }} *</span>
+                                                <script type="text/javascript">
+                                                    $('.score_error').show();
+                                                </script>
+                                            {% else %}
+                                                {{ result.result }}
+                                            {% endif %}
                                         {% endif %}
                                     {% endfor %}
                                     </td>
