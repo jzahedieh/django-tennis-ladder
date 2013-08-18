@@ -66,7 +66,6 @@
                                     {% endif %}
                                 </ul>
                             </li>
-                            <li>{{ request.path }}</li>
                         </ul>
                         <form class="navbar-form pull-right" id="find_player_form" action="{% url 'ladder:player_result' %}" method="get">
                             <input id="player-search" type="text" name="player_name" placeholder="Search Players" data-provide="typeahead"  autocomplete="off">
