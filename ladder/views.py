@@ -21,7 +21,7 @@ def multi_dimensions(n, type):
   return defaultdict(lambda:multi_dimensions(n-1, type))
 
 
-@cache_page(60 * 60 * 12)  # 12 hour page cache
+@cache_page(60 * 60 * 24 * 7)  # 7 day page cache
 def index(request):
     current_season = Season.objects.order_by('-start_date')[0]
     context = {
