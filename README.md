@@ -1,9 +1,6 @@
 django-tennis-ladder
 ====================
 
-Online system to keep track of my tennis clubs ladder, demo at: http://highgate.sites.djangoeurope.com/
+Online system to keep track of my tennis clubs ladder, live at: http://highgate-ladder.co.uk/
 
-Todo:
-~ Player search
-~ Players match up
-~ AJAX loading
+Contact me if you something similar implemented for your club.
