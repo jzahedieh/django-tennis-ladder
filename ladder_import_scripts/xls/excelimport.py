@@ -4,12 +4,17 @@ from collections import defaultdict
 import datetime
 
 book = open_workbook(
-    '/home/jon/workspace/python_projects/tennis/ladder_import_scripts/xls/files/ladderSep-Dec2009Results.xls')
+    '/var/www/tennis/ladder_import_scripts/xls/files/lad2_2003res.xls')
 
-season = Season.objects.get(pk=14)  # hard code season as have to create manually
+season = Season.objects.get(pk=31)  # hard code season as have to create manually
 sh1 = book.sheet_by_index(0)  # sheet1, aways first sheet
 player_list = defaultdict(dict)  # initialize defaultdict for our player list.
 current_div = 0  # set the division counter to 0
+
+# INSERT INTO `ladder_season` (`name`, `start_date`, `end_date`, `season_round`) VALUES
+# ('Round 3 2006', '2006-09-01', '2006-12-31', 3),
+# ('Round 2 2006', '2006-05-01', '2006-08-31', 2),
+# ('Round 1 2006', '2006-01-01', '2006-04-30', 1);
 
 # save all players then set up ladder
 for rownum in range(sh1.nrows):
@@ -61,60 +66,67 @@ current_div = 0  # reset the division counter to 0
 # save the results
 for rownum in range(sh1.nrows):
 
-    rows = sh1.row_values(rownum)
+    try:
+        rows = sh1.row_values(rownum)
 
-    #Well lazy copy pasta for division info
-    if not rows[0] and rows[1] != 'NAME' and rows[1] != 'ROUND':
-        for div in rows:
-            if isinstance(div, float):
-                current_div = div
+        #Well lazy copy pasta for division info
+        if not rows[0] and rows[1] != 'NAME' and rows[1] != 'ROUND':
+            for div in rows:
+                if isinstance(div, float):
+                    current_div = div
 
-    if rows[1] == 'NAME':
-        i = 3
-        while rows[i] != 'Div':
-            i += 1
+        if rows[1] == 'NAME':
+            i = 3
+            while rows[i] != 'DIV': #normally 'Div'
+                i += 1
 
-        count = i - 3
+            count = i - 3
 
-    if rows[0]:
-        position = rows[0]
-        first_name = rows[1]
-        last_name = rows[2]
+        if rows[0]:
+            try:
+                position = rows[0]
+                first_name = rows[1]
+                last_name = rows[2]
+            except:
+                print 'index error for row: ' + rows[0]
 
-        #print id, name1, name2
-        for c in range(count):
+            #print id, name1, name2
 
-            if rows[c + 3]:
-                score = rows[c + 3]
+            for c in range(count):
 
-                if not isinstance(score, float):
-                    break
+                if rows[c + 3] != '':
+                    score = rows[c + 3]
 
-                opp_last_name = player_list[current_div][c + 1]['last_name']
-                opp_first_name = player_list[current_div][c + 1]['first_name']
+                    if not isinstance(score, float):
+                        break
+
+                    opp_last_name = player_list[current_div][c + 1]['last_name']
+                    opp_first_name = player_list[current_div][c + 1]['first_name']
 
 
-                #print str(id) + ' vs ' + str(c) + ' score: ' + str(rows[c+3])
-                try:
-                    ladder_object = Ladder.objects.get(season=season, division=int(current_div))
-                except:
-                    print 'No ladder matching: ' + ' ' + str(current_div)
-                    break
-                try:
-                    player_object = Player.objects.get(first_name=first_name, last_name=last_name)
-                except:
-                    print 'No match for player: ' + first_name + last_name
-                try:
-                    opp_object = Player.objects.get(first_name=opp_first_name, last_name=opp_last_name)
-                except:
-                    print 'No match for opp: ' + opp_first_name + opp_last_name
-                    #print str(season_pk) + ' ' +division_no + ': ' + first_name + last_name + ' vs ' +opp_first_name + opp_last_name + ' ' +  str(r)
+                    #print str(id) + ' vs ' + str(c) + ' score: ' + str(rows[c+3])
+                    try:
+                        ladder_object = Ladder.objects.get(season=season, division=int(current_div))
+                    except:
+                        print 'No ladder matching: ' + ' ' + str(current_div)
+                        break
+                    try:
+                        player_object = Player.objects.get(first_name=first_name, last_name=last_name)
+                    except:
+                        print 'No match for player: ' + first_name + last_name
+                    try:
+                        opp_object = Player.objects.get(first_name=opp_first_name, last_name=opp_last_name)
+                    except:
+                        print 'No match for opp: ' + opp_first_name + opp_last_name
+                        #print str(season_pk) + ' ' +division_no + ': ' + first_name + last_name + ' vs ' +opp_first_name + opp_last_name + ' ' +  str(r)
 
-                try:
-                    result_object = Result.objects.get(ladder=ladder_object, player=player_object, opponent=opp_object)
-                except Result.MultipleObjectsReturned:
-                    pass
-                except:
-                    result_object = Result(ladder=ladder_object, player=player_object, opponent=opp_object,
-                                           result=score, date_added=datetime.datetime.now())
-                    result_object.save()
+                    try:
+                        result_object = Result.objects.get(ladder=ladder_object, player=player_object, opponent=opp_object)
+                    except Result.MultipleObjectsReturned:
+                        pass
+                    except:
+                        result_object = Result(ladder=ladder_object, player=player_object, opponent=opp_object,
+                                               result=score, date_added=season.end_date)
+                        result_object.save()
+    except Exception, e:
+        print 'problem @ row: ' + rownum.__str__() + e.message

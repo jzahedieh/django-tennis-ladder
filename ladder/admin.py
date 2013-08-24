@@ -6,7 +6,7 @@ from django.contrib.contenttypes.generic import GenericForeignKey
 
 
 class SeasonAdmin(admin.ModelAdmin):
-    list_display = ('name', 'start_date', 'end_date')
+    list_display = ('name', 'start_date', 'end_date', 'season_round')
     date_hierarchy = 'start_date'
 
 
