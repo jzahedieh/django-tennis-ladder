@@ -21,11 +21,25 @@ def multi_dimensions(n, type):
   return defaultdict(lambda:multi_dimensions(n-1, type))
 
 
-@cache_page(60 * 60 * 24 * 7)  # 7 day page cache
+@cache_page(60 * 60 * 24 * 2)  # 2 day page cache
 def index(request):
     current_season = Season.objects.order_by('-start_date')[0]
+    os_year = Season.objects.order_by('start_date')[0].start_date.year
+    cs_year = current_season.start_date.year
+
+    at_ladders = Season.objects.count()
+    at_divisions = Ladder.objects.count()
+    at_results = Result.objects.count() / 2
+    at_players = Player.objects.count()
+
     context = {
         'current_season': current_season,
+        'at_years': (cs_year - os_year),
+        'at_years_str': ' (' + os_year.__str__() +  ' -> ' + cs_year.__str__() +  ')',
+        'at_divisions': at_divisions,
+        'at_ladders': at_ladders,
+        'at_results': at_results,
+        'at_players': at_players,
     }
     return render(request, 'ladder/index.html', context)
 
