@@ -11,7 +11,7 @@ import datetime
 from ladder.models import Ladder, Player, Result, Season, League
 
 
-@cache_page(60 * 60 * 24 * 2)  # 2 day page cache
+@cache_page(60 * 60 * 24 * 2, key_prefix='index')  # 2 day page cache
 def index(request):
     current_season = Season.objects.order_by('-start_date')[0]
     os_year = Season.objects.order_by('start_date')[0].start_date.year
@@ -34,7 +34,7 @@ def index(request):
     return render(request, 'ladder/index.html', context)
 
 
-@cache_page(60 * 60 * 24)  # 1 day page cache
+@cache_page(60 * 60 * 24, key_prefix='round')  # 1 day page cache
 def list_rounds(request):
     seasons = Season.objects.order_by('-start_date')
     context = {
@@ -43,7 +43,7 @@ def list_rounds(request):
     return render(request, 'ladder/season/list.html', context)
 
 
-@cache_page(60 * 60 * 24)  # 1 day  page cache
+@cache_page(60 * 60, key_prefix='season')  # 1 hour page cache
 def season(request, year, season_round):
     try:
         season = Season.objects.get(start_date__year=year, season_round=season_round)
