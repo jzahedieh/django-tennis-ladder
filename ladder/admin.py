@@ -14,6 +14,9 @@ admin.site.register(Season, SeasonAdmin)
 
 
 def merge_players(modeladmin, request, queryset):
+    """
+    Merge two player records together
+    """
     if queryset.count() != 2:
         return False
 
@@ -21,6 +24,7 @@ def merge_players(modeladmin, request, queryset):
     duplicate_player = Player.objects.get(id=queryset[1].id)
 
     merge_model_objects(primary_player, duplicate_player)
+
 
 merge_players.short_description = "Merge Players"
 
@@ -40,6 +44,7 @@ class LadderAdmin(admin.ModelAdmin):
 
 
 admin.site.register(Ladder, LadderAdmin)
+
 
 class LeagueAdmin(admin.ModelAdmin):
     list_filter = ['ladder']

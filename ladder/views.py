@@ -1,24 +1,14 @@
 from django.http import HttpResponseRedirect, Http404, HttpResponse
-from django.shortcuts import render, get_object_or_404, redirect
+from django.shortcuts import render, get_object_or_404
 from django.utils import simplejson as json
 from django.utils.html import escape
 from django.core.urlresolvers import reverse
 from django.views.decorators.cache import cache_page
-from ladder.models import Ladder, Player, Result, Season, League
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
-import datetime, json
-from collections import defaultdict
-from decimal import Decimal
+import datetime
 
-
-
-def multi_dimensions(n, type):
-  """ Creates an n-dimension dictionary where the n-th dimension is of type 'type'
-  """
-  if n<=1:
-    return type()
-  return defaultdict(lambda:multi_dimensions(n-1, type))
+from ladder.models import Ladder, Player, Result, Season, League
 
 
 @cache_page(60 * 60 * 24 * 2)  # 2 day page cache

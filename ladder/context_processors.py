@@ -3,6 +3,9 @@ from ladder.models import Season
 
 
 def navigation(request):
+    """
+    Generates the urls for the top navigation
+    """
     season_list = Season.objects.order_by('-start_date')[1:5]
     season_first = Season.objects.order_by('-start_date')[0]
     season_total = Season.objects.count()

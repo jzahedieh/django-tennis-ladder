@@ -1,7 +1,5 @@
 import operator
-
 from django.db import models
-from django.template.defaultfilters import slugify
 
 
 class Season(models.Model):
@@ -14,15 +12,16 @@ class Season(models.Model):
         return str(self.start_date.year) + ' Round ' + str(self.season_round)
 
     def get_stats(self):
+        """
+        Generates the season stats
+        """
         player_count = 0
         results_count = 0
         total_games_count = 0.0
-        current_leaders = {}
         for ladder in self.ladder_set.all():
             player_count += ladder.league_set.count()
             results_count += ladder.result_set.count() / 2
             total_games_count += (ladder.league_set.count() * (ladder.league_set.count() - 1)) / 2
-            #current_leaders[ladder.division] = ladder.get_leader()
 
         percentage_played = (results_count / total_games_count) * 100
 
@@ -35,6 +34,9 @@ class Season(models.Model):
         }
 
     def get_leader_stats(self):
+        """
+        Generates the list of leaders for current season
+        """
         current_leaders = {}
 
         for ladder in self.ladder_set.all():
@@ -43,6 +45,7 @@ class Season(models.Model):
         return {
             'current_leaders': current_leaders,
         }
+
 
 class Player(models.Model):
     first_name = models.CharField(max_length=100)
@@ -66,6 +69,9 @@ class Ladder(models.Model):
         return str(self.season.start_date.year) + ' Round ' + str(self.season.season_round) + ' - Division: ' + str(self.division)
 
     def get_leader(self):
+        """
+        Finds the leader of the ladder
+        """
         totals = {}
         for result in self.result_set.filter(ladder=self):
             try:
@@ -87,6 +93,9 @@ class Ladder(models.Model):
         return {'player': player.__str__(), 'player_id': player.id, 'total': totals[player], 'division': self.division}
 
     def get_latest_results(self):
+        """
+        Gets latest results for the ladder
+        """
         results = {}
         for result in self.result_set.filter(ladder=self).order_by('-date_added')[:10]:  # [:10] to limit to 5
 
@@ -112,6 +121,9 @@ class Ladder(models.Model):
         return ordered_results.items()
 
     def get_stats(self):
+        """
+        Generates the stats for current division
+        """
         total_matches_played = 0.00
         total_matches = self.league_set.count() * (self.league_set.count() - 1) / 2
         total_matches_played += self.result_set.count() / 2
@@ -133,6 +145,9 @@ class League(models.Model):
         return self.player.first_name + ' ' + self.player.last_name
 
     def player_stats(self):
+        """
+        Generates the player stats for player listings
+        """
         total_points = 0.00
         games = 0.00
         won_count = 0
