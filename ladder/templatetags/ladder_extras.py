@@ -27,9 +27,7 @@ def gettotal(value, arg):
 def unplayed(value, arg):
     not_played = []
     try:
-        for player in value:
-            if player.id != arg:
-                not_played.append(player)
+        not_played = [player for player in value if player.id != arg]
 
         return not_played
     except:

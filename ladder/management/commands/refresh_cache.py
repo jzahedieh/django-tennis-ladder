@@ -1,6 +1,7 @@
 from django.core.management.base import BaseCommand, CommandError
 from django.test.client import RequestFactory
 from django.conf import settings
+from django.core.urlresolvers import reverse
 
 from ladder.models import Season
 from ladder.views import season as season_view
@@ -28,9 +29,8 @@ class Command(BaseCommand):
         self.factory = RequestFactory()
         seasons = Season.objects.all()
         for season in seasons:
-            path = '/' + season.end_date.year.__str__() + '/round/' + season.season_round.__str__() + '/'
+            path = reverse('ladder:season', args=(str(season.end_date.year), str(season.season_round)))
             # use the request factory to generate the correct url for the cache hash
             request = self.factory.get(path)
 
             season_view(request, season.end_date.year, season.season_round)
-            self.stdout.write('Successfully refreshed: %s' % path)
