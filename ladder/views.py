@@ -1,3 +1,5 @@
+import datetime
+
 from django.http import HttpResponseRedirect, Http404, HttpResponse
 from django.shortcuts import render, get_object_or_404
 from django.utils import simplejson as json
@@ -6,7 +8,6 @@ from django.core.urlresolvers import reverse
 from django.views.decorators.cache import cache_page
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
-import datetime
 
 from ladder.models import Ladder, Player, Result, Season, League
 
@@ -45,10 +46,7 @@ def list_rounds(request):
 
 @cache_page(60 * 60, key_prefix='season')  # 1 hour page cache
 def season(request, year, season_round):
-    try:
-        season = Season.objects.get(start_date__year=year, season_round=season_round)
-    except Season.DoesNotExist:
-        raise Http404
+    season = get_object_or_404(Season, start_date__year=year, season_round=season_round)
 
     ladders = Ladder.objects.filter(season=season)
 
@@ -66,10 +64,7 @@ def season(request, year, season_round):
 
 
 def ladder(request, year, season_round, division_id):
-    try:
-        ladder = Ladder.objects.get(division=division_id, season__start_date__year=year, season__season_round=season_round)
-    except Ladder.DoesNotExist:
-        raise Http404
+    ladder = get_object_or_404(Ladder, division=division_id, season__start_date__year=year, season__season_round=season_round)
 
     results = Result.objects.filter(ladder=ladder)
 
@@ -82,10 +77,7 @@ def ladder(request, year, season_round, division_id):
 
 @login_required
 def add(request, year, season_round, division_id):
-    try:
-        ladder = Ladder.objects.get(division=division_id, season__start_date__year=year, season__season_round=season_round)
-    except Ladder.DoesNotExist:
-        raise Http404
+    ladder = get_object_or_404(Ladder, division=division_id, season__start_date__year=year, season__season_round=season_round)
 
     results = Result.objects.filter(ladder=ladder)
 
