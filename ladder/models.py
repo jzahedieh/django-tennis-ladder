@@ -61,7 +61,7 @@ class Player(models.Model):
 
 class Ladder(models.Model):
     season = models.ForeignKey(Season)
-    division = models.IntegerField(default=0)
+    division = models.CharField(max_length=11)
     ladder_type = models.CharField(max_length=100)
 
 

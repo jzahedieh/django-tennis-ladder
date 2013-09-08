@@ -4,12 +4,12 @@ from collections import defaultdict
 import datetime
 
 book = open_workbook(
-    '/var/www/tennis/ladder_import_scripts/xls/files/lad2_2003res.xls')
+    '/var/www/tennis/ladder_import_scripts/xls/files/ladderSep-Dec2013.xls')
 
-season = Season.objects.get(pk=31)  # hard code season as have to create manually
+season = Season.objects.get(pk=30)  # hard code season as have to create manually
 sh1 = book.sheet_by_index(0)  # sheet1, aways first sheet
 player_list = defaultdict(dict)  # initialize defaultdict for our player list.
-current_div = 0  # set the division counter to 0
+current_div = {}  # set the division counter to 0
 
 # INSERT INTO `ladder_season` (`name`, `start_date`, `end_date`, `season_round`) VALUES
 # ('Round 3 2006', '2006-09-01', '2006-12-31', 3),
@@ -24,11 +24,11 @@ for rownum in range(sh1.nrows):
     if not rows[0] and rows[1] != 'NAME' and rows[1] != 'ROUND':
         for div in rows:
             if isinstance(div, float):
-                current_div = div
+                current_div = ('%.2f' % div).rstrip('0').rstrip('.')
                 try:
-                    ladder = Ladder.objects.get(season=season, division=div)
+                    ladder = Ladder.objects.get(season=season, division=current_div)
                 except:
-                    ladder = Ladder(season=season, division=div, ladder_type="First to 9")
+                    ladder = Ladder(season=season, division=current_div, ladder_type="First to 9")
                     ladder.save()
 
 
@@ -62,7 +62,7 @@ for rownum in range(sh1.nrows):
 
 print 'built good'
 
-current_div = 0  # reset the division counter to 0
+current_div = {}  # reset the division counter to 0
 # save the results
 for rownum in range(sh1.nrows):
 
@@ -73,11 +73,12 @@ for rownum in range(sh1.nrows):
         if not rows[0] and rows[1] != 'NAME' and rows[1] != 'ROUND':
             for div in rows:
                 if isinstance(div, float):
-                    current_div = div
+                    current_div = ('%.2f' % div).rstrip('0').rstrip('.')
+                    print current_div
 
         if rows[1] == 'NAME':
             i = 3
-            while rows[i] != 'DIV': #normally 'Div'
+            while rows[i] != 'Div': #normally 'Div'
                 i += 1
 
             count = i - 3
@@ -106,7 +107,7 @@ for rownum in range(sh1.nrows):
 
                     #print str(id) + ' vs ' + str(c) + ' score: ' + str(rows[c+3])
                     try:
-                        ladder_object = Ladder.objects.get(season=season, division=int(current_div))
+                        ladder_object = Ladder.objects.get(season=season, division=current_div)
                     except:
                         print 'No ladder matching: ' + ' ' + str(current_div)
                         break
