@@ -1,3 +1,5 @@
+import datetime
+
 from django.http import HttpResponseRedirect, Http404, HttpResponse
 from django.shortcuts import render, get_object_or_404
 from django.utils import simplejson as json
@@ -6,7 +8,6 @@ from django.core.urlresolvers import reverse
 from django.views.decorators.cache import cache_page
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
-import datetime
 
 from ladder.models import Ladder, Player, Result, Season, League
 from ladder.forms import *
