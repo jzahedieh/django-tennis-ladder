@@ -85,10 +85,12 @@ class Ladder(models.Model):
                 else:
                     totals[result.player] = int(result.result) + 1
 
+
         if totals:
             player = max(totals.iteritems(), key=operator.itemgetter(1))[0]
         else:
-            player = {}
+            return {'player': 'No Results', 'player_id': '../#', 'total': '-', 'division': self.division}
+
 
         return {'player': player.__str__(), 'player_id': player.id, 'total': totals[player], 'division': self.division}
 
