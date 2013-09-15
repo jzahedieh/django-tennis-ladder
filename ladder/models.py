@@ -40,7 +40,7 @@ class Season(models.Model):
         current_leaders = {}
 
         for ladder in self.ladder_set.all():
-            current_leaders[ladder.division] = ladder.get_leader()
+            current_leaders[ladder.id] = ladder.get_leader()
 
         return {
             'current_leaders': current_leaders,
