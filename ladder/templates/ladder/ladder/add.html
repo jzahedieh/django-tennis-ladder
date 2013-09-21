@@ -46,8 +46,18 @@ $(document).ready(function()
             }
         });
 
+        $(".selectable").hover(function () {
+            opponentSelector(this).css("background-color", "#eee")
+        }, function () {
+            opponentSelector(this).css("background-color", "");
+        });
+
     }
 );
+
+function opponentSelector(element) {
+    return $('td[data-player=' + $(element).data('opp') + '][data-opp=' + $(element).data('player') + ']');
+}
 
 function updateForm() {
     var l_score = $('.score_field input').val();
@@ -55,12 +65,6 @@ function updateForm() {
     $('[name=player_score]').val(l_score);
     can_submit = true;
 
-}
-
-function selectRecord() {
-    var player = $(this).attr('data-player');
-    var opp = $(this).attr('data-opp');
-    console.log(player);
 }
 
 </script>
