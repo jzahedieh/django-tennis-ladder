@@ -149,6 +149,20 @@ def player_history(request, player_id):
     return render(request, 'ladder/player/history.html', {'player': player, 'league_set': league_set, 'ladder_set':league_set})
 
 
+def head_to_head(request, player_id, opponent_id):
+    print player_id, opponent_id
+    player = get_object_or_404(Player, pk=player_id)
+    opponent = get_object_or_404(Player, pk=opponent_id)
+
+    results1 = Result.objects.filter(player=player, opponent=opponent, result__lt=9).order_by('-ladder__season__end_date')
+    results2 = Result.objects.filter(player=opponent, opponent=player, result__lt=9).order_by('-ladder__season__end_date')
+
+    results = results1 | results2
+
+    stats = {'won': results2.count(), 'lost': results1.count(), 'played': results1.count() + results2.count()}
+
+    return render(request, 'ladder/head_to_head/index.html', {'stats':stats, 'results': results, 'player': player, 'opponent':opponent})
+
 def player_result(request):
     try:
         query = request.GET[u'player_name']
