@@ -44,10 +44,10 @@ $(document).ready(function()
                                 {% if column_counter == player_counter %}
                                     <td class="box_grey score_field"></td>
                                 {% else %}
-                                    <td class="score_field">
+                                    <td class="score_field selectable"  data-player="{{ league.player.id }}" data-opp="{{ opponent.player.id }}">
                                     {% for result in results_dict|getkey:league.player.id %}
                                         {% if league.player == result.player and opponent.player == result.opponent %}
-                                            {% if result.inaccurate_flag %}
+                                           {% if result.inaccurate_flag %}
                                                 <span style="color:red; font-weight: bold"> {{ result.result }} *</span>
                                                 <script type="text/javascript">
                                                     $('.score_error').show();
@@ -100,5 +100,21 @@ $(document).ready(function()
             </table>
         </div>
     </div>
+
+    <script type="text/javascript">
+
+        $(document).ready(function () {
+                    $(".selectable").hover(function () {
+                        opponentSelector(this).css("background-color", "#eee")
+                    }, function () {
+                        opponentSelector(this).css("background-color", "");
+                    });
+
+                }
+        );
+        function opponentSelector(element) {
+            return $('td[data-player=' + $(element).data('opp') + '][data-opp=' + $(element).data('player') + ']');
+        }
+    </script>
 
 {% endblock %}
