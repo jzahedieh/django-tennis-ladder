@@ -44,9 +44,13 @@ $(document).ready(function()
                                 {% if column_counter == player_counter %}
                                     <td class="box_grey score_field"></td>
                                 {% else %}
-                                    <td class="score_field selectable"  data-player="{{ league.player.id }}" data-opp="{{ opponent.player.id }}">
-                                    {% for result in results_dict|getkey:league.player.id %}
-                                        {% if league.player == result.player and opponent.player == result.opponent %}
+                                    <td class="score_field selectable" data-player="{{ league.player.id }}"
+                                        data-opp="{{ opponent.player.id }}"
+                                        onclick="location.href='{% url 'ladder:head_to_head' league.player.id opponent.player.id %}'">
+                                        <a href="{% url 'ladder:head_to_head' league.player.id opponent.player.id %}">
+                                            <div style="height:100%;width:100%">
+                                                {% for result in results_dict|getkey:league.player.id %}
+                                                    {% if league.player == result.player and opponent.player == result.opponent %}
                                            {% if result.inaccurate_flag %}
                                                 <span style="color:red; font-weight: bold"> {{ result.result }} *</span>
                                                 <script type="text/javascript">
@@ -57,6 +61,8 @@ $(document).ready(function()
                                             {% endif %}
                                         {% endif %}
                                     {% endfor %}
+                                            </div>
+                                        </a>
                                     </td>
                                 {% endif %}
                             {% endwith %}
