@@ -1,3 +1,5 @@
+import datetime
+
 from django.http import HttpResponseRedirect, Http404, HttpResponse
 from django.shortcuts import render, get_object_or_404
 from django.utils import simplejson as json
@@ -5,8 +7,7 @@ from django.utils.html import escape
 from django.core.urlresolvers import reverse
 from django.views.decorators.cache import cache_page
 from django.contrib.auth.decorators import login_required
-from django.db.models import Q
-import datetime
+from django.db.models import Q, Count, Max
 
 from ladder.models import Ladder, Player, Result, Season, League
 from ladder.forms import *
@@ -138,7 +139,6 @@ def add_result(request, ladder_id):
                 return HttpResponseRedirect(
             reverse('ladder:add', args=(ladder.season.start_date.year, ladder.season.season_round, ladder.division)))
 
-
 def player_history(request, player_id):
     try:
         player = Player.objects.get(pk=player_id)
@@ -146,7 +146,15 @@ def player_history(request, player_id):
     except Player.DoesNotExist:
         raise Http404
 
-    return render(request, 'ladder/player/history.html', {'player': player, 'league_set': league_set, 'ladder_set':league_set})
+    #return top 10 played against
+    try:
+        head = Result.objects.values('opponent', 'opponent__first_name', 'opponent__last_name').filter(
+            player=player).annotate(times_played=Count('opponent'), last_played=Max('date_added')).order_by(
+            '-times_played')[:10]
+    except Result.DoesNotExist:
+        raise Http404
+
+    return render(request, 'ladder/player/history.html', {'player': player, 'league_set': league_set, 'ladder_set': league_set, 'head': head})
 
 
 def head_to_head(request, player_id, opponent_id):

@@ -2,6 +2,36 @@
 {% block container %}
 
     <h1>{{ player }}</h1>
+    <a href="javascript:history.go(-1)">Back</a>
+
+    <h2>Head to Head</h2>
+
+    <div class="span12">
+        <table cellspacing="1" id="head-table" class="table table">
+            <thead>
+            <tr>
+                <th>Player</th>
+                <th>Times Played</th>
+                <th>Last Played</th>
+                <th></th>
+            </tr>
+            </thead>
+
+            <tbody>
+            {% for h in head %}
+                <tr>
+                    <td>{{ h.opponent__first_name }} {{ h.opponent__last_name }}</td>
+                    <td>{{ h.times_played|floatformat:"0" }}</td>
+                    <td>{{ h.last_played }}</td>
+                    <td><a href="{% url 'ladder:head_to_head' player.id h.opponent %}">More Detail</a></td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+
+    <h2>History</h2>
     <div class="span12">
         <table cellspacing="1" id="seasons-table" class="table">
             <thead>
