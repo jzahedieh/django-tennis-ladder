@@ -158,7 +158,7 @@ def player_history(request, player_id):
 
 
 def head_to_head(request, player_id, opponent_id):
-    print player_id, opponent_id
+
     player = get_object_or_404(Player, pk=player_id)
     opponent = get_object_or_404(Player, pk=opponent_id)
 
@@ -207,6 +207,28 @@ def player_search(request):
     resultSet["options"] = results
 
     return HttpResponse(json.dumps(resultSet), content_type="application/json")
+
+
+def h2h_search(request, player_id):
+
+    resultSet = {}
+    try:
+        query = request.GET[u'query']
+    except:
+        raise Http404
+
+    qs = Result.objects.all()
+
+    for term in query.split():
+        qs = qs.filter(Q(opponent__first_name__icontains=term) | Q(opponent__last_name__icontains=term), Q(player__id=player_id))
+
+    qs = qs.annotate(times_played=Count('opponent'))
+
+    print qs
+    #results = [escape(x.opponent__first_name.strip() + ' ' + x.opponent__last_name.strip()) for x in qs]
+    #resultSet["options"] = results
+
+    #return HttpResponse(json.dumps(resultSet), content_type="application/json")
 
 
 def season_ajax_stats(request):

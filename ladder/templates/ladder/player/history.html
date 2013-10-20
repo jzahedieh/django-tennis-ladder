@@ -28,8 +28,32 @@
             {% endfor %}
             </tbody>
         </table>
-    </div>
 
+        <form class="pull-left" id="h2h_form" action="{% url 'ladder:h2h_search'  player.id %}" method="get">
+        <input id="h2h-search" type="text" name="player_name" placeholder="Search Players" data-provide="typeahead"
+               autocomplete="off">
+        <button type="submit" class="btn">Find</button>
+    </form>
+            <script type="text/javascript">
+            (function () {
+                var timeout;
+
+                $('#h2h-search').typeahead({
+                    source: function (query, process) {
+                        if (timeout) {
+                            clearTimeout(timeout);
+                        }
+                        console.log('test');
+                        timeout = setTimeout(function () {
+                            return $.get('/player/h2h/{{ player.id }}/', { query: query }, function (data) {
+                                return process(data.options);
+                            });
+                        }, 300);
+                    }
+                });
+            })();
+        </script>
+    </div>
 
     <h2>History</h2>
     <div class="span12">
