@@ -19,6 +19,7 @@ $(document).ready(function()
 
 <h1> {{ ladder }} </h1>
 <h3>{{ ladder.season.start_date }} to {{ ladder.season.end_date }}</h3>
+    <a href="javascript:history.go(-1)">Back</a>
 
     <span class="score_error" style="color:red; font-weight: bold; display: none">* Flagged as inaccurate, please double check physical copy.</span>
     <table id="ladderTable" class="tablesorter">
