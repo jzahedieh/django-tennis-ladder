@@ -23,7 +23,7 @@
             {% for result in results %}
                 <tr>
                     <td>{{ result.date_added }}</td>
-                    <td>{{ result.ladder }}</td>
+                    <td><a href="{% url 'ladder:ladder' result.ladder.season.start_date|date:"Y" result.ladder.season.season_round result.ladder.division %}">{{ result.ladder }}</a></td>
                     <td>{{ result.opponent }}</td>
                     <td>9</td>
                     <td>{{ result.player }}</td>
