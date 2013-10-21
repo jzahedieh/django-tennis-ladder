@@ -211,24 +211,28 @@ def player_search(request):
 
 def h2h_search(request, player_id):
 
-    resultSet = {}
+    result_set = {}
     try:
         query = request.GET[u'query']
     except:
         raise Http404
 
-    qs = Result.objects.all()
+    head = Result.objects.values('opponent', 'opponent__first_name', 'opponent__last_name')
 
     for term in query.split():
-        qs = qs.filter(Q(opponent__first_name__icontains=term) | Q(opponent__last_name__icontains=term), Q(player__id=player_id))
+        head = head.filter(
+            Q(opponent__first_name__icontains=term) | Q(opponent__last_name__icontains=term),
+            Q(player__id=player_id)).annotate(times_played=Count('opponent')).order_by('-times_played')
 
-    qs = qs.annotate(times_played=Count('opponent'))
+    results = {}
+    for x in head:
+        results[x['opponent']] = escape(
+            str(x['times_played']).strip() + ' x ' + x['opponent__first_name'].strip() + ' ' + x[
+                'opponent__last_name'].strip())
 
-    print qs
-    #results = [escape(x.opponent__first_name.strip() + ' ' + x.opponent__last_name.strip()) for x in qs]
-    #resultSet["options"] = results
+    result_set["options"] = results
 
-    #return HttpResponse(json.dumps(resultSet), content_type="application/json")
+    return HttpResponse(json.dumps(result_set), content_type="application/json")
 
 
 def season_ajax_stats(request):

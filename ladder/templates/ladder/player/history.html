@@ -27,29 +27,46 @@
                 </tr>
             {% endfor %}
             </tbody>
+            <tr>
+                <td>
+                    <form class="pull-left input-append" id="h2h_form">
+                        <input id="h2h-search" type="text" name="player_name" placeholder="Not in list? Search Rival"
+                               data-provide="typeahead"
+                               autocomplete="off">
+                        <button id="h2h_button" type="submit" disabled="disabled" class="btn">More Details</button>
+                    </form>
+                </td>
+            </tr>
         </table>
 
-        <form class="pull-left" id="h2h_form" action="{% url 'ladder:h2h_search'  player.id %}" method="get">
-        <input id="h2h-search" type="text" name="player_name" placeholder="Search Players" data-provide="typeahead"
-               autocomplete="off">
-        <button type="submit" class="btn">Find</button>
-    </form>
-            <script type="text/javascript">
+        <script type="text/javascript">
             (function () {
                 var timeout;
 
                 $('#h2h-search').typeahead({
                     source: function (query, process) {
+                        labels = [];
+                        mapped = {};
                         if (timeout) {
                             clearTimeout(timeout);
                         }
-                        console.log('test');
                         timeout = setTimeout(function () {
                             return $.get('/player/h2h/{{ player.id }}/', { query: query }, function (data) {
-                                return process(data.options);
+                                $.each(data.options, function (id, player) {
+                                    mapped[player] = id;
+                                    labels.push(player);
+                                });
+                                process(labels);
                             });
                         }, 300);
-                    }
+                    },
+                    updater: function (query_label) {
+                        var id = mapped[query_label];
+                        $('#h2h_form').attr('action', '/head_to_head/{{ player.id }}/vs/' + id + '/');
+                        $('#h2h_button').removeAttr("disabled");
+
+                        return query_label;
+                    },
                 });
             })();
         </script>
