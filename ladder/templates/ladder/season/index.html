@@ -36,21 +36,20 @@
                         {% if column_counter == player_counter %}
                         <td class="box_grey score_field"></td>
                         {% else %}
-                        <td class="score_field">
-
-                            {% for result in results_dict|getkey:league.player.id %}
-                                {% if league.player.id == result.player.id and opponent.player.id == result.opponent.id %}
-                                            {% if result.inaccurate_flag %}
-                                                <span style="color:red; font-weight: bold"> {{ result.result }} *</span>
-                                                <script type="text/javascript">
-                                                    $('.score_error').show();
-                                                </script>
-                                            {% else %}
-                                                {{ result.result }}
-                                            {% endif %}
-                                {% endif %}
-                            {% endfor %}
-                        </td>
+<td class="score_field">
+{% for result in results_dict|getkey:league.player.id %}
+{% if league.player.id == result.player.id and opponent.player.id == result.opponent.id %}
+{% if result.inaccurate_flag %}
+<span style="color:red; font-weight: bold"> {{ result.result }} *</span>
+<script type="text/javascript">
+$('.score_error').show();
+</script>
+{% else %}
+{{ result.result }}
+{% endif %}
+{% endif %}
+{% endfor %}
+</td>
                         {% endif %}
                     {% endwith %}
                 {% endfor %}
