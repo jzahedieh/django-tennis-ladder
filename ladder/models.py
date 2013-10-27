@@ -143,6 +143,9 @@ class League(models.Model):
     player = models.ForeignKey(Player)
     sort_order = models.IntegerField(default=0)
 
+    class Meta:
+        ordering = ['sort_order']
+
     def __unicode__(self):
         return self.player.first_name + ' ' + self.player.last_name
 
