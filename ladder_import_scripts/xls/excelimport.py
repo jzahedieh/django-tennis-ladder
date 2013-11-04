@@ -99,7 +99,7 @@ for rownum in range(sh1.nrows):
                     score = rows[c + 3]
 
                     if not isinstance(score, float):
-                        break
+                        continue
 
                     opp_last_name = player_list[current_div][c + 1]['last_name']
                     opp_first_name = player_list[current_div][c + 1]['first_name']
