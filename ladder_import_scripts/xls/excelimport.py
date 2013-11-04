@@ -3,10 +3,9 @@ from ladder.models import Season, Player, Ladder, Result, League
 from collections import defaultdict
 import datetime
 
-book = open_workbook(
-    '/var/www/tennis/ladder_import_scripts/xls/files/ladderSep-Dec2013.xls')
+book = open_workbook("F://Vagrants//shared_tennis//tennis//ladder_import_scripts//xls//files//lad3_2003res.xls")
 
-season = Season.objects.get(pk=30)  # hard code season as have to create manually
+season = Season.objects.get(pk=33)  # hard code season as have to create manually
 sh1 = book.sheet_by_index(0)  # sheet1, aways first sheet
 player_list = defaultdict(dict)  # initialize defaultdict for our player list.
 current_div = {}  # set the division counter to 0
@@ -78,7 +77,7 @@ for rownum in range(sh1.nrows):
 
         if rows[1] == 'NAME':
             i = 3
-            while rows[i] != 'Div': #normally 'Div'
+            while rows[i] != 'DIV': #normally 'Div'
                 i += 1
 
             count = i - 3
