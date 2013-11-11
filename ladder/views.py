@@ -10,7 +10,6 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Q, Count, Max
 
 from ladder.models import Ladder, Player, Result, Season, League
-from ladder.forms import *
 
 
 @cache_page(60 * 60 * 24 * 2, key_prefix='index')  # 2 day page cache
