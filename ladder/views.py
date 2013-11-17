@@ -10,6 +10,7 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Q, Count, Max
 
 from ladder.models import Ladder, Player, Result, Season, League
+from ladder.forms import AddResultForm
 
 
 @cache_page(60 * 60 * 24 * 2, key_prefix='index')  # 2 day page cache
@@ -78,65 +79,43 @@ def ladder(request, year, season_round, division_id):
 @login_required
 def add(request, year, season_round, division_id):
     ladder = get_object_or_404(Ladder, division=division_id, season__start_date__year=year, season__season_round=season_round)
+    result = Result(ladder=ladder, date_added=datetime.datetime.now())
 
+    # process or generate te score adding form
+    if request.POST:
+        form = AddResultForm(ladder, request.POST, instance=result)
+        if form.is_valid():
+            losing_result = form.save(commit=False)
+
+            # check for existing results, assume update if find a match aka delete
+            try:
+                existing_player_result = Result.objects.get(ladder=ladder, player=losing_result.player, opponent=losing_result.opponent)
+                existing_player_result.delete()
+                existing_opponent_result = Result.objects.get(ladder=ladder, player=losing_result.opponent, opponent=losing_result.player)
+                existing_opponent_result.delete()
+            except Result.DoesNotExist:
+                pass
+
+            # build the mirror result (aka winner) from losing form data
+            winning_result = Result(ladder=losing_result.ladder, player=losing_result.opponent,
+                                    opponent=losing_result.player, result=9, date_added=losing_result.date_added,
+                                    inaccurate_flag=losing_result.inaccurate_flag)
+            losing_result.save()
+            winning_result.save()
+
+            return HttpResponseRedirect(reverse('ladder:add', args=(
+                ladder.season.start_date.year, ladder.season.season_round, ladder.division)))
+    else:
+        form = AddResultForm(ladder, instance=result)
+
+    # prepare the results for displaying
     results = Result.objects.filter(ladder=ladder)
-
     results_dict = {}
-
     for result in results:
         results_dict.setdefault(result.player.id, []).append(result)
 
-    return render(request, 'ladder/ladder/add.html', {'ladder': ladder, 'results_dict': results_dict, 'points': range(10)})
+    return render(request, 'ladder/ladder/add.html', {'ladder': ladder, 'results_dict': results_dict, 'form': form})
 
-@login_required
-def add_result(request, ladder_id):
-    ladder = get_object_or_404(Ladder, pk=ladder_id)
-    try:
-        inaccurate = request.POST['checkbox_inaccurate']
-    except:
-        inaccurate = 0
-
-    try:
-        player_object = Player.objects.get(id=request.POST['player'])
-        opponent_object = Player.objects.get(id=request.POST['opponent'])
-        player_score = request.POST['player_score']
-        opponent_score = request.POST['opponent_score']
-
-        if int(player_score) != 9 and int(opponent_score) != 9:
-            raise Exception("No winner selected")
-
-        if int(player_score) == 9 and int(opponent_score) == 9:
-            raise Exception("Can't have two winners")
-
-        try:
-            result_object = Result.objects.get(ladder=ladder, player=player_object, opponent=opponent_object)
-            result_object.delete()
-            raise Exception("want to add all the time")
-        except:
-            player_result_object = Result(ladder=ladder, player=player_object, opponent=opponent_object,
-                                       result=player_score, date_added=datetime.datetime.now(), inaccurate_flag=inaccurate)
-            player_result_object.save()
-
-
-        try:
-            result_object = Result.objects.get(ladder=ladder, player=opponent_object, opponent=player_object)
-            result_object.delete()
-            raise Exception("want to add all the time")
-        except:
-            opp_result_object = Result(ladder=ladder, player=opponent_object, opponent=player_object,
-                                       result=opponent_score, date_added=datetime.datetime.now(), inaccurate_flag=inaccurate)
-            opp_result_object.save()
-
-
-    except Exception as e:
-        return render(request, 'ladder/ladder/add.html', {
-            'ladder': ladder,
-            'error_message': e,
-            'points': range(10)
-        })
-    else:
-                return HttpResponseRedirect(
-            reverse('ladder:add', args=(ladder.season.start_date.year, ladder.season.season_round, ladder.division)))
 
 def player_history(request, player_id):
     try:

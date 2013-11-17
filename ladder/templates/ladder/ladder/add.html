@@ -61,8 +61,7 @@ function opponentSelector(element) {
 
 function updateForm() {
     var l_score = $('.score_field input').val();
-    console.log(l_score);
-    $('[name=player_score]').val(l_score);
+    $('#id_result').val(l_score);
     can_submit = true;
 
 }
@@ -122,46 +121,12 @@ function updateForm() {
 
         {% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
 
-    <form id="add_result_form" action="{% url 'ladder:add_result' ladder.id %}" method="post">
-        {% csrf_token %}
-        <select id='player' name="player">
-            <option value='FALSE'>.. choose a player ..</option>
-            {% for league in ladder.league_set.all %}
-                <option value="{{ league.player.id }}"> {{ league.player }} </option>
-            {% endfor %}
-        </select>
-        <select name="player_score">
-            {% for point in points %}
-                {% if point == 9 %}
-                    <option selected value="{{ point }}"> {{ point }} </option>
-                {% else %}
-                    <option value="{{ point }}"> {{ point }} </option>
-                {% endif %}
-            {% endfor %}
-        </select>
-        <div id="opp">
-        Vs <br />
-        <select id='opponent' name="opponent">
-        <option value='FALSE'>.. choose a player ..</option>
-            {% for league in ladder.league_set.all %}
-                <option value="{{ league.player.id }}"> {{ league.player }} </option>
-            {% endfor %}
-        </select>
 
-        <select name="opponent_score">
-            {% for point in points %}
-                {% if point == 9 %}
-                    <option selected value="{{ point }}"> {{ point }} </option>
-                {% else %}
-                    <option value="{{ point }}"> {{ point }} </option>
-                {% endif %}
-            {% endfor %}
-        </select>
-        <br />
-        <label for="checkbox_inaccurate">Inaccurate Result</label>
-        <input type="checkbox" name="checkbox_inaccurate" id="checkbox_inaccurate" value="inaccurate" />
-        </div>
-        <br />
-        <input type="submit" value="Add Result" />
+    <form id="add_result_form" action="{% url 'ladder:add' ladder.season.start_date.year ladder.season.season_round ladder.division %}" method="post">{% csrf_token %}
+        {{ form.as_p }}
+        <input type="submit" value="Add Result"/>
     </form>
+
+
+
 {% endblock %}
