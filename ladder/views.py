@@ -1,8 +1,8 @@
 import datetime
+import json
 
 from django.http import HttpResponseRedirect, Http404, HttpResponse
 from django.shortcuts import render, get_object_or_404
-from django.utils import simplejson as json
 from django.utils.html import escape
 from django.core.urlresolvers import reverse
 from django.views.decorators.cache import cache_page
