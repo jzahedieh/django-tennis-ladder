@@ -119,14 +119,9 @@ function updateForm() {
         </tbody>
     </table>
 
-        {% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
-
-
     <form id="add_result_form" action="{% url 'ladder:add' ladder.season.start_date.year ladder.season.season_round ladder.division %}" method="post">{% csrf_token %}
         {{ form.as_p }}
         <input type="submit" value="Add Result"/>
     </form>
-
-
 
 {% endblock %}
