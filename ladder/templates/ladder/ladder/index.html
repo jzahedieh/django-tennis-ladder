@@ -30,6 +30,7 @@ $(document).ready(function()
                 {% for i in ladder.league_set.all %}
                     <th class="score_field {sorter: false}"><strong> {{ forloop.counter }} </strong></th>
                 {% endfor %}
+                <th class="score_field">Average</th>
                 <th class="score_field">Total</th>
             </tr>
         </thead>
@@ -69,6 +70,7 @@ $(document).ready(function()
                             {% endwith %}
                         {% endfor %}
 
+                    <td class="score_field"> {{ results_dict|getaverage:league.player.id }} </td>
                     <td class="score_field"> {{ results_dict|gettotal:league.player.id }} </td>
                 </tr>
             {% endwith %}
