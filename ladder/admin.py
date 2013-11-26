@@ -49,7 +49,7 @@ admin.site.register(Ladder, LadderAdmin)
 class LeagueAdmin(admin.ModelAdmin):
     list_filter = ['ladder']
     list_display = ('player', 'ladder', 'sort_order')
-    search_fields = ('player', 'ladder')
+    search_fields = ('player__first_name', 'player__last_name')
 
 
 admin.site.register(League, LeagueAdmin)
