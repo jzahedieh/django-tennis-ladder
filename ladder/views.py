@@ -8,11 +8,13 @@ from django.core.urlresolvers import reverse
 from django.views.decorators.cache import cache_page
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q, Count, Max
+from django.views.decorators.gzip import gzip_page
 
 from ladder.models import Ladder, Player, Result, Season, League
 from ladder.forms import AddResultForm
 
 
+@gzip_page
 @cache_page(60 * 60 * 24 * 2, key_prefix='index')  # 2 day page cache
 def index(request):
     current_season = Season.objects.latest('start_date')
@@ -36,6 +38,7 @@ def index(request):
     return render(request, 'ladder/index.html', context)
 
 
+@gzip_page
 @cache_page(60 * 60 * 24, key_prefix='round')  # 1 day page cache
 def list_rounds(request):
     seasons = Season.objects.order_by('-start_date')
@@ -45,6 +48,7 @@ def list_rounds(request):
     return render(request, 'ladder/season/list.html', context)
 
 
+@gzip_page
 @cache_page(60 * 60, key_prefix='season')  # 1 hour page cache
 def season(request, year, season_round):
     season = get_object_or_404(Season, start_date__year=year, season_round=season_round)
@@ -64,6 +68,7 @@ def season(request, year, season_round):
     )
 
 
+@gzip_page
 def ladder(request, year, season_round, division_id):
     ladder = get_object_or_404(Ladder, division=division_id, season__start_date__year=year, season__season_round=season_round)
 
@@ -117,6 +122,7 @@ def add(request, year, season_round, division_id):
     return render(request, 'ladder/ladder/add.html', {'ladder': ladder, 'results_dict': results_dict, 'form': form})
 
 
+@gzip_page
 def player_history(request, player_id):
     try:
         player = Player.objects.get(pk=player_id)
@@ -135,6 +141,7 @@ def player_history(request, player_id):
     return render(request, 'ladder/player/history.html', {'player': player, 'league_set': league_set, 'ladder_set': league_set, 'head': head})
 
 
+@gzip_page
 def head_to_head(request, player_id, opponent_id):
 
     player = get_object_or_404(Player, pk=player_id)
@@ -149,6 +156,8 @@ def head_to_head(request, player_id, opponent_id):
 
     return render(request, 'ladder/head_to_head/index.html', {'stats':stats, 'results': results, 'player': player, 'opponent':opponent})
 
+
+@gzip_page
 def player_result(request):
     try:
         query = request.GET[u'player_name']
