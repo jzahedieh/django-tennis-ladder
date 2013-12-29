@@ -90,6 +90,15 @@ class Command(BaseCommand):
         grey_box_style = XFStyle()
         grey_box_style.pattern = pattern
 
+        #Red box
+        pattern = Pattern()
+        pattern.pattern = Pattern.SOLID_PATTERN
+        pattern.pattern_fore_colour = Style.colour_map['red']
+
+        inaccurate_style = XFStyle()
+        inaccurate_style.pattern = pattern
+        inaccurate_style.font = font0
+
         # export
         export = Export(options['year'], options['round'])
         col = 1
@@ -161,7 +170,10 @@ class Command(BaseCommand):
                         # result
                         for result in getkey(export.results, league.player.id):
                             if league.player.id == result.player.id and opponent.player.id == result.opponent.id:
-                                ws.write(col, row, result.result, style0)
+                                if result.inaccurate_flag:
+                                    ws.write(col, row, result.result, inaccurate_style)
+                                else:
+                                    ws.write(col, row, result.result, style0)
 
                     row += 1
                     column_counter += 1
