@@ -55,8 +55,14 @@ class Player(models.Model):
     email = models.CharField(max_length=100, blank=True)
     junior = models.BooleanField(default=False)
 
-    def __unicode__(self):
-        return self.first_name + ' ' + self.last_name
+    def __str__(self):
+        string = self.first_name
+        if self.last_name:
+            last_names = self.last_name.split()
+            last_names[-1] = last_names[-1][:1].capitalize() + '.'  # abbreviate last name
+            string += ' ' + ' '.join(last_names)
+
+        return string
 
 
 class Ladder(models.Model):
