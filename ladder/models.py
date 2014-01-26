@@ -1,5 +1,6 @@
 import operator
 from django.db import models
+from django.db.models import Avg
 
 
 class Season(models.Model):
@@ -63,6 +64,28 @@ class Player(models.Model):
             string += ' ' + ' '.join(last_names)
 
         return string
+
+    def player_stats(self):
+        """
+        Calculates stats about the players historical performance.
+        """
+        played = self.result_player.count()
+
+        won = float(self.result_player.filter(result=9).count())
+        win_rate = won / float(played) * 100.00
+
+        # work out the average with additional points
+        lost = played - won  # more efficient than doing a count on the object
+        additional_points = ((won * 2) + lost) / played
+        average = self.result_player.aggregate(Avg('result')).values()[0]
+        average_with_additional = average + additional_points
+
+        return {
+            'played': played,
+            'win_rate': "{0:.2f} %".format(win_rate),
+            'average': "{0:.2f}".format(average_with_additional)
+        }
+
 
 
 class Ladder(models.Model):
