@@ -70,13 +70,21 @@ class Player(models.Model):
         Calculates stats about the players historical performance.
         """
         played = self.result_player.count()
-
         won = float(self.result_player.filter(result=9).count())
-        win_rate = won / float(played) * 100.00
+        lost = played - won  # more efficient than doing a count on the object
+
+        # safe division (not by 0)
+        if played != 0:
+            win_rate = won / float(played) * 100.00
+            additional_points = ((won * 2) + lost) / played
+        else:
+            return {
+                'played': "-",
+                'win_rate': "- %",
+                'average': "-"
+            }
 
         # work out the average with additional points
-        lost = played - won  # more efficient than doing a count on the object
-        additional_points = ((won * 2) + lost) / played
         average = self.result_player.aggregate(Avg('result')).values()[0]
         average_with_additional = average + additional_points
 
