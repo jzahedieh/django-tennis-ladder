@@ -88,12 +88,20 @@ class Player(models.Model):
         average = self.result_player.aggregate(Avg('result')).values()[0]
         average_with_additional = average + additional_points
 
+        leagues = self.league_set.filter(player=self) #.ladder.league_set.count()
+
+        match_count = 0
+        for league in leagues:
+            match_count += league.ladder.league_set.count() - 1
+
+        completion_rate = float(played) / float(match_count) * 100.00
+
         return {
             'played': played,
             'win_rate': "{0:.2f} %".format(win_rate),
+            'completion_rate': "{0:.2f} %".format(completion_rate),
             'average': "{0:.2f}".format(average_with_additional)
         }
-
 
 
 class Ladder(models.Model):
