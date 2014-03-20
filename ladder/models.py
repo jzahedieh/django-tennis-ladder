@@ -88,10 +88,11 @@ class Player(models.Model):
         average = self.result_player.aggregate(Avg('result')).values()[0]
         average_with_additional = average + additional_points
 
-        leagues = self.league_set.filter(player=self) #.ladder.league_set.count()
+        leagues = self.league_set.filter(player=self)
 
         match_count = 0
         for league in leagues:
+            # count other players in ladder minus the player to get games
             match_count += league.ladder.league_set.count() - 1
 
         completion_rate = float(played) / float(match_count) * 100.00
@@ -109,9 +110,9 @@ class Ladder(models.Model):
     division = models.CharField(max_length=11)
     ladder_type = models.CharField(max_length=100)
 
-
     def __unicode__(self):
-        return str(self.season.start_date.year) + ' Round ' + str(self.season.season_round) + ' - Division: ' + str(self.division)
+        return str(self.season.start_date.year) + ' Round ' + str(self.season.season_round) + ' - Division: ' + str(
+            self.division)
 
     def get_leader(self):
         """
@@ -130,12 +131,10 @@ class Ladder(models.Model):
                 else:
                     totals[result.player] = int(result.result) + 1
 
-
         if totals:
             player = max(totals.iteritems(), key=operator.itemgetter(1))[0]
         else:
             return {'player': 'No Results', 'player_id': '../#', 'total': '-', 'division': self.division}
-
 
         return {'player': player.__str__(), 'player_id': player.id, 'total': totals[player], 'division': self.division}
 
@@ -236,5 +235,5 @@ class Result(models.Model):
     inaccurate_flag = models.BooleanField()
 
     def __unicode__(self):
-        return self.player.first_name + ' ' + self.player.last_name + ' vs ' + self.opponent.first_name + ' ' + self.opponent.last_name + ' score: ' + str(
-            self.result)
+        return (self.player.first_name + ' ' + self.player.last_name) + ' vs ' + (
+            self.opponent.first_name + ' ' + self.opponent.last_name) + (' score: ' + str(self.result))
