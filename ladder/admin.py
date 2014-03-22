@@ -47,7 +47,7 @@ admin.site.register(Ladder, LadderAdmin)
 
 
 class LeagueAdmin(admin.ModelAdmin):
-    list_filter = ['ladder']
+    list_filter = ['ladder__season']
     list_display = ('player', 'ladder', 'sort_order')
     search_fields = ('player__first_name', 'player__last_name')
 
@@ -56,6 +56,7 @@ admin.site.register(League, LeagueAdmin)
 
 
 class ResultAdmin(admin.ModelAdmin):
+    list_filter = ['ladder__season']
     search_fields = ['player__first_name', 'player__last_name']
     list_display = ('ladder', 'player', 'opponent', 'result', 'date_added')
     date_hierarchy = 'date_added'
