@@ -1,5 +1,7 @@
 # Django settings for tennis project.
 import os
+import pymysql
+pymysql.install_as_MySQLdb()
 
 SETTINGS_DIR = os.path.abspath(os.path.dirname(__file__))
 STATIC_DIR = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'static'))
@@ -25,6 +27,9 @@ DATABASES = {
         'PASSWORD': 'tennis',
         'HOST': '',
         'PORT': '',
+        'OPTIONS': {
+            'autocommit': True,
+        },
     }
 }
 
