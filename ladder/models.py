@@ -85,7 +85,7 @@ class Player(models.Model):
             }
 
         # work out the average with additional points
-        average = self.result_player.aggregate(Avg('result')).values()[0]
+        average = list(self.result_player.aggregate(Avg('result')).values())[0]
         average_with_additional = average + additional_points
 
         leagues = self.league_set.filter(player=self)
@@ -132,7 +132,7 @@ class Ladder(models.Model):
                     totals[result.player] = int(result.result) + 1
 
         if totals:
-            player = max(totals.iteritems(), key=operator.itemgetter(1))[0]
+            player = max(iter(totals.items()), key=operator.itemgetter(1))[0]
         else:
             return {'player': 'No Results', 'player_id': '../#', 'total': '-', 'division': self.division}
 
@@ -164,7 +164,7 @@ class Ladder(models.Model):
             ordered_results[i] = results[key]
             i += 1
 
-        return ordered_results.items()
+        return list(ordered_results.items())
 
     def get_stats(self):
         """

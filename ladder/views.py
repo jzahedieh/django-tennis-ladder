@@ -171,7 +171,7 @@ def head_to_head(request, player_id, opponent_id):
 @gzip_page
 def player_result(request):
     try:
-        query = request.GET[u'player_name']
+        query = request.GET['player_name']
     except:
         raise Http404
 
@@ -192,7 +192,7 @@ def player_result(request):
 def player_search(request):
     result_set = {}
     try:
-        query = request.GET[u'query']
+        query = request.GET['query']
     except:
         raise Http404
 
@@ -210,7 +210,7 @@ def player_search(request):
 def h2h_search(request, player_id):
     result_set = {}
     try:
-        query = request.GET[u'query']
+        query = request.GET['query']
     except:
         raise Http404
 
