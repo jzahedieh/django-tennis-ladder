@@ -76,7 +76,8 @@ class Player(models.Model):
         # safe division (not by 0)
         if played != 0:
             win_rate = won / float(played) * 100.00
-            additional_points = ((won * 2) + lost) / played
+            # 2 points for winning, 1 for playing
+            additional_points = ((won * 2) + played) / played
         else:
             return {
                 'played': "-",
