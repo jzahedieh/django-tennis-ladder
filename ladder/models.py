@@ -9,7 +9,7 @@ class Season(models.Model):
     end_date = models.DateField('End date')
     season_round = models.IntegerField(max_length=1)
 
-    def __unicode__(self):
+    def __str__(self):
         return str(self.start_date.year) + ' Round ' + str(self.season_round)
 
     def get_stats(self):
@@ -110,7 +110,7 @@ class Ladder(models.Model):
     division = models.CharField(max_length=11)
     ladder_type = models.CharField(max_length=100)
 
-    def __unicode__(self):
+    def __str__(self):
         return str(self.season.start_date.year) + ' Round ' + str(self.season.season_round) + ' - Division: ' + str(
             self.division)
 
@@ -190,7 +190,7 @@ class League(models.Model):
     class Meta:
         ordering = ['sort_order']
 
-    def __unicode__(self):
+    def __str__(self):
         return self.player.first_name + ' ' + self.player.last_name
 
     def player_stats(self):
@@ -234,6 +234,6 @@ class Result(models.Model):
     date_added = models.DateField('Date added')
     inaccurate_flag = models.BooleanField(default=None)
 
-    def __unicode__(self):
+    def __str__(self):
         return (self.player.first_name + ' ' + self.player.last_name) + ' vs ' + (
             self.opponent.first_name + ' ' + self.opponent.last_name) + (' score: ' + str(self.result))
