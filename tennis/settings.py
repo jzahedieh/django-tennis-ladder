@@ -16,10 +16,6 @@ ADMINS = (
 MANAGERS = ADMINS
 
 DATABASES = {
-    #'default': {
-    #    'ENGINE': 'django.db.backends.sqlite3',
-    #    'NAME': os.path.join(SETTINGS_DIR, 'sample_data.sqlite'),
-    #}
     'default': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'tennis',
