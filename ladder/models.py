@@ -54,7 +54,7 @@ class Player(models.Model):
     home_phone = models.CharField(max_length=100, blank=True)
     mobile_phone = models.CharField(max_length=100, blank=True)
     email = models.CharField(max_length=100, blank=True)
-    junior = models.BooleanField(default=False)
+    junior = models.BooleanField(default=None)
 
     def __str__(self):
         string = self.first_name
@@ -232,7 +232,7 @@ class Result(models.Model):
     opponent = models.ForeignKey(Player, related_name='result_opponent')
     result = models.IntegerField()
     date_added = models.DateField('Date added')
-    inaccurate_flag = models.BooleanField()
+    inaccurate_flag = models.BooleanField(default=None)
 
     def __unicode__(self):
         return (self.player.first_name + ' ' + self.player.last_name) + ' vs ' + (
