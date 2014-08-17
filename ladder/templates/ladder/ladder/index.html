@@ -2,73 +2,83 @@
 {% load ladder_extras %}
 
 {% block container %}
-<link rel="stylesheet" type="text/css" href="/static/css/theme.ice.css" />
-<link rel="stylesheet" type="text/css" href="/static/css/ladder.css" />
-<script type="text/javascript" src="/static/js/jquery.tablesorter.min.js"></script>
-<script type="text/javascript" src="/static/js/jquery.metadata.js"></script>
+    <link rel="stylesheet" type="text/css" href="/static/css/theme.ice.css"/>
+    <link rel="stylesheet" type="text/css" href="/static/css/ladder.css"/>
+    <script type="text/javascript" src="/static/js/jquery.tablesorter.min.js"></script>
+    <script type="text/javascript" src="/static/js/jquery.metadata.js"></script>
 
-<script type="text/javascript">
-$(document).ready(function()
-    {
-        $("#ladderTable").tablesorter({
-            theme: 'ice'
-        });
-    }
-);
-</script>
+    <script type="text/javascript">
+        $(document).ready(function () {
+                    $("#ladderTable").tablesorter({
+                        theme: 'ice'
+                    });
+                }
+        );
+    </script>
 
-<h1> {{ ladder }} </h1>
-<h3>{{ ladder.season.start_date }} to {{ ladder.season.end_date }}</h3>
+    <h1> {{ ladder }} </h1>
+    <h3>{{ ladder.season.start_date }} to {{ ladder.season.end_date }}</h3>
     <a href="javascript:history.go(-1)">Back</a>
 
     <span class="score_error" style="color:red; font-weight: bold; display: none">* Flagged as inaccurate, please double check physical copy.</span>
     <table id="ladderTable" class="tablesorter">
         <thead>
-       	    <tr>
-                <th></th>
-                <th class="{sorter: false}">Name</th>
-                {% for i in ladder.league_set.all %}
-                    <th class="score_field {sorter: false}"><strong> {{ forloop.counter }} </strong></th>
-                {% endfor %}
-                <th class="score_field">Average</th>
-                <th class="score_field">Total</th>
-            </tr>
+        <tr>
+            <th></th>
+            <th class="{sorter: false}">Name</th>
+            {% for i in ladder.league_set.all %}
+                <th class="score_field {sorter: false}"><strong> {{ forloop.counter }} </strong></th>
+            {% endfor %}
+            <th class="score_field">Average</th>
+            <th class="score_field">Total</th>
+        </tr>
         </thead>
 
-       <tbody>
+        <tbody>
+        {% comment %}Loop over the all players in this ladder{% endcomment %}
         {% for league in ladder.league_set.all %}
+            {% comment %}Set the player_counter for the players number{% endcomment %}
             {% with player_counter=forloop.counter %}
+                {% comment %}Row data with name, results and scores{% endcomment %}
                 <tr>
                     <td class="player_position"><strong> {{ player_counter }} </strong></td>
-                    <td class="player_name"> <a href="{% url 'ladder:player_history' league.player.id %}"> {{ league.player }} </a> </td>
-                        {% for opponent in ladder.league_set.all %}
-                            {% with column_counter=forloop.counter %}
-                                {% if column_counter == player_counter %}
-                                    <td class="box_grey score_field"></td>
-                                {% else %}
-                                    <td class="score_field selectable" data-player="{{ league.player.id }}"
-                                        data-opp="{{ opponent.player.id }}"
-                                        onclick="location.href='{% url 'ladder:head_to_head' league.player.id opponent.player.id %}'">
-                                        <a href="{% url 'ladder:head_to_head' league.player.id opponent.player.id %}">
-                                            <div style="height:100%;width:100%">
-                                                {% for result in results_dict|getkey:league.player.id %}
-                                                    {% if league.player == result.player and opponent.player == result.opponent %}
-                                           {% if result.inaccurate_flag %}
-                                                <span style="color:red; font-weight: bold"> {{ result.result }} *</span>
-                                                <script type="text/javascript">
-                                                    $('.score_error').show();
-                                                </script>
-                                            {% else %}
-                                                {{ result.result }}
-                                            {% endif %}
-                                        {% endif %}
-                                    {% endfor %}
-                                            </div>
-                                        </a>
-                                    </td>
-                                {% endif %}
-                            {% endwith %}
-                        {% endfor %}
+                    <td class="player_name"><a
+                            href="{% url 'ladder:player_history' league.player.id %}">{{ league.player }}</a></td>
+                    {% comment %}Loop over all players again to get opponents.{% endcomment %}
+                    {% for opponent in ladder.league_set.all %}
+                        {% comment %}Player cannot play against themselves, fill in box with grey.{% endcomment %}
+                        {% with column_counter=forloop.counter %}
+                            {% if column_counter == player_counter %}
+                                <td class="box_grey score_field"></td>
+                            {% else %}
+                                {% comment %}Score field, with identifier for JS{% endcomment %}
+                                <td class="score_field selectable" data-player="{{ league.player.id }}"
+                                    data-opp="{{ opponent.player.id }}"
+                                    onclick="location.href='{% url 'ladder:head_to_head' league.player.id opponent.player.id %}'">
+                                    {% comment %}Head to head link{% endcomment %}
+                                    <a href="{% url 'ladder:head_to_head' league.player.id opponent.player.id %}">
+                                        {% comment %}todo: remove these styles.{% endcomment %}
+                                        <div style="height:100%;width:100%">
+                                            {% comment %}Loop over every result of player{% endcomment %}
+                                            {% for result in results_dict|getkey:league.player.id %}
+                                                {% comment %}See if it matches opponent and print result.{% endcomment %}
+                                                {% if league.player == result.player and opponent.player == result.opponent %}
+                                                    {% if result.inaccurate_flag %}
+                                                        <span style="color:red; font-weight: bold"> {{ result.result }} *</span>
+                                                        <script type="text/javascript">
+                                                            $('.score_error').show();
+                                                        </script>
+                                                    {% else %}
+                                                        {{ result.result }}
+                                                    {% endif %}
+                                                {% endif %}
+                                            {% endfor %}
+                                        </div>
+                                    </a>
+                                </td>
+                            {% endif %}
+                        {% endwith %}
+                    {% endfor %}
 
                     <td class="score_field"> {{ results_dict|getaverage:league.player.id }} </td>
                     <td class="score_field"> {{ results_dict|gettotal:league.player.id }} </td>
@@ -82,9 +92,18 @@ $(document).ready(function()
         <div class="span6">
             <h2>{{ current_season }} Stats</h2>
             <table class="table">
-                    <tr><td>Total Matches in Division</td><td>{{ ladder.get_stats.total_matches }}</td></tr>
-                    <tr><td>Total Matches Played</td><td>{{ ladder.get_stats.total_matches_played|floatformat:"0" }}</td></tr>
-                    <tr><td>Percentage Matches Played</td><td>{{ ladder.get_stats.perc_matches_played|floatformat:"2" }}%</td></tr>
+                <tr>
+                    <td>Total Matches in Division</td>
+                    <td>{{ ladder.get_stats.total_matches }}</td>
+                </tr>
+                <tr>
+                    <td>Total Matches Played</td>
+                    <td>{{ ladder.get_stats.total_matches_played|floatformat:"0" }}</td>
+                </tr>
+                <tr>
+                    <td>Percentage Matches Played</td>
+                    <td>{{ ladder.get_stats.perc_matches_played|floatformat:"2" }}%</td>
+                </tr>
             </table>
         </div>
         <div class="span6">

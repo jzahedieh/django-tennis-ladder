@@ -74,11 +74,14 @@ def ladder(request, year, season_round, division_id):
     ladder_object = get_object_or_404(Ladder, division=division_id, season__start_date__year=year,
                                       season__season_round=season_round)
 
+    # Get all results in the ladder
     results = Result.objects.filter(ladder=ladder_object)
 
+    # Generate the results dictionary
     results_dict = {}
-
     for result in results:
+        # Set the default result as an empty list if it is not already set.
+        # Then add the result to this list.
         results_dict.setdefault(result.player.id, []).append(result)
 
     return render(request, 'ladder/ladder/index.html', {'ladder': ladder_object, 'results_dict': results_dict})
