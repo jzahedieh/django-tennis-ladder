@@ -1,5 +1,5 @@
 from django.test import TestCase
-from ladder.models import Player, Result, League
+from ladder.models import Player, Result, League, Season
 from django.db.models import Avg
 
 
@@ -44,3 +44,33 @@ class PlayerModelTest(TestCase):
         self.assertEqual(stats['average'], "{0:.2f}".format(average_with_additional))
 
 
+class SeasonModelTest(TestCase):
+
+    def test_season_stats(self):
+
+        season = Season.objects.first()
+        stats = season.get_stats()
+
+        player_count = 0
+        results_count = 0
+        total_games_count = 0.0
+        for ladder in season.ladder_set.all():
+            player_count += ladder.league_set.count()
+            results_count += ladder.result_set.count() / 2
+            total_games_count += (ladder.league_set.count() * (ladder.league_set.count() - 1)) / 2
+
+        # division stat assertion
+        self.assertEqual(stats['divisions'], season.ladder_set.count())
+
+        # perc played assertion
+        percentage_played = (results_count / total_games_count) * 100
+        self.assertEqual(stats['percentage_played'], "{0:.2f}".format(percentage_played))
+
+        # total games assertion
+        self.assertEqual(stats['total_games_count'], total_games_count)
+
+        # result count assertion
+        self.assertEqual(stats['results_count'], results_count)
+
+        # player count assertion
+        self.assertEqual(stats['player_count'], player_count)

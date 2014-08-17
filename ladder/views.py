@@ -23,7 +23,7 @@ def index(request):
 
     at_ladders = Season.objects.count()
     at_divisions = Ladder.objects.count()
-    at_results = Result.objects.count() / 2
+    at_results = int(Result.objects.count() / 2)
     at_players = Player.objects.count()
 
     context = {
