@@ -1,0 +1,8 @@
+language: python
+python:
+  - "3.4"
+install:
+  - pip install -r requirements.txt
+before_script:
+  - mysql -e 'create database tennis;'
+script: python manage.py test

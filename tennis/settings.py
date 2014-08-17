@@ -19,8 +19,8 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'tennis',
-        'USER': 'tennis',
-        'PASSWORD': 'tennis',
+        'USER': 'root',
+        'PASSWORD': '',
         'HOST': '',
         'PORT': '',
         'OPTIONS': {
