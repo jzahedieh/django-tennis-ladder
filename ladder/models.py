@@ -9,7 +9,7 @@ class Season(models.Model):
     end_date = models.DateField('End date')
     season_round = models.IntegerField(max_length=1)
 
-    def __unicode__(self):
+    def __str__(self):
         return str(self.start_date.year) + ' Round ' + str(self.season_round)
 
     def get_stats(self):
@@ -54,7 +54,7 @@ class Player(models.Model):
     home_phone = models.CharField(max_length=100, blank=True)
     mobile_phone = models.CharField(max_length=100, blank=True)
     email = models.CharField(max_length=100, blank=True)
-    junior = models.BooleanField(default=False)
+    junior = models.BooleanField(default=None)
 
     def __str__(self):
         string = self.first_name
@@ -76,7 +76,8 @@ class Player(models.Model):
         # safe division (not by 0)
         if played != 0:
             win_rate = won / float(played) * 100.00
-            additional_points = ((won * 2) + lost) / played
+            # 2 points for winning, 1 for playing
+            additional_points = ((won * 2) + played) / played
         else:
             return {
                 'played': "-",
@@ -85,7 +86,7 @@ class Player(models.Model):
             }
 
         # work out the average with additional points
-        average = self.result_player.aggregate(Avg('result')).values()[0]
+        average = list(self.result_player.aggregate(Avg('result')).values())[0]
         average_with_additional = average + additional_points
 
         leagues = self.league_set.filter(player=self)
@@ -110,7 +111,7 @@ class Ladder(models.Model):
     division = models.CharField(max_length=11)
     ladder_type = models.CharField(max_length=100)
 
-    def __unicode__(self):
+    def __str__(self):
         return str(self.season.start_date.year) + ' Round ' + str(self.season.season_round) + ' - Division: ' + str(
             self.division)
 
@@ -132,7 +133,7 @@ class Ladder(models.Model):
                     totals[result.player] = int(result.result) + 1
 
         if totals:
-            player = max(totals.iteritems(), key=operator.itemgetter(1))[0]
+            player = max(iter(totals.items()), key=operator.itemgetter(1))[0]
         else:
             return {'player': 'No Results', 'player_id': '../#', 'total': '-', 'division': self.division}
 
@@ -164,7 +165,7 @@ class Ladder(models.Model):
             ordered_results[i] = results[key]
             i += 1
 
-        return ordered_results.items()
+        return list(ordered_results.items())
 
     def get_stats(self):
         """
@@ -190,7 +191,7 @@ class League(models.Model):
     class Meta:
         ordering = ['sort_order']
 
-    def __unicode__(self):
+    def __str__(self):
         return self.player.first_name + ' ' + self.player.last_name
 
     def player_stats(self):
@@ -232,8 +233,8 @@ class Result(models.Model):
     opponent = models.ForeignKey(Player, related_name='result_opponent')
     result = models.IntegerField()
     date_added = models.DateField('Date added')
-    inaccurate_flag = models.BooleanField()
+    inaccurate_flag = models.BooleanField(default=None)
 
-    def __unicode__(self):
+    def __str__(self):
         return (self.player.first_name + ' ' + self.player.last_name) + ' vs ' + (
             self.opponent.first_name + ' ' + self.opponent.last_name) + (' score: ' + str(self.result))

@@ -1,5 +1,7 @@
 # Django settings for tennis project.
 import os
+import pymysql
+pymysql.install_as_MySQLdb()
 
 SETTINGS_DIR = os.path.abspath(os.path.dirname(__file__))
 STATIC_DIR = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'static'))
@@ -14,17 +16,16 @@ ADMINS = (
 MANAGERS = ADMINS
 
 DATABASES = {
-    #'default': {
-    #    'ENGINE': 'django.db.backends.sqlite3',
-    #    'NAME': os.path.join(SETTINGS_DIR, 'sample_data.sqlite'),
-    #}
     'default': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'tennis',
-        'USER': 'tennis',
-        'PASSWORD': 'tennis',
+        'USER': 'root',
+        'PASSWORD': '',
         'HOST': '',
         'PORT': '',
+        'OPTIONS': {
+            'autocommit': True,
+        },
     }
 }
 
@@ -147,6 +148,8 @@ CACHES = {
         'BACKEND': 'django.core.cache.backends.dummy.DummyCache',
     }
 }
+
+TEST_RUNNER = 'django.test.runner.DiscoverRunner'
 
 # A sample logging configuration. The only tangible logging
 # performed by this configuration is to send an email to
