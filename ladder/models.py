@@ -54,7 +54,7 @@ class Player(models.Model):
     home_phone = models.CharField(max_length=100, blank=True)
     mobile_phone = models.CharField(max_length=100, blank=True)
     email = models.CharField(max_length=100, blank=True)
-    junior = models.BooleanField(default=None)
+    junior = models.BooleanField(default=False)
 
     def __str__(self):
         string = self.first_name
