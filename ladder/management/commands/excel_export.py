@@ -51,7 +51,7 @@ class Command(BaseCommand):
                 return {}
 
         # where generated files will be saved
-        folder = 'E:\\projects\\django-tennis-ladder\\ladder_import_scripts\\xls\\files'
+        folder = '/home/input/projects/django-tennis-ladder/ladder_import_scripts/xls/files'
 
         if os.access(folder, os.W_OK) is False:
             raise CommandError('Directory (%s) is not writeable, change in code' % folder)

@@ -1,3 +1,4 @@
-https://www.djangoproject.com/download/1.7c2/tarball/
+Django==1.7
 PyMySQL==0.6.2
 xlrd==0.9.3
+xlwt-future==0.8.0

@@ -20,7 +20,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
 
-        file_location = "E:\\projects\\django-tennis-ladder\\ladder_import_scripts\\xls\\files\\import.xls"
+        file_location = "/home/input/projects/django-tennis-ladder/ladder_import_scripts/xls/files/import.xls"
 
         if os.access(file_location, os.R_OK) is False:
             raise CommandError('Directory (%s) is not writeable, change in code' % file_location)
