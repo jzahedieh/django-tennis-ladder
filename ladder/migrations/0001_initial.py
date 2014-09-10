@@ -31,11 +31,11 @@ def create_season_data(apps, schema_editor):
 
 def create_player_data(apps, schema_editor):
     """
-    Create 10 players in a loop
+    Create 20 players in a loop
     """
     Player = apps.get_model("ladder", "Player")
 
-    for n in range(1, 10):
+    for n in range(1, 20):
         Player(
             first_name="Player",
             last_name="no " + n.__str__(),
@@ -45,7 +45,7 @@ def create_player_data(apps, schema_editor):
 
 def create_ladder_data(apps, schema_editor):
     """
-    Create two ladders for each eeason
+    Create two ladders for each season
     """
     Season = apps.get_model("ladder", "Season")
     Ladder = apps.get_model("ladder", "Ladder")
@@ -82,7 +82,7 @@ def create_league_data(apps, schema_editor):
 
 def create_result_data(apps, schema_editor):
     """
-    Create leagues, add half the players into each.
+    Create results with a 50% play rate
     """
     Ladder = apps.get_model("ladder", "Ladder")
     Result = apps.get_model("ladder", "Result")
@@ -95,26 +95,28 @@ def create_result_data(apps, schema_editor):
             players.append(league.player.id)
 
         # loop over unique combinations of players and opponents
-        for player, opponent in itertools.combinations(players, 2):
-            # winner
-            Result(
-                ladder=ladder,
-                player_id=player,
-                opponent_id=opponent,
-                result=9,
-                date_added=datetime.datetime.now(),
-                inaccurate_flag=False,
-            ).save()
+        for (idx, (player, opponent)) in enumerate(itertools.combinations(players, 2)):
 
-            # loser
-            Result(
-                ladder=ladder,
-                player_id=opponent,
-                opponent_id=player,
-                result=random.randrange(0, 8),
-                date_added=datetime.datetime.now(),
-                inaccurate_flag=False,
-            ).save()
+            if idx % 2 == 0:
+                # winner
+                Result(
+                    ladder=ladder,
+                    player_id=player,
+                    opponent_id=opponent,
+                    result=9,
+                    date_added=datetime.datetime.now(),
+                    inaccurate_flag=False,
+                ).save()
+
+                # loser
+                Result(
+                    ladder=ladder,
+                    player_id=opponent,
+                    opponent_id=player,
+                    result=random.randrange(0, 8),
+                    date_added=datetime.datetime.now(),
+                    inaccurate_flag=False,
+                ).save()
 
 
 class Migration(migrations.Migration):
