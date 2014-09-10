@@ -132,11 +132,8 @@ def add(request, year, season_round, division_id):
 
 @gzip_page
 def player_history(request, player_id):
-    try:
-        player = Player.objects.get(pk=player_id)
-        league_set = player.league_set.order_by('-ladder__season__start_date')
-    except Player.DoesNotExist:
-        raise Http404
+    player = get_object_or_404(Player, pk=player_id)
+    league_set = player.league_set.order_by('-ladder__season__start_date')
 
     #return top 10 played against
     try:
@@ -170,9 +167,8 @@ def head_to_head(request, player_id, opponent_id):
 
 @gzip_page
 def player_result(request):
-    try:
-        query = request.GET['player_name']
-    except:
+    query = request.GET.get('player_name', False)
+    if query is False:
         raise Http404
 
     qs = Player.objects.all()
@@ -191,9 +187,8 @@ def player_result(request):
 
 def player_search(request):
     result_set = {}
-    try:
-        query = request.GET['query']
-    except:
+    query = request.GET.get('query', False)
+    if query is False:
         raise Http404
 
     qs = Player.objects.all()
@@ -209,9 +204,8 @@ def player_search(request):
 
 def h2h_search(request, player_id):
     result_set = {}
-    try:
-        query = request.GET['query']
-    except:
+    query = request.GET.get('query', False)
+    if query is False:
         raise Http404
 
     head = Result.objects.values('opponent', 'opponent__first_name', 'opponent__last_name')
