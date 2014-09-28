@@ -47,6 +47,38 @@ class Season(models.Model):
             'current_leaders': current_leaders,
         }
 
+    def get_progress(self):
+        """
+        Query how many games have been played so far.
+        """
+        results = Result.objects.raw("""
+            SELECT ladder_result.id, ladder_id, season_id, date_added, COUNT(*) AS added_count
+            FROM ladder_result LEFT JOIN ladder_ladder
+            ON ladder_result.ladder_id=ladder_ladder.id
+            WHERE season_id = %s GROUP BY DATE(date_added)
+            ORDER BY DATE(date_added) ASC;
+        """, [self.id])
+
+        played = []
+        played_days = []
+        played_cumulative = []
+        played_cumulative_count = 0
+
+        for result in results:
+            played.append(result.added_count)
+            played_days.append((result.date_added - self.start_date).days)
+
+            played_cumulative_count += result.added_count
+            played_cumulative.append(played_cumulative_count)
+
+        return {
+            "season_days": [0, (self.end_date - self.start_date).days],
+            "season_total_matches": [0, 400],
+            "played_days": played_days,
+            "played": played,
+            "played_cumulative": played_cumulative
+        }
+
 
 class Player(models.Model):
     first_name = models.CharField(max_length=100)
