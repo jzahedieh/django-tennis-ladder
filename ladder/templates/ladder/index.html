@@ -1,42 +1,62 @@
 {% extends 'base.html' %}
 {% block container %}
 
-    <link rel="stylesheet" type="text/css" href="/static/css/c3.css" />
+    <link rel="stylesheet" type="text/css" href="/static/css/c3.css"/>
     <script type="text/javascript" src="/static/js/vendor/d3.min.js"></script>
     <script type="text/javascript" src="/static/js/vendor/c3.min.js"></script>
 
     <!-- Main hero unit for a primary marketing message or call to action -->
     <div class="well">
         <h2>Progress Chart</h2>
+
         <div id="chart"></div>
         <p>Latest results updated on</p>
     </div>
 
     <script type="text/javascript">
         $(document).ready(function () {
+            $.get('/season/ajax/progress/', { id: {{ current_season.id }}}, function (data) {
 
-            var chart = c3.generate({
-                bindto: '#chart',
-                data: {
-                    xs: {
-                        'total': 'x1',
-                        'played': 'x2'
+                var season_days = ['x1'];
+                var played_days = ['x2'];
+                var played_cumulative = ['played'];
+                var season_total_matches = ['total'];
+
+
+                $.each(data.season_days, function (i, item) {
+                    season_days.push(item);
+                });
+
+                $.each(data.played_days, function (i, item) {
+                    played_days.push(item);
+                });
+
+                $.each(data.played_cumulative, function (i, item) {
+                    played_cumulative.push(item);
+                });
+
+                $.each(data.season_total_matches, function (i, item) {
+                    season_total_matches.push(item);
+                });
+
+                var chart = c3.generate({
+                    bindto: '#chart',
+                    data: {
+                        xs: {
+                            'total': 'x1',
+                            'played': 'x2'
+                        },
+                        columns: [season_days, played_days, played_cumulative, season_total_matches]
                     },
-                    columns: [
-                        ['x1', 0, 90],
-                        ['x2', 0, 10, 20, 30, 40, 80],
-                        ['total', 0, 400],
-                        ['played', 0, 5, 10, 20, 100, 160]
-                    ]
-                },
-                axis: {
-                    x: {
-                        label: 'Days'
-                    },
-                    y: {
-                        label: 'Matches'
+                    axis: {
+                        x: {
+                            label: 'Days'
+                        },
+                        y: {
+                            label: 'Matches'
+                        }
                     }
-                }
+                });
             });
         });
     </script>
