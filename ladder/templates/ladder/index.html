@@ -7,10 +7,10 @@
 
     <!-- Main hero unit for a primary marketing message or call to action -->
     <div class="well">
-        <h2>Progress Chart</h2>
+        <h2>Progress Graph</h2>
 
         <div id="chart"></div>
-        <p>Latest results updated on</p>
+        <p>Results updated on <span id="progress_date"></span></p>
     </div>
 
     <script type="text/javascript">
@@ -22,6 +22,7 @@
                 var played_cumulative = ['played'];
                 var season_total_matches = ['total'];
 
+                $('#progress_date').text(data.latest_result);
 
                 $.each(data.season_days, function (i, item) {
                     season_days.push(item);

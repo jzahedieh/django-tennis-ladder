@@ -59,24 +59,38 @@ class Season(models.Model):
             ORDER BY DATE(date_added) ASC;
         """, [self.id])
 
+        leagues = League.objects.raw("""
+            SELECT ladder_league.id, COUNT(*) AS player_count
+            FROM ladder_league LEFT JOIN ladder_ladder
+            ON ladder_league.ladder_id=ladder_ladder.id
+            WHERE season_id = %s GROUP BY ladder_id;
+        """, [self.id])
+
         played = []
         played_days = []
         played_cumulative = []
         played_cumulative_count = 0
+        latest_result = 'None'
 
         for result in results:
             played.append(result.added_count)
             played_days.append((result.date_added - self.start_date).days)
 
-            played_cumulative_count += result.added_count
+            played_cumulative_count += result.added_count / 2
             played_cumulative.append(played_cumulative_count)
+            latest_result = result.date_added
+
+        total_matches = 0
+        for league in leagues:
+            total_matches += (league.player_count-1) * league.player_count / 2
 
         return {
             "season_days": [0, (self.end_date - self.start_date).days],
-            "season_total_matches": [0, 400],
+            "season_total_matches": [0, total_matches],
             "played_days": played_days,
             "played": played,
-            "played_cumulative": played_cumulative
+            "played_cumulative": played_cumulative,
+            "latest_result": latest_result.strftime("%B %d, %Y")
         }
 
 
