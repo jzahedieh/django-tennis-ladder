@@ -20,4 +20,5 @@ urlpatterns = patterns('',
                        url(r'^player/h2h/(?P<player_id>\d+)/$', views.h2h_search, name='h2h_search'),
                        url(r'^player/results/$', views.player_result, name='player_result'),
                        url(r'^season/ajax/stats/$', views.season_ajax_stats, name='season_ajax_stats'),
+                       url(r'^season/ajax/progress/$', views.season_ajax_progress, name='season_ajax_progress'),
 )
