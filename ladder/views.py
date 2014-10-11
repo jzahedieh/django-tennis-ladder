@@ -246,3 +246,18 @@ def season_ajax_stats(request):
         stats.update(season_object.get_leader_stats())
 
     return HttpResponse(json.dumps(stats), content_type="application/json")
+
+
+def season_ajax_progress(request):
+    season_id = request.GET.get('id', False)
+    if season_id is False:
+        raise Http404
+
+    try:
+        season_object = Season.objects.get(pk=season_id)
+    except Season.DoesNotExist:
+        raise Http404
+    except ValueError:
+        raise Http404
+
+    return HttpResponse(json.dumps(season_object.get_progress()), content_type="application/json")
