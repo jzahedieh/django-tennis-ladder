@@ -5,4 +5,5 @@ install:
   - pip install -r requirements.txt
 before_script:
   - mysql -e 'create database tennis;'
+  - cp tennis/settings.py.sample tennis/settings.py
 script: python manage.py test
