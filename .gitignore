@@ -15,3 +15,6 @@
 
 #Libreoffice locks
 .~lock*
+
+#Ignore settings file
+/tennis/settings.py
