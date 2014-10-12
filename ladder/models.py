@@ -47,6 +47,52 @@ class Season(models.Model):
             'current_leaders': current_leaders,
         }
 
+    def get_progress(self):
+        """
+        Query how many games have been played so far.
+        """
+        results = Result.objects.raw("""
+            SELECT ladder_result.id, ladder_id, season_id, date_added, COUNT(*) AS added_count
+            FROM ladder_result LEFT JOIN ladder_ladder
+            ON ladder_result.ladder_id=ladder_ladder.id
+            WHERE season_id = %s GROUP BY DATE(date_added)
+            ORDER BY DATE(date_added) ASC;
+        """, [self.id])
+
+        leagues = League.objects.raw("""
+            SELECT ladder_league.id, COUNT(*) AS player_count
+            FROM ladder_league LEFT JOIN ladder_ladder
+            ON ladder_league.ladder_id=ladder_ladder.id
+            WHERE season_id = %s GROUP BY ladder_id;
+        """, [self.id])
+
+        played = []
+        played_days = []
+        played_cumulative = []
+        played_cumulative_count = 0
+        latest_result = 'None'
+
+        for result in results:
+            played.append(result.added_count)
+            played_days.append((result.date_added - self.start_date).days)
+
+            played_cumulative_count += result.added_count / 2
+            played_cumulative.append(played_cumulative_count)
+            latest_result = result.date_added
+
+        total_matches = 0
+        for league in leagues:
+            total_matches += (league.player_count-1) * league.player_count / 2
+
+        return {
+            "season_days": [0, (self.end_date - self.start_date).days],
+            "season_total_matches": [0, total_matches],
+            "played_days": played_days,
+            "played": played,
+            "played_cumulative": played_cumulative,
+            "latest_result": latest_result.strftime("%B %d, %Y")
+        }
+
 
 class Player(models.Model):
     first_name = models.CharField(max_length=100)
