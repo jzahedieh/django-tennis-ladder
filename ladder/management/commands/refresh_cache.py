@@ -8,28 +8,28 @@ from ladder.views import season as season_view
 
 
 class Command(BaseCommand):
-    help = 'Refreshes cached pages'
+    help = u'Refreshes cached pages'
 
     def handle(self, *args, **options):
-        """
+        u"""
         Script that calls all season pages to refresh the cache on them if it has expired.
 
         Any time/date settings create postfixes on the caching key, for now the solution is to disable them.
         """
 
         if settings.USE_I18N:
-            raise CommandError('USE_I18N in settings must be disabled.')
+            raise CommandError(u'USE_I18N in settings must be disabled.')
 
         if settings.USE_L10N:
-            raise CommandError('USE_L10N in settings must be disabled.')
+            raise CommandError(u'USE_L10N in settings must be disabled.')
 
         if settings.USE_TZ:
-            raise CommandError('USE_TZ in settings must be disabled.')
+            raise CommandError(u'USE_TZ in settings must be disabled.')
 
         self.factory = RequestFactory()
         seasons = Season.objects.all()
         for season in seasons:
-            path = reverse('ladder:season', args=(str(season.end_date.year), str(season.season_round)))
+            path = reverse(u'ladder:season', args=(unicode(season.end_date.year), unicode(season.season_round)))
             # use the request factory to generate the correct url for the cache hash
             request = self.factory.get(path)
 

@@ -1,3 +1,4 @@
+from __future__ import division
 import datetime
 import json
 
@@ -15,10 +16,10 @@ from ladder.forms import AddResultForm
 
 
 @gzip_page
-@cache_page(60 * 60 * 24 * 2, key_prefix='index')  # 2 day page cache
+@cache_page(60 * 60 * 24 * 2, key_prefix=u'index')  # 2 day page cache
 def index(request):
-    current_season = Season.objects.latest('start_date')
-    os_year = Season.objects.order_by('start_date')[0].start_date.year
+    current_season = Season.objects.latest(u'start_date')
+    os_year = Season.objects.order_by(u'start_date')[0].start_date.year
     cs_year = current_season.start_date.year
 
     at_ladders = Season.objects.count()
@@ -27,29 +28,29 @@ def index(request):
     at_players = Player.objects.count()
 
     context = {
-        'current_season': current_season,
-        'at_years': (cs_year - os_year),
-        'at_years_str': ' (' + os_year.__str__() + ' -> ' + cs_year.__str__() + ')',
-        'at_divisions': at_divisions,
-        'at_ladders': at_ladders,
-        'at_results': at_results,
-        'at_players': at_players,
+        u'current_season': current_season,
+        u'at_years': (cs_year - os_year),
+        u'at_years_str': u' (' + os_year.__str__() + u' -> ' + cs_year.__str__() + u')',
+        u'at_divisions': at_divisions,
+        u'at_ladders': at_ladders,
+        u'at_results': at_results,
+        u'at_players': at_players,
     }
-    return render(request, 'ladder/index.html', context)
+    return render(request, u'ladder/index.html', context)
 
 
 @gzip_page
-@cache_page(60 * 60 * 24, key_prefix='round')  # 1 day page cache
+@cache_page(60 * 60 * 24, key_prefix=u'round')  # 1 day page cache
 def list_rounds(request):
-    seasons = Season.objects.order_by('-start_date')
+    seasons = Season.objects.order_by(u'-start_date')
     context = {
-        'seasons': seasons,
+        u'seasons': seasons,
     }
-    return render(request, 'ladder/season/list.html', context)
+    return render(request, u'ladder/season/list.html', context)
 
 
 @gzip_page
-@cache_page(60 * 60, key_prefix='season')  # 1 hour page cache
+@cache_page(60 * 60, key_prefix=u'season')  # 1 hour page cache
 def season(request, year, season_round):
     season_object = get_object_or_404(Season, start_date__year=year, season_round=season_round)
 
@@ -64,7 +65,7 @@ def season(request, year, season_round):
         results_dict.setdefault(result.player.id, []).append(result)
 
     return render(
-        request, 'ladder/season/index.html',
+        request, u'ladder/season/index.html',
         dict(season=season_object, ladders=ladders, results_dict=results_dict, league=league)
     )
 
@@ -81,7 +82,7 @@ def ladder(request, year, season_round, division_id):
     for result in results:
         results_dict.setdefault(result.player.id, []).append(result)
 
-    return render(request, 'ladder/ladder/index.html', {'ladder': ladder_object, 'results_dict': results_dict})
+    return render(request, u'ladder/ladder/index.html', {u'ladder': ladder_object, u'results_dict': results_dict})
 
 
 @login_required
@@ -115,7 +116,7 @@ def add(request, year, season_round, division_id):
             losing_result.save()
             winning_result.save()
 
-            return HttpResponseRedirect(reverse('ladder:add', args=(
+            return HttpResponseRedirect(reverse(u'ladder:add', args=(
                 ladder_object.season.start_date.year, ladder_object.season.season_round, ladder_object.division)))
     else:
         form = AddResultForm(ladder_object, instance=result)
@@ -126,25 +127,25 @@ def add(request, year, season_round, division_id):
     for result in results:
         results_dict.setdefault(result.player.id, []).append(result)
 
-    return render(request, 'ladder/ladder/add.html',
-                  {'ladder': ladder_object, 'results_dict': results_dict, 'form': form})
+    return render(request, u'ladder/ladder/add.html',
+                  {u'ladder': ladder_object, u'results_dict': results_dict, u'form': form})
 
 
 @gzip_page
 def player_history(request, player_id):
     player = get_object_or_404(Player, pk=player_id)
-    league_set = player.league_set.order_by('-ladder__season__start_date')
+    league_set = player.league_set.order_by(u'-ladder__season__start_date')
 
     #return top 10 played against
     try:
-        head = Result.objects.values('opponent', 'opponent__first_name', 'opponent__last_name').filter(
-            player=player).annotate(times_played=Count('opponent'), last_played=Max('date_added')).order_by(
-                '-times_played')[:10]
+        head = Result.objects.values(u'opponent', u'opponent__first_name', u'opponent__last_name').filter(
+            player=player).annotate(times_played=Count(u'opponent'), last_played=Max(u'date_added')).order_by(
+                u'-times_played')[:10]
     except Result.DoesNotExist:
         raise Http404
 
-    return render(request, 'ladder/player/history.html',
-                  {'player': player, 'league_set': league_set, 'ladder_set': league_set, 'head': head})
+    return render(request, u'ladder/player/history.html',
+                  {u'player': player, u'league_set': league_set, u'ladder_set': league_set, u'head': head})
 
 
 @gzip_page
@@ -153,21 +154,21 @@ def head_to_head(request, player_id, opponent_id):
     opponent = get_object_or_404(Player, pk=opponent_id)
 
     results1 = Result.objects.filter(player=player, opponent=opponent, result__lt=9).order_by(
-        '-ladder__season__end_date')
+        u'-ladder__season__end_date')
     results2 = Result.objects.filter(player=opponent, opponent=player, result__lt=9).order_by(
-        '-ladder__season__end_date')
+        u'-ladder__season__end_date')
 
     results = results1 | results2
 
-    stats = {'won': results2.count(), 'lost': results1.count(), 'played': results1.count() + results2.count()}
+    stats = {u'won': results2.count(), u'lost': results1.count(), u'played': results1.count() + results2.count()}
 
-    return render(request, 'ladder/head_to_head/index.html',
-                  {'stats': stats, 'results': results, 'player': player, 'opponent': opponent})
+    return render(request, u'ladder/head_to_head/index.html',
+                  {u'stats': stats, u'results': results, u'player': player, u'opponent': opponent})
 
 
 @gzip_page
 def player_result(request):
-    query = request.GET.get('player_name', False)
+    query = request.GET.get(u'player_name', False)
     if query is False:
         raise Http404
 
@@ -182,12 +183,12 @@ def player_result(request):
         player = results[0]
         return player_history(request, player.id)
 
-    return render(request, 'ladder/player/results.html', {'players': results, 'query': escape(query)})
+    return render(request, u'ladder/player/results.html', {u'players': results, u'query': escape(query)})
 
 
 def player_search(request):
     result_set = {}
-    query = request.GET.get('query', False)
+    query = request.GET.get(u'query', False)
     if query is False:
         raise Http404
 
@@ -196,39 +197,39 @@ def player_search(request):
     for term in query.split():
         qs = qs.filter(Q(first_name__icontains=term) | Q(last_name__icontains=term))
 
-    results = [escape(x.first_name.strip() + ' ' + x.last_name.strip()) for x in qs]
-    result_set["options"] = results
+    results = [escape(x.first_name.strip() + u' ' + x.last_name.strip()) for x in qs]
+    result_set[u"options"] = results
 
-    return HttpResponse(json.dumps(result_set), content_type="application/json")
+    return HttpResponse(json.dumps(result_set), content_type=u"application/json")
 
 
 def h2h_search(request, player_id):
     result_set = {}
-    query = request.GET.get('query', False)
+    query = request.GET.get(u'query', False)
     if query is False:
         raise Http404
 
-    head = Result.objects.values('opponent', 'opponent__first_name', 'opponent__last_name')
+    head = Result.objects.values(u'opponent', u'opponent__first_name', u'opponent__last_name')
 
     for term in query.split():
         head = head.filter(
             Q(opponent__first_name__icontains=term) | Q(opponent__last_name__icontains=term),
-            Q(player__id=player_id)).annotate(times_played=Count('opponent')).order_by('-times_played')
+            Q(player__id=player_id)).annotate(times_played=Count(u'opponent')).order_by(u'-times_played')
 
     results = {}
     for x in head:
-        results[x['opponent']] = escape(
-            str(x['times_played']).strip() + ' x ' + x['opponent__first_name'].strip() + ' ' + x[
-                'opponent__last_name'].strip())
+        results[x[u'opponent']] = escape(
+            unicode(x[u'times_played']).strip() + u' x ' + x[u'opponent__first_name'].strip() + u' ' + x[
+                u'opponent__last_name'].strip())
 
-    result_set["options"] = results
+    result_set[u"options"] = results
 
-    return HttpResponse(json.dumps(result_set), content_type="application/json")
+    return HttpResponse(json.dumps(result_set), content_type=u"application/json")
 
 
 def season_ajax_stats(request):
 
-    season_id = request.GET.get('id', False)
+    season_id = request.GET.get(u'id', False)
     if season_id is False:
         raise Http404
 
@@ -241,15 +242,15 @@ def season_ajax_stats(request):
 
     stats = season_object.get_stats()
 
-    include_leader = request.GET.get('leader', False)
+    include_leader = request.GET.get(u'leader', False)
     if include_leader:
         stats.update(season_object.get_leader_stats())
 
-    return HttpResponse(json.dumps(stats), content_type="application/json")
+    return HttpResponse(json.dumps(stats), content_type=u"application/json")
 
 
 def season_ajax_progress(request):
-    season_id = request.GET.get('id', False)
+    season_id = request.GET.get(u'id', False)
     if season_id is False:
         raise Http404
 
@@ -260,4 +261,4 @@ def season_ajax_progress(request):
     except ValueError:
         raise Http404
 
-    return HttpResponse(json.dumps(season_object.get_progress()), content_type="application/json")
+    return HttpResponse(json.dumps(season_object.get_progress()), content_type=u"application/json")

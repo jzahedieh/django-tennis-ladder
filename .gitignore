@@ -21,3 +21,5 @@
 
 #Ignore logs
 /logs/
+
+/venv/

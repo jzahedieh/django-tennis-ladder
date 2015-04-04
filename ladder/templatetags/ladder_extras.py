@@ -1,16 +1,17 @@
+from __future__ import division
 from django import template
 
 register = template.Library()
 
 
-@register.filter(name='getkey')
+@register.filter(name=u'getkey')
 def getkey(value, arg):
     try:
         return value[arg]
     except:
         return
 
-@register.filter(name='gettotal')
+@register.filter(name=u'gettotal')
 def gettotal(value, arg):
     total = 0
     try:
@@ -23,7 +24,7 @@ def gettotal(value, arg):
     except KeyError:
         return total
 
-@register.filter(name='getaverage')
+@register.filter(name=u'getaverage')
 def getaverage(value, arg):
     total = 0.0
     count = 0.0
@@ -35,13 +36,13 @@ def getaverage(value, arg):
                 total = total + result.result + 1
             count += 1
         if count != 0:
-            return "%.2f" % (total / count)
+            return u"%.2f" % (total / count)
         return 0
     except KeyError:
         if count != 0:
-            return "%.2f" % (total / count)
+            return u"%.2f" % (total / count)
         return 0
-@register.filter(name='unplayed')
+@register.filter(name=u'unplayed')
 def unplayed(value, arg):
     not_played = []
     try:

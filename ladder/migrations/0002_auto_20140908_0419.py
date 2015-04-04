@@ -7,13 +7,13 @@ from django.db import models, migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('ladder', '0001_initial'),
+        (u'ladder', u'0001_initial'),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='player',
-            name='junior',
+            model_name=u'player',
+            name=u'junior',
             field=models.BooleanField(default=False),
         ),
     ]
