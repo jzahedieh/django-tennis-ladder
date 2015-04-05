@@ -18,6 +18,11 @@
   background-repeat: repeat-x;
 }
 
+#perc_played {
+    border-bottom: 1px solid #DDD;
+}
+
+
 
 .navbar-inverse .navbar-inner {
   background-color: #a2b5d7;
