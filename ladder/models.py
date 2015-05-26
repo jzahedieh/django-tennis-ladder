@@ -71,7 +71,7 @@ class Season(models.Model):
         played_days = []
         played_cumulative = []
         played_cumulative_count = 0
-        latest_result = u'None'
+        latest_result = False
 
         for result in results:
             played.append(result.added_count)
@@ -91,7 +91,7 @@ class Season(models.Model):
             u"played_days": played_days,
             u"played": played,
             u"played_cumulative": played_cumulative,
-            u"latest_result": latest_result.strftime(u"%B %d, %Y")
+            u"latest_result": latest_result.strftime(u"%B %d, %Y") if latest_result else "-"
         }
 
 
