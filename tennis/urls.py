@@ -9,6 +9,6 @@ admin.autodiscover()
 
 urlpatterns = patterns(u'',
 	url(ur'^admin/', include(admin.site.urls)),
-	url(ur'', include(u'ladder.urls', namespace=u"ladder")),
+	url(ur'', include(u'ladder.urls', namespace="ladder")),
 
 ) + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

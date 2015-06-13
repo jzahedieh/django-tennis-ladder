@@ -6,18 +6,18 @@ from django.db.models import Avg
 
 class Season(models.Model):
     name = models.CharField(max_length=150)
-    start_date = models.DateField(u'Start date')
-    end_date = models.DateField(u'End date')
+    start_date = models.DateField('Start date')
+    end_date = models.DateField('End date')
     season_round = models.IntegerField(max_length=1)
 
     class Meta:
         ordering = ['-start_date',]
 
     def __str__(self):
-        return unicode(self.start_date.year) + u' Round ' + unicode(self.season_round)
+        return unicode(self.start_date.year) + ' Round ' + unicode(self.season_round)
 
     def get_stats(self):
-        u"""
+        """
         Generates the season stats
         """
         player_count = 0
@@ -31,15 +31,15 @@ class Season(models.Model):
         percentage_played = (results_count / total_games_count) * 100
 
         return {
-            u'divisions': self.ladder_set.count(),
-            u'percentage_played': u"{0:.2f}".format(percentage_played),
-            u'total_games_count': total_games_count,
-            u'results_count': results_count,
-            u'player_count': player_count
+            'divisions': self.ladder_set.count(),
+            'percentage_played': "{0:.2f}".format(percentage_played),
+            'total_games_count': total_games_count,
+            'results_count': results_count,
+            'player_count': player_count
         }
 
     def get_leader_stats(self):
-        u"""
+        """
         Generates the list of leaders for current season
         """
         current_leaders = {}
@@ -48,14 +48,14 @@ class Season(models.Model):
             current_leaders[ladder.id] = ladder.get_leader()
 
         return {
-            u'current_leaders': current_leaders,
+            'current_leaders': current_leaders,
         }
 
     def get_progress(self):
-        u"""
+        """
         Query how many games have been played so far.
         """
-        results = Result.objects.raw(u"""
+        results = Result.objects.raw("""
             SELECT ladder_result.id, ladder_id, season_id, date_added, COUNT(*) AS added_count
             FROM ladder_result LEFT JOIN ladder_ladder
             ON ladder_result.ladder_id=ladder_ladder.id
@@ -63,7 +63,7 @@ class Season(models.Model):
             ORDER BY DATE(date_added) ASC;
         """, [self.id])
 
-        leagues = League.objects.raw(u"""
+        leagues = League.objects.raw("""
             SELECT ladder_league.id, COUNT(*) AS player_count
             FROM ladder_league LEFT JOIN ladder_ladder
             ON ladder_league.ladder_id=ladder_ladder.id
@@ -89,12 +89,12 @@ class Season(models.Model):
             total_matches += (league.player_count-1) * league.player_count / 2
 
         return {
-            u"season_days": [0, (self.end_date - self.start_date).days],
-            u"season_total_matches": [0, total_matches],
-            u"played_days": played_days,
-            u"played": played,
-            u"played_cumulative": played_cumulative,
-            u"latest_result": latest_result.strftime(u"%B %d, %Y") if latest_result else "-"
+            "season_days": [0, (self.end_date - self.start_date).days],
+            "season_total_matches": [0, total_matches],
+            "played_days": played_days,
+            "played": played,
+            "played_cumulative": played_cumulative,
+            "latest_result": latest_result.strftime("%B %d, %Y") if latest_result else "-"
         }
 
 
@@ -106,13 +106,13 @@ class Player(models.Model):
         string = self.first_name
         if self.last_name:
             last_names = self.last_name.split()
-            last_names[-1] = last_names[-1][:1].capitalize() + u'.'  # abbreviate last name
-            string += u' ' + u' '.join(last_names)
+            last_names[-1] = last_names[-1][:1].capitalize() + '.'  # abbreviate last name
+            string += ' ' + ' '.join(last_names)
 
         return string
 
     def player_stats(self):
-        u"""
+        """
         Calculates stats about the players historical performance.
         """
         played = self.result_player.count()
@@ -126,13 +126,13 @@ class Player(models.Model):
             additional_points = ((won * 2) + played) / played
         else:
             return {
-                u'played': u"-",
-                u'win_rate': u"- %",
-                u'average': u"-"
+                'played': "-",
+                'win_rate': "- %",
+                'average': "-"
             }
 
         # work out the average with additional points
-        average = list(self.result_player.aggregate(Avg(u'result')).values())[0]
+        average = list(self.result_player.aggregate(Avg('result')).values())[0]
         average_with_additional = average + additional_points
 
         leagues = self.league_set.filter(player=self)
@@ -145,10 +145,10 @@ class Player(models.Model):
         completion_rate = float(played) / float(match_count) * 100.00
 
         return {
-            u'played': played,
-            u'win_rate': u"{0:.2f} %".format(win_rate),
-            u'completion_rate': u"{0:.2f} %".format(completion_rate),
-            u'average': u"{0:.2f}".format(average_with_additional)
+            'played': played,
+            'win_rate': "{0:.2f} %".format(win_rate),
+            'completion_rate': "{0:.2f} %".format(completion_rate),
+            'average': "{0:.2f}".format(average_with_additional)
         }
 
 
@@ -158,11 +158,11 @@ class Ladder(models.Model):
     ladder_type = models.CharField(max_length=100)
 
     def __str__(self):
-        return unicode(self.season.start_date.year) + u' Round ' + unicode(self.season.season_round) + u' - Division: ' + unicode(
+        return unicode(self.season.start_date.year) + ' Round ' + unicode(self.season.season_round) + ' - Division: ' + unicode(
             self.division)
 
     def get_leader(self):
-        u"""
+        """
         Finds the leader of the ladder
         """
         totals = {}
@@ -181,40 +181,40 @@ class Ladder(models.Model):
         if totals:
             player = max(iter(totals.items()), key=operator.itemgetter(1))[0]
         else:
-            return {u'player': u'No Results', u'player_id': u'../#', u'total': u'-', u'division': self.division}
+            return {'player': 'No Results', 'player_id': '../#', 'total': '-', 'division': self.division}
 
-        return {u'player': player.__str__(), u'player_id': player.id, u'total': totals[player], u'division': self.division}
+        return {'player': player.__str__(), 'player_id': player.id, 'total': totals[player], 'division': self.division}
 
     def get_latest_results(self):
-        u"""
+        """
         Gets latest results for the ladder
         """
         results = {}
-        for result in self.result_set.filter(ladder=self).order_by(u'-date_added')[:10]:  # [:10] to limit to 5
+        for result in self.result_set.filter(ladder=self).order_by('-date_added')[:10]:  # [:10] to limit to 5
 
             try:
                 opponent = self.result_set.filter(ladder=self, player=result.opponent, opponent=result.player)[0]
             except IndexError:
                 continue  # this exception happens if result does not have opponent
-            player_opponent_index = u''.join(unicode(e) for e in sorted([result.player.id, opponent.player.id]))
+            player_opponent_index = ''.join(unicode(e) for e in sorted([result.player.id, opponent.player.id]))
             try:
                 if results[player_opponent_index]:
                     continue
             except KeyError:
-                results[player_opponent_index] = {u'player': result.player, u'player_result': result.result,
-                                                  u'opponent_result': opponent.result, u'opponent': opponent.player,
-                                                  u'date_added': result.date_added}
+                results[player_opponent_index] = {'player': result.player, 'player_result': result.result,
+                                                  'opponent_result': opponent.result, 'opponent': opponent.player,
+                                                  'date_added': result.date_added}
 
         ordered_results = {}
         i = 0
-        for key in sorted(results, key=lambda x: (results[x][u'date_added']), reverse=True):
+        for key in sorted(results, key=lambda x: (results[x]['date_added']), reverse=True):
             ordered_results[i] = results[key]
             i += 1
 
         return list(ordered_results.items())
 
     def get_stats(self):
-        u"""
+        """
         Generates the stats for current division
         """
         total_matches_played = 0.00
@@ -223,9 +223,9 @@ class Ladder(models.Model):
         perc_matches_played = (total_matches_played / total_matches) * 100
 
         return {
-            u'total_matches_played': int(total_matches_played),
-            u'total_matches': int(total_matches),
-            u'perc_matches_played': perc_matches_played
+            'total_matches_played': int(total_matches_played),
+            'total_matches': int(total_matches),
+            'perc_matches_played': perc_matches_played
         }
 
 
@@ -235,13 +235,13 @@ class League(models.Model):
     sort_order = models.IntegerField(default=0)
 
     class Meta(object):
-        ordering = [u'sort_order']
+        ordering = ['sort_order']
 
     def __str__(self):
-        return self.player.first_name + u' ' + self.player.last_name
+        return self.player.first_name + ' ' + self.player.last_name
 
     def player_stats(self):
-        u"""
+        """
         Generates the player stats for player listings
         """
         total_points = 0.00
@@ -265,22 +265,22 @@ class League(models.Model):
             percplayed = pointsdivgames = 0
 
         return {
-            u'total_points': total_points,
-            u'games': games,
-            u'pointsdivgames': pointsdivgames,
-            u'won_count': won_count,
-            u'percplayed': percplayed
+            'total_points': total_points,
+            'games': games,
+            'pointsdivgames': pointsdivgames,
+            'won_count': won_count,
+            'percplayed': percplayed
         }
 
 
 class Result(models.Model):
     ladder = models.ForeignKey(Ladder)
-    player = models.ForeignKey(Player, related_name=u'result_player')
-    opponent = models.ForeignKey(Player, related_name=u'result_opponent')
+    player = models.ForeignKey(Player, related_name='result_player')
+    opponent = models.ForeignKey(Player, related_name='result_opponent')
     result = models.IntegerField()
-    date_added = models.DateField(u'Date added')
+    date_added = models.DateField('Date added')
     inaccurate_flag = models.BooleanField(default=None)
 
     def __str__(self):
-        return (self.player.first_name + u' ' + self.player.last_name) + u' vs ' + (
-            self.opponent.first_name + u' ' + self.opponent.last_name) + (u' score: ' + unicode(self.result))
+        return (self.player.first_name + ' ' + self.player.last_name) + ' vs ' + (
+            self.opponent.first_name + ' ' + self.opponent.last_name) + (' score: ' + unicode(self.result))

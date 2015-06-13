@@ -27,19 +27,19 @@ class Export(object):
 
 
 class Command(BaseCommand):
-    help = u'Exports XLS, args: year and round'
+    help = 'Exports XLS, args: year and round'
     option_list = BaseCommand.option_list + (
-        make_option(u'--year',
-                    action=u'store',
-                    dest=u'year',
+        make_option('--year',
+                    action='store',
+                    dest='year',
                     default=False,
-                    help=u'Year of ladder'),
+                    help='Year of ladder'),
     ) + (
-        make_option(u'--round',
-                    action=u'store',
-                    dest=u'round',
+        make_option('--round',
+                    action='store',
+                    dest='round',
                     default=False,
-                    help=u'Round of ladder'),
+                    help='Round of ladder'),
     )
 
     def handle(self, *args, **options):
@@ -51,29 +51,29 @@ class Command(BaseCommand):
                 return {}
 
         # where generated files will be saved
-        folder = u'/home/input/projects/django-tennis-ladder/ladder_import_scripts/xls/files'
+        folder = '/home/input/projects/django-tennis-ladder/ladder_import_scripts/xls/files'
 
         if os.access(folder, os.W_OK) is False:
-            raise CommandError(u'Directory (%s) is not writeable, change in code' % folder)
+            raise CommandError('Directory (%s) is not writeable, change in code' % folder)
 
         # make arg checks
-        if options[u'year'] is False:
-            raise CommandError(u'--year option not set')
+        if options['year'] is False:
+            raise CommandError('--year option not set')
 
-        if options[u'round'] is False:
-            raise CommandError(u'--round option not set')
+        if options['round'] is False:
+            raise CommandError('--round option not set')
 
         # workbook setup stuff
-        w = Workbook(encoding=u'utf-8')
-        ws = w.add_sheet(u'Sheet 1')
+        w = Workbook(encoding='utf-8')
+        ws = w.add_sheet('Sheet 1')
 
         font0 = Font()
-        font0.name = u'Times New Roman'
+        font0.name = 'Times New Roman'
         font0.height = 280
         font0.bold = True
 
         font1 = Font()
-        font1.name = u'Times New Roman'
+        font1.name = 'Times New Roman'
         font1.height = 400
         font1.bold = True
 
@@ -85,7 +85,7 @@ class Command(BaseCommand):
         #Grey box
         pattern = Pattern()
         pattern.pattern = Pattern.SOLID_PATTERN
-        pattern.pattern_fore_colour = Style.colour_map[u'gray40']
+        pattern.pattern_fore_colour = Style.colour_map['gray40']
 
         grey_box_style = XFStyle()
         grey_box_style.pattern = pattern
@@ -93,36 +93,36 @@ class Command(BaseCommand):
         #Red box
         pattern = Pattern()
         pattern.pattern = Pattern.SOLID_PATTERN
-        pattern.pattern_fore_colour = Style.colour_map[u'red']
+        pattern.pattern_fore_colour = Style.colour_map['red']
 
         inaccurate_style = XFStyle()
         inaccurate_style.pattern = pattern
         inaccurate_style.font = font0
 
         # export
-        export = Export(options[u'year'], options[u'round'])
+        export = Export(options['year'], options['round'])
         col = 1
 
         ws.row(1).height_mismatch = 1
         ws.row(1).height = 600
         ws.col(0).width = 256 * 5
 
-        ws.write(col, 1, u'ROUND', style1)
+        ws.write(col, 1, 'ROUND', style1)
         ws.write(col, 2, unicode(export.season.season_round), style1)
-        ws.write(col, 5, export.season.start_date.strftime(u'%b') + u' - ' + export.season.end_date.strftime(u'%d %B %Y'), style1)
+        ws.write(col, 5, export.season.start_date.strftime('%b') + ' - ' + export.season.end_date.strftime('%d %B %Y'), style1)
 
         for ladder in export.ladders:
             col += 2
             ws.row(col).height_mismatch = 1
             ws.row(col).height = 450
-            ws.write(col, 5, u'DIVISION', style0)
+            ws.write(col, 5, 'DIVISION', style0)
             ws.write(col, 8, ladder.division.__str__(), style0)
-            ws.write(col, 14, u'LAST ROUND', style0)
+            ws.write(col, 14, 'LAST ROUND', style0)
 
             col += 1
             ws.row(col).height_mismatch = 1
             ws.row(col).height = 450
-            ws.write(col, 1, u'NAME', style0)
+            ws.write(col, 1, 'NAME', style0)
             ws.col(1).width = 256 * 16
             ws.col(2).width = 256 * 26
 
@@ -144,10 +144,10 @@ class Command(BaseCommand):
                 ws.write(col, 2 + count, count, style0)
                 count += 1
 
-            ws.write(col, 2 + count, u'Div', style0)
-            ws.write(col, 2 + count + 1, u'PLD', style0)
-            ws.write(col, 2 + count + 2, u'WON', style0)
-            ws.write(col, 2 + count + 3, u'TOTAL', style0)
+            ws.write(col, 2 + count, 'Div', style0)
+            ws.write(col, 2 + count + 1, 'PLD', style0)
+            ws.write(col, 2 + count + 2, 'WON', style0)
+            ws.write(col, 2 + count + 3, 'TOTAL', style0)
 
             # total won col/row for later use
             total_won_col = col + 1
@@ -165,7 +165,7 @@ class Command(BaseCommand):
                 for opponent in ladder.league_set.all():
                     # loop through op
                     if column_counter == player_counter:
-                        ws.write(col, row, u'', grey_box_style)
+                        ws.write(col, row, '', grey_box_style)
                     else:
                         # result
                         for result in getkey(export.results, league.player.id):
@@ -182,26 +182,26 @@ class Command(BaseCommand):
                 frow = (col + 1).__str__()
 
                 #pld / won
-                last_l = unichr(row + ord(u"A") - 1)
+                last_l = unichr(row + ord("A") - 1)
                 ws.write(col, row, league.ladder.division, style0)
-                ws.write(col, row + 1, Formula(u'COUNT(D' + frow + u':' + last_l + frow + u')'), style0)
-                ws.write(col, row + 2, Formula(u'COUNTIF(D' + frow + u':' + last_l + frow + u',9)'), style0)
+                ws.write(col, row + 1, Formula('COUNT(D' + frow + ':' + last_l + frow + ')'), style0)
+                ws.write(col, row + 2, Formula('COUNTIF(D' + frow + ':' + last_l + frow + ',9)'), style0)
 
                 # total
-                pld_l = unichr(row + 2 + ord(u"A") - 1)
-                won_l = unichr(row + 3 + ord(u"A") - 1)
+                pld_l = unichr(row + 2 + ord("A") - 1)
+                won_l = unichr(row + 3 + ord("A") - 1)
                 ws.write(col, row + 3,
-                         Formula(u'SUM(D' + frow + u':' + last_l + frow + u') + ' + pld_l + frow + u' + (' + won_l + frow + u'*2)'),
+                         Formula('SUM(D' + frow + ':' + last_l + frow + ') + ' + pld_l + frow + ' + (' + won_l + frow + '*2)'),
                          style0)
 
                 player_counter += 1
 
             #won stats
-            last_r = unichr(total_won_row - 4 + ord(u"A") - 1)
+            last_r = unichr(total_won_row - 4 + ord("A") - 1)
             ws.write(total_won_col, total_won_row,
-                     Formula(u'COUNTIF(D' + total_played_col.__str__() + u':' + last_r + (col + 1).__str__() + u',9)'), style0)
+                     Formula('COUNTIF(D' + total_played_col.__str__() + ':' + last_r + (col + 1).__str__() + ',9)'), style0)
             ws.write(total_played_col, total_played_row,
-                     Formula(u'COUNT(D' + total_played_col.__str__() + u':' + last_r + (col + 1).__str__() + u')'), style0)
+                     Formula('COUNT(D' + total_played_col.__str__() + ':' + last_r + (col + 1).__str__() + ')'), style0)
 
-        filename = u'ladder' + export.season.start_date.strftime(u'%b') + u'-' + export.season.end_date.strftime(u'%b%Y') + u'Results.xls'
+        filename = 'ladder' + export.season.start_date.strftime('%b') + '-' + export.season.end_date.strftime('%b%Y') + 'Results.xls'
         w.save(folder + filename)

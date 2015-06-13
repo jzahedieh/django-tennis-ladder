@@ -6,15 +6,15 @@ from django.contrib.contenttypes.generic import GenericForeignKey
 
 
 class SeasonAdmin(admin.ModelAdmin):
-    list_display = (u'name', u'start_date', u'end_date', u'season_round')
-    date_hierarchy = u'start_date'
+    list_display = ('name', 'start_date', 'end_date', 'season_round')
+    date_hierarchy = 'start_date'
 
 
 admin.site.register(Season, SeasonAdmin)
 
 class PlayerAdmin(admin.ModelAdmin):
-    list_display = (u'first_name', u'last_name')
-    search_fields = (u'first_name', u'last_name')
+    list_display = ('first_name', 'last_name')
+    search_fields = ('first_name', 'last_name')
     ordering = ('last_name',)
 
 
@@ -22,8 +22,8 @@ admin.site.register(Player, PlayerAdmin)
 
 
 class LadderAdmin(admin.ModelAdmin):
-    list_filter = [u'season']
-    list_display = (u'season', u'division')
+    list_filter = ['season']
+    list_display = ('season', 'division')
     ordering = ("season", "division")
 
 
@@ -31,9 +31,9 @@ admin.site.register(Ladder, LadderAdmin)
 
 
 class LeagueAdmin(admin.ModelAdmin):
-    list_filter = [u'ladder__season']
-    list_display = (u'get_player', u'get_season', u'get_division', u'sort_order')
-    search_fields = (u'player__first_name', u'player__last_name')
+    list_filter = ['ladder__season']
+    list_display = ('get_player', 'get_season', 'get_division', 'sort_order')
+    search_fields = ('player__first_name', 'player__last_name')
     ordering = ('ladder__season__start_date', 'ladder__division', 'sort_order')
 
     def get_season(self, league):
@@ -56,10 +56,10 @@ admin.site.register(League, LeagueAdmin)
 
 
 class ResultAdmin(admin.ModelAdmin):
-    list_filter = [u'ladder__season']
-    search_fields = [u'player__first_name', u'player__last_name']
-    list_display = (u'ladder', u'get_player', u'get_opponent', u'result', u'date_added')
-    date_hierarchy = u'date_added'
+    list_filter = ['ladder__season']
+    search_fields = ['player__first_name', 'player__last_name']
+    list_display = ('ladder', 'get_player', 'get_opponent', 'result', 'date_added')
+    date_hierarchy = 'date_added'
 
     def get_player(self, result):
         return result.player.first_name + ' ' + result.player.last_name

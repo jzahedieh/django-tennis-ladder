@@ -4,14 +4,14 @@ from django import template
 register = template.Library()
 
 
-@register.filter(name=u'getkey')
+@register.filter(name='getkey')
 def getkey(value, arg):
     try:
         return value[arg]
     except:
         return
 
-@register.filter(name=u'gettotal')
+@register.filter(name='gettotal')
 def gettotal(value, arg):
     total = 0
     try:
@@ -24,7 +24,7 @@ def gettotal(value, arg):
     except KeyError:
         return total
 
-@register.filter(name=u'getaverage')
+@register.filter(name='getaverage')
 def getaverage(value, arg):
     total = 0.0
     count = 0.0
@@ -36,13 +36,13 @@ def getaverage(value, arg):
                 total = total + result.result + 1
             count += 1
         if count != 0:
-            return u"%.2f" % (total / count)
+            return "%.2f" % (total / count)
         return 0
     except KeyError:
         if count != 0:
-            return u"%.2f" % (total / count)
+            return "%.2f" % (total / count)
         return 0
-@register.filter(name=u'unplayed')
+@register.filter(name='unplayed')
 def unplayed(value, arg):
     not_played = []
     try:
