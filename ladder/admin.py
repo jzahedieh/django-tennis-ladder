@@ -15,6 +15,7 @@ admin.site.register(Season, SeasonAdmin)
 class PlayerAdmin(admin.ModelAdmin):
     list_display = (u'first_name', u'last_name')
     search_fields = (u'first_name', u'last_name')
+    ordering = ('last_name',)
 
 
 admin.site.register(Player, PlayerAdmin)
@@ -30,9 +31,25 @@ admin.site.register(Ladder, LadderAdmin)
 
 class LeagueAdmin(admin.ModelAdmin):
     list_filter = [u'ladder__season']
-    list_display = (u'player', u'ladder', u'sort_order')
+    list_display = (u'get_player', u'get_season', u'get_division', u'sort_order')
     search_fields = (u'player__first_name', u'player__last_name')
+    ordering = ('ladder__season__start_date', 'ladder__division', 'sort_order')
 
+    def get_season(self, league):
+        return league.ladder.season
+
+    def get_division(self, league):
+        return league.ladder.division
+
+    def get_player(self, league):
+        return league.player.first_name + ' ' + league.player.last_name
+
+    get_season.short_description = "Season"
+    get_season.admin_order_field = "ladder__season__start_date"
+    get_division.short_description = "Division"
+    get_division.admin_order_field = "ladder__division"
+    get_player.short_description = "Player"
+    get_player.admin_order_field = "player"
 
 admin.site.register(League, LeagueAdmin)
 

@@ -10,6 +10,9 @@ class Season(models.Model):
     end_date = models.DateField(u'End date')
     season_round = models.IntegerField(max_length=1)
 
+    class Meta:
+        ordering = ['-start_date',]
+
     def __str__(self):
         return unicode(self.start_date.year) + u' Round ' + unicode(self.season_round)
 
@@ -151,7 +154,7 @@ class Player(models.Model):
 
 class Ladder(models.Model):
     season = models.ForeignKey(Season)
-    division = models.CharField(max_length=11)
+    division = models.IntegerField(max_length=11)
     ladder_type = models.CharField(max_length=100)
 
     def __str__(self):
