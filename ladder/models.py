@@ -220,8 +220,8 @@ class Ladder(models.Model):
         perc_matches_played = (total_matches_played / total_matches) * 100
 
         return {
-            u'total_matches_played': total_matches_played,
-            u'total_matches': total_matches,
+            u'total_matches_played': int(total_matches_played),
+            u'total_matches': int(total_matches),
             u'perc_matches_played': perc_matches_played
         }
 
