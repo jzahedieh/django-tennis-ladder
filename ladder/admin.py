@@ -34,7 +34,7 @@ class LeagueAdmin(admin.ModelAdmin):
     list_filter = ['ladder__season']
     list_display = ('get_player', 'get_season', 'get_division', 'sort_order')
     search_fields = ('player__first_name', 'player__last_name')
-    ordering = ('ladder__season__start_date', 'ladder__division', 'sort_order')
+    ordering = ('-ladder__season__start_date', 'ladder__division', 'sort_order')
 
     def get_season(self, league):
         return league.ladder.season
