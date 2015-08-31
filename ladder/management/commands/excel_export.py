@@ -27,7 +27,7 @@ class Export(object):
 
 
 class Command(BaseCommand):
-    help = 'Exports XLS, args: year and round'
+    help = 'Exports XLS, args: year, round and optional dir (default project root)'
     option_list = BaseCommand.option_list + (
         make_option('--year',
                     action='store',
@@ -40,6 +40,12 @@ class Command(BaseCommand):
                     dest='round',
                     default=False,
                     help='Round of ladder'),
+    ) + (
+        make_option('--dir',
+                    action='store',
+                    dest='dir',
+                    default=os.path.dirname(os.path.realpath(__file__)),
+                    help='Directory for export'),
     )
 
     def handle(self, *args, **options):
@@ -51,7 +57,7 @@ class Command(BaseCommand):
                 return {}
 
         # where generated files will be saved
-        folder = '/home/input/projects/django-tennis-ladder/ladder_import_scripts/xls/files'
+        folder = options['dir'] + '/'
 
         if os.access(folder, os.W_OK) is False:
             raise CommandError('Directory (%s) is not writeable, change in code' % folder)
@@ -205,3 +211,5 @@ class Command(BaseCommand):
 
         filename = 'ladder' + export.season.start_date.strftime('%b') + '-' + export.season.end_date.strftime('%b%Y') + 'Results.xls'
         w.save(folder + filename)
+
+        print "Export complete to file: " + folder + filename
