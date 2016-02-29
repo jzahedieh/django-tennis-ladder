@@ -70,6 +70,14 @@ function updateForm() {
 <h1> {{ ladder }} </h1>
 <h3>{{ ladder.season.start_date }} to {{ ladder.season.end_date }}</h3>
 
+<div class="add_navigation">
+    {% if previous_ladder %}
+        <a href="{% url 'ladder:add' ladder.season.start_date|date:"Y" ladder.season.season_round previous_ladder.division %}">Previous</a>
+    {% endif %}
+    {% if next_ladder %}
+        <a href="{% url 'ladder:add' ladder.season.start_date|date:"Y" ladder.season.season_round next_ladder.division %}">Next </a>
+    {% endif %}
+</div>
 
 	<table id="ladderTable" class="tablesorter">
         <thead>

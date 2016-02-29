@@ -92,6 +92,17 @@ def add(request, year, season_round, division_id):
 
     result = Result(ladder=ladder_object, date_added=datetime.datetime.now())
 
+    try:
+        next_ladder = Ladder.objects.get(season=ladder_object.season, division=ladder_object.division + 1)
+    except Ladder.DoesNotExist:
+        next_ladder = False
+
+    try:
+        previous_ladder = Ladder.objects.get(season=ladder_object.season, division=ladder_object.division - 1)
+    except Ladder.DoesNotExist:
+        previous_ladder = False
+
+
     # process or generate te score adding form
     if request.POST:
         form = AddResultForm(ladder_object, request.POST, instance=result)
@@ -128,7 +139,8 @@ def add(request, year, season_round, division_id):
         results_dict.setdefault(result.player.id, []).append(result)
 
     return render(request, 'ladder/ladder/add.html',
-                  {'ladder': ladder_object, 'results_dict': results_dict, 'form': form})
+                  {'ladder': ladder_object, 'results_dict': results_dict, 'form': form,
+                   'next_ladder': next_ladder, 'previous_ladder': previous_ladder})
 
 
 @gzip_page
