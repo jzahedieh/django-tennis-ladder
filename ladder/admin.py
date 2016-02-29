@@ -1,8 +1,5 @@
 from django.contrib import admin
 from ladder.models import Season, Player, Ladder, Result, League
-from django.db import transaction
-from django.db.models import get_models, Model
-from django.contrib.contenttypes.generic import GenericForeignKey
 
 
 class SeasonAdmin(admin.ModelAdmin):
@@ -11,6 +8,7 @@ class SeasonAdmin(admin.ModelAdmin):
 
 
 admin.site.register(Season, SeasonAdmin)
+
 
 class PlayerAdmin(admin.ModelAdmin):
     list_display = ('first_name', 'last_name')
