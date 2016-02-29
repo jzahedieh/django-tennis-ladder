@@ -22,4 +22,8 @@
 #Ignore logs
 /logs/
 
+#Ignore local VENV
 /venv/
+
+#Ignore collect static location
+/static/
