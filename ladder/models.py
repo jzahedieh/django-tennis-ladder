@@ -8,7 +8,7 @@ class Season(models.Model):
     name = models.CharField(max_length=150)
     start_date = models.DateField('Start date')
     end_date = models.DateField('End date')
-    season_round = models.IntegerField(max_length=1)
+    season_round = models.IntegerField()
 
     class Meta:
         ordering = ['-start_date',]
@@ -154,7 +154,7 @@ class Player(models.Model):
 
 class Ladder(models.Model):
     season = models.ForeignKey(Season)
-    division = models.IntegerField(max_length=11)
+    division = models.IntegerField()
     ladder_type = models.CharField(max_length=100)
 
     def __str__(self):
