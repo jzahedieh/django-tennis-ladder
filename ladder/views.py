@@ -49,6 +49,14 @@ def list_rounds(request):
     return render(request, 'ladder/season/list.html', context)
 
 
+def current_season_redirect(request):
+    season_first = Season.objects.latest('start_date')
+
+    return HttpResponseRedirect(reverse('ladder:season', args=(
+        season_first.start_date.year, season_first.season_round)
+    ))
+
+
 @gzip_page
 @cache_page(60 * 60, key_prefix='season')  # 1 hour page cache
 def season(request, year, season_round):

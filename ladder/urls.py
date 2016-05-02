@@ -5,6 +5,7 @@ from ladder import views
 urlpatterns = [
     url(ur'^$', views.index, name='index'),
     url(ur'^list/$', views.list_rounds, name='list'),
+    url(ur'^current/$', views.current_season_redirect, name='current'),
     # ex: /2013/round/1/
     url(ur'^(?P<year>\d+)/round/(?P<season_round>\d+)/$', views.season, name='season'),
     # ex: /2013/round/1/division/1-n
