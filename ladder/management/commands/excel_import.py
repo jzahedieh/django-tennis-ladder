@@ -1,5 +1,4 @@
 from collections import defaultdict
-from optparse import make_option
 import os
 
 from xlrd import open_workbook
@@ -10,18 +9,19 @@ from ladder.models import Season, Player, Ladder, Result, League
 
 class Command(BaseCommand):
     help = 'Exports XLS, args: --season'
-    option_list = BaseCommand.option_list + (
-        make_option('--season',
-                    action='store',
-                    dest='season',
-                    default=False,
-                    help='ID of season'),
-        make_option('--file',
-                    action='store',
-                    dest='file',
-                    default=False,
-                    help='File location of import speadsheet'),
-    )
+
+    def add_arguments(self, parser):
+        parser.add_argument('--season',
+            action='store',
+            dest='season',
+            default=False,
+            help='ID of season')
+
+        parser.add_argument('--file',
+            action='store',
+            dest='file',
+            default=False,
+            help='File location of import speadsheet')
 
     def handle(self, *args, **options):
 
