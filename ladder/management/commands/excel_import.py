@@ -16,11 +16,20 @@ class Command(BaseCommand):
                     dest='season',
                     default=False,
                     help='ID of season'),
+        make_option('--file',
+                    action='store',
+                    dest='file',
+                    default=False,
+                    help='File location of import speadsheet'),
     )
 
     def handle(self, *args, **options):
 
-        file_location = "/home/input/projects/django-tennis-ladder/ladder_import_scripts/xls/files/import.xls"
+        # make arg checks
+        if options['file'] is False:
+            raise CommandError('--file location is not set')
+
+        file_location = options['file']
 
         if os.access(file_location, os.R_OK) is False:
             raise CommandError('Directory (%s) is not writeable, change in code' % file_location)
