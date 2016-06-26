@@ -1,43 +1,122 @@
 @import url(http://fonts.googleapis.com/css?family=Open+Sans);
 
 a {
-font-family: 'Open Sans', sans-serif;
-}
-
-
-table.tablesorter
-{
-	width:100%;
-	margin-bottom:20px;
     font-family: 'Open Sans', sans-serif;
 }
 
-table.tablesorter td, table.tablesorter th
-{
-    margin: 0;
-    border-width: 1px;
-    border-style: solid;
+/*
+ * general
+ * ____________________________________
+ */
+
+table.tablesorter td.box_grey {
+    background-color: grey;
 }
 
 table.tablesorter td.score_field {
-	min-width:30px;
+    min-width: 30px;
     text-align: center;
 }
 
-table.tablesorter td.player_position {
-	width:28px;
+/*
+ * desktop
+ * ____________________________________
+ */
+@media (min-width: 979px) {
+    table.tablesorter {
+        width: 100%;
+        margin-bottom: 20px;
+        font-family: 'Open Sans', sans-serif;
+    }
+
+    table.tablesorter td, table.tablesorter th {
+        margin: 0;
+        border-width: 1px;
+        border-style: solid;
+    }
+
+    table.tablesorter td.player_position {
+        width: 28px;
+    }
+
+    table.tablesorter td.player_name {
+        min-width: 200px;
+        width: 200px;
+    }
+
+    td.selectable:hover {
+        background-color: #eee;
+        cursor: pointer;
+    }
 }
 
-table.tablesorter td.player_name {
-	min-width:200px;
-	width:200px;
+/*
+ * mobile / tablet
+ * ____________________________________
+ */
+@media (max-width: 979px) {
+
+    body {
+        padding-right: 2px;
+        padding-left: 2px;
+    }
+
+    .navbar .brand {
+        padding-left: 28px;
+    }
+
+    a.btn-navbar {
+        margin-right: 23px !important;
+    }
+
+    .player_name {
+        display: flex;
+    }
+
+    .player_name span, .player_name a {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+
+        min-width: 0;
+    }
+
+    table.tablesorter td.score_field {
+        min-width: 10px;
+    }
+
+    table.tablesorter td.player_position, table.tablesorter td.score_total {
+        width: 10px;
+    }
+
+    .tablesorter-ice tbody td,
+    .tablesorter-ice tfoot th,
+    .tablesorter-ice tfoot td {
+        padding: 0px;
+    }
+
 }
 
-table.tablesorter td.box_grey {
-	background-color:grey;
+/*
+ * narrow mobile
+ * ____________________________________
+ */
+@media (max-width: 350px) {
+    .player_position {
+        display: none;
+    }
+
+    tr > th:first-child {
+        display: none;
+    }
+
+    th.score_total {
+        text-indent: -9999px;
+    }
 }
 
-td.selectable:hover {
-    background-color: #eee;
-    cursor: pointer;
+@media (max-width: 420px) {
+    .score_average {
+        display: none;
+    }
 }
