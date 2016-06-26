@@ -40,7 +40,7 @@
 {% for result in results_dict|getkey:league.player.id %}
 {% if league.player.id == result.player.id and opponent.player.id == result.opponent.id %}
 {% if result.inaccurate_flag %}
-<span style="color:red; font-weight: bold"> {{ result.result }} *</span>
+<span style="color:red; font-weight: bold"> {{ result.result }} <span class="astrix">*</span></span>
 <script type="text/javascript">
 $('.score_error').show();
 </script>
