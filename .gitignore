@@ -27,3 +27,6 @@
 
 #Ignore collect static location
 /static/
+
+#Ignore data directory (import/export + persist)
+/data/
