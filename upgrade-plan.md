@@ -2,9 +2,18 @@
 
 Upgrade plan and place to document any changes
 
-## Django 1.9 - 1.11.17
+## Django 1.9 - 1.11.29
 
 First step get to 1.11 LTS
+
+### Notices
+
+```
+?: (mysql.W002) MySQL Strict Mode is not set for database connection 'default'
+	HINT: MySQL's Strict Mode fixes many data integrity problems in MySQL, such as data truncation upon insertion, by escalating warnings into errors. It is strongly recommended you activate it. See: https://docs.djangoproject.com/en/1.11/ref/databases/#mysql-sql-mode
+```
+
+To pick up at later date
 
 ## Python 2 - 3.7
 
