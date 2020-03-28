@@ -28,25 +28,31 @@ class Export(object):
 
 class Command(BaseCommand):
     help = 'Exports XLS, args: year, round and optional dir (default project root)'
-    option_list = BaseCommand.option_list + (
-        make_option('--year',
-                    action='store',
-                    dest='year',
-                    default=False,
-                    help='Year of ladder'),
-    ) + (
-        make_option('--round',
-                    action='store',
-                    dest='round',
-                    default=False,
-                    help='Round of ladder'),
-    ) + (
-        make_option('--dir',
-                    action='store',
-                    dest='dir',
-                    default=os.path.dirname(os.path.realpath(__file__)),
-                    help='Directory for export'),
-    )
+
+    def add_arguments(self, parser):
+        parser.add_argument(
+            '--year',
+            action='store',
+            dest='year',
+            default=False,
+            help='Year of ladder'
+        )
+
+        parser.add_argument(
+            '--round',
+            action='store',
+            dest='round',
+            default=False,
+            help='Round of ladder'
+        )
+
+        parser.add_argument(
+            '--dir',
+            action='store',
+            dest='dir',
+            default=os.path.dirname(os.path.realpath(__file__)),
+            help='Directory for export'
+        )
 
     def handle(self, *args, **options):
 
