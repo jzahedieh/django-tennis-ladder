@@ -1,6 +1,5 @@
 from xlwt import *
 from django.core.management.base import BaseCommand, CommandError
-from optparse import make_option
 import os
 
 
@@ -139,7 +138,7 @@ class Command(BaseCommand):
             ws.col(2).width = 256 * 26
 
             #col width for results
-            for i in xrange(3, 25):
+            for i in range(3, 25):
                 ws.col(i).width = 256 * 6
 
             # names and row numbers
@@ -194,14 +193,14 @@ class Command(BaseCommand):
                 frow = (col + 1).__str__()
 
                 #pld / won
-                last_l = unichr(row + ord("A") - 1)
+                last_l = chr(row + ord("A") - 1)
                 ws.write(col, row, league.ladder.division, style0)
                 ws.write(col, row + 1, Formula('COUNT(D' + frow + ':' + last_l + frow + ')'), style0)
                 ws.write(col, row + 2, Formula('COUNTIF(D' + frow + ':' + last_l + frow + ',9)'), style0)
 
                 # total
-                pld_l = unichr(row + 2 + ord("A") - 1)
-                won_l = unichr(row + 3 + ord("A") - 1)
+                pld_l = chr(row + 2 + ord("A") - 1)
+                won_l = chr(row + 3 + ord("A") - 1)
                 ws.write(col, row + 3,
                          Formula('SUM(D' + frow + ':' + last_l + frow + ') + ' + pld_l + frow + ' + (' + won_l + frow + '*2)'),
                          style0)
@@ -209,7 +208,7 @@ class Command(BaseCommand):
                 player_counter += 1
 
             #won stats
-            last_r = unichr(total_won_row - 4 + ord("A") - 1)
+            last_r = chr(total_won_row - 4 + ord("A") - 1)
             ws.write(total_won_col, total_won_row,
                      Formula('COUNTIF(D' + total_played_col.__str__() + ':' + last_r + (col + 1).__str__() + ',9)'), style0)
             ws.write(total_played_col, total_played_row,
@@ -218,4 +217,4 @@ class Command(BaseCommand):
         filename = 'ladder' + export.season.start_date.strftime('%b') + '-' + export.season.end_date.strftime('%b%Y') + 'Results.xls'
         w.save(folder + filename)
 
-        print "Export complete to file: " + folder + filename
+        print('Export complete to file: ' + folder + filename)

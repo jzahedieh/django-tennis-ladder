@@ -33,7 +33,7 @@ def create_player_data(apps, schema_editor):
     """
     Player = apps.get_model("ladder", "Player")
 
-    for n in xrange(1, 20):
+    for n in range(1, 20):
         Player(
             first_name="Player",
             last_name="no " + n.__str__(),
@@ -49,7 +49,7 @@ def create_ladder_data(apps, schema_editor):
     Ladder = apps.get_model("ladder", "Ladder")
 
     for season in Season.objects.all():
-        for n in xrange(1, 3):
+        for n in range(1, 3):
             Ladder(
                 ladder_type="First To 9",
                 division=n.__str__(),

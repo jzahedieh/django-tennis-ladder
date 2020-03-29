@@ -1,8 +1,8 @@
-from collections import defaultdict
 import os
+from collections import defaultdict
 
-from xlrd import open_workbook
 from django.core.management.base import BaseCommand, CommandError
+from xlrd import open_workbook
 
 from ladder.models import Season, Player, Ladder, Result, League
 
@@ -46,7 +46,7 @@ class Command(BaseCommand):
         current_div = {}  # set the division counter to 0
 
         # save all players then set up ladder
-        for rownum in xrange(sh1.nrows):
+        for rownum in range(sh1.nrows):
             rows = sh1.row_values(rownum)
 
             #Find out division numbers
@@ -72,12 +72,12 @@ class Command(BaseCommand):
                 try:
                     player_object = Player.objects.get(first_name=first_name, last_name=last_name)
                 except:
-                    print 'No match for player: ' + first_name + last_name
+                    print('No match for player: ' + first_name + last_name)
                     try:
                         player_object = Player(first_name=first_name, last_name=last_name)
                         player_object.save()
                     except:
-                        print 'Failed to create player: ' + first_name + last_name
+                        print('Failed to create player: ' + first_name + last_name)
 
                 try:
                     league_object = League.objects.get(ladder=ladder, player=player_object)
@@ -86,11 +86,11 @@ class Command(BaseCommand):
                 except:
                     league_object = League.objects.create(ladder=ladder, player=player_object, sort_order=position * 10)
 
-        print 'built good'
+        print('built good')
 
         current_div = {}  # reset the division counter to 0
         # save the results
-        for rownum in xrange(sh1.nrows):
+        for rownum in range(sh1.nrows):
 
             try:
                 rows = sh1.row_values(rownum)
@@ -100,7 +100,7 @@ class Command(BaseCommand):
                     for div in rows:
                         if isinstance(div, float):
                             current_div = ('%.2f' % div).rstrip('0').rstrip('.')
-                            print current_div
+                            print(current_div)
 
                 if rows[1] == 'NAME':
                     i = 3
@@ -115,9 +115,9 @@ class Command(BaseCommand):
                         first_name = rows[1]
                         last_name = rows[2]
                     except:
-                        print 'index error for row: ' + rows[0]
+                        print('index error for row: ' + rows[0])
 
-                    for c in xrange(count):
+                    for c in range(count):
 
                         if rows[c + 3] != '':
                             score = rows[c + 3]
@@ -131,16 +131,16 @@ class Command(BaseCommand):
                             try:
                                 ladder_object = Ladder.objects.get(season=season, division=current_div)
                             except:
-                                print 'No ladder matching: ' + ' ' + str(current_div)
+                                print('No ladder matching: ' + ' ' + str(current_div))
                                 break
                             try:
                                 player_object = Player.objects.get(first_name=first_name, last_name=last_name)
                             except:
-                                print 'No match for player: ' + first_name + last_name
+                                print('No match for player: ' + first_name + last_name)
                             try:
                                 opp_object = Player.objects.get(first_name=opp_first_name, last_name=opp_last_name)
                             except:
-                                print 'No match for opp: ' + opp_first_name + opp_last_name
+                                print('No match for opp: ' + opp_first_name + opp_last_name)
 
                             try:
                                 result_object = Result.objects.get(ladder=ladder_object, player=player_object,
@@ -151,6 +151,6 @@ class Command(BaseCommand):
                                 result_object = Result(ladder=ladder_object, player=player_object, opponent=opp_object,
                                                        result=score, date_added=season.end_date)
                                 result_object.save()
-            except Exception, e:
-                print 'problem @ row: ' + rownum.__str__() + e.__str__()
+            except Exception as e:
+                print('problem @ row: ' + rownum.__str__() + e.__str__())
                 raise CommandError(e.__str__())
