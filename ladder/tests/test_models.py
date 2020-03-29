@@ -1,4 +1,3 @@
-from __future__ import division
 from django.test import TestCase
 from ladder.models import Player, Result, League, Season
 from django.db.models import Avg
