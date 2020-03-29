@@ -6,6 +6,6 @@ from django.contrib import admin
 admin.autodiscover()
 
 urlpatterns = [
-                  url(ur'^admin/', include(admin.site.urls)),
-                  url(ur'', include(u'ladder.urls', namespace="ladder")),
+                  url(r'^admin/', include(admin.site.urls)),
+                  url(r'', include(u'ladder.urls', namespace="ladder")),
               ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
