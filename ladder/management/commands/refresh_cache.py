@@ -29,7 +29,7 @@ class Command(BaseCommand):
         self.factory = RequestFactory()
         seasons = Season.objects.all()
         for season in seasons:
-            path = reverse('ladder:season', args=(unicode(season.end_date.year), unicode(season.season_round)))
+            path = reverse('ladder:season', args=(str(season.end_date.year), str(season.season_round)))
             # use the request factory to generate the correct url for the cache hash
             request = self.factory.get(path)
 

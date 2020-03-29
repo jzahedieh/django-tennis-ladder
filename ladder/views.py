@@ -239,7 +239,7 @@ def h2h_search(request, player_id):
     results = {}
     for x in head:
         results[x['opponent']] = escape(
-            unicode(x['times_played']).strip() + ' x ' + x['opponent__first_name'].strip() + ' ' + x[
+            str(x['times_played']).strip() + ' x ' + x['opponent__first_name'].strip() + ' ' + x[
                 'opponent__last_name'].strip())
 
     result_set["options"] = results

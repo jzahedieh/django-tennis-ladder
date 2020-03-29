@@ -14,7 +14,7 @@ class Season(models.Model):
         ordering = ['-start_date',]
 
     def __str__(self):
-        return unicode(self.start_date.year) + ' Round ' + unicode(self.season_round)
+        return str(self.start_date.year) + ' Round ' + str(self.season_round)
 
     def get_stats(self):
         """
@@ -158,7 +158,7 @@ class Ladder(models.Model):
     ladder_type = models.CharField(max_length=100)
 
     def __str__(self):
-        return unicode(self.season.start_date.year) + ' Round ' + unicode(self.season.season_round) + ' - Division: ' + unicode(
+        return str(self.season.start_date.year) + ' Round ' + str(self.season.season_round) + ' - Division: ' + str(
             self.division)
 
     def get_leader(self):
@@ -196,7 +196,7 @@ class Ladder(models.Model):
                 opponent = self.result_set.filter(ladder=self, player=result.opponent, opponent=result.player)[0]
             except IndexError:
                 continue  # this exception happens if result does not have opponent
-            player_opponent_index = ''.join(unicode(e) for e in sorted([result.player.id, opponent.player.id]))
+            player_opponent_index = ''.join(str(e) for e in sorted([result.player.id, opponent.player.id]))
             try:
                 if results[player_opponent_index]:
                     continue
@@ -283,4 +283,4 @@ class Result(models.Model):
 
     def __str__(self):
         return (self.player.first_name + ' ' + self.player.last_name) + ' vs ' + (
-            self.opponent.first_name + ' ' + self.opponent.last_name) + (' score: ' + unicode(self.result))
+            self.opponent.first_name + ' ' + self.opponent.last_name) + (' score: ' + str(self.result))

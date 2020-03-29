@@ -120,7 +120,7 @@ class Command(BaseCommand):
         ws.col(0).width = 256 * 5
 
         ws.write(col, 1, 'ROUND', style1)
-        ws.write(col, 2, unicode(export.season.season_round), style1)
+        ws.write(col, 2, str(export.season.season_round), style1)
         ws.write(col, 5, export.season.start_date.strftime('%b') + ' - ' + export.season.end_date.strftime('%d %B %Y'), style1)
 
         for ladder in export.ladders:

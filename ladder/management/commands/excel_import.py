@@ -131,7 +131,7 @@ class Command(BaseCommand):
                             try:
                                 ladder_object = Ladder.objects.get(season=season, division=current_div)
                             except:
-                                print 'No ladder matching: ' + ' ' + unicode(current_div)
+                                print 'No ladder matching: ' + ' ' + str(current_div)
                                 break
                             try:
                                 player_object = Player.objects.get(first_name=first_name, last_name=last_name)
