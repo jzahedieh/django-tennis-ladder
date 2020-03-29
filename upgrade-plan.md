@@ -2,7 +2,7 @@
 
 Upgrade plan and place to document any changes
 
-## Django 1.9 - 1.11.29
+## Django 1.9 - 1.11.29 [&check;]
 
 First step get to 1.11 LTS
 
@@ -16,6 +16,9 @@ First step get to 1.11 LTS
 To pick up at later date
 
 ## Python 2 - 3.7
+
+* TravisCI
+* MySQL-Python - mysqlclient
 
 Upgrade to Python 3.7 as 3.8 is not supported in 1.11.17
 
