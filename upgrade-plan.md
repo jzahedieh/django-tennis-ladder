@@ -15,12 +15,12 @@ First step get to 1.11 LTS
 
 To pick up at later date
 
-## Python 2 - 3.7
+## Python 2 - 3.7 [&check;]
 
-* TravisCI
-* MySQL-Python - mysqlclient
+Upgrade to Python 3.7 as 3.8 is not supported in 1.11.29
 
-Upgrade to Python 3.7 as 3.8 is not supported in 1.11.17
+* TravisCI &check;
+* MySQL-Python - mysqlclient &check;
 
 ## Django 1.11 - 2.2.11
 
