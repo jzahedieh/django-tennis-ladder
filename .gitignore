@@ -30,4 +30,4 @@
 
 #Ignore data directory (import/export + persist)
 /data/*
-!/data/nginx/
+!/data/nginx/app.conf.template
