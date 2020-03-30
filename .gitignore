@@ -7,6 +7,9 @@
 #Ignore temporary files created by vim
 *.swp
 
+#Ignore prod enviroment variables
+.env.prod
+
 #Ignore run_script folder
 /run_script/*
 
@@ -15,9 +18,6 @@
 
 #Libreoffice locks
 .~lock*
-
-#Ignore settings file
-/tennis/settings.py
 
 #Ignore logs
 /logs/
@@ -29,4 +29,5 @@
 /static/
 
 #Ignore data directory (import/export + persist)
-/data/
+/data/*
+!/data/nginx/

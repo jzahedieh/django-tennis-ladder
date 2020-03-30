@@ -3,7 +3,7 @@ import os
 
 SETTINGS_DIR = os.path.abspath(os.path.dirname(__file__))
 
-DEBUG = True
+DEBUG = os.environ.get("DEBUG", 1)
 
 ADMINS = (
     ('Admin User', 'admin@highgate-ladder.co.uk'),
@@ -14,10 +14,10 @@ MANAGERS = ADMINS
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'tennis',
-        'USER': 'root',
-        'PASSWORD': '',
-        'HOST': '',
+        'NAME': os.environ.get("SQL_DATABASE", "tennis"),
+        'USER':  os.environ.get("SQL_USER", "root"),
+        'PASSWORD': os.environ.get("SQL_PASSWORD", "admin123"),
+        'HOST':  os.environ.get("SQL_HOST", "db"),
         'PORT': '',
         'OPTIONS': {
             'autocommit': True,
@@ -106,7 +106,7 @@ STATICFILES_FINDERS = (
 )
 
 # Make this unique, and don't share it with anybody.
-SECRET_KEY = 'this_should_be_kept_a_secret'
+SECRET_KEY = os.environ.get("SECRET_KEY", "this_should_be_kept_a_secret")
 
 MIDDLEWARE_CLASSES = (
     'django.middleware.common.CommonMiddleware',

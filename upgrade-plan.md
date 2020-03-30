@@ -22,6 +22,20 @@ Upgrade to Python 3.7 as 3.8 is not supported in 1.11.29
 * TravisCI &check;
 * MySQL-Python - mysqlclient &check;
 
+## Move to cloud
+
+The current deployment process with django europe is very manual,
+in order to upgrade and maintain the project the plan is to move
+to Digital Ocean using docker-compose with production configuration:
+
+* mariadb
+* adminer
+  * [with login](https://www.adminer.org/en/extension/)
+* python
+  * with gunicorn
+* nginx
+* certbot
+
 ## Django 1.11 - 2.2.11
 
 Upgrade to 2.2 LTS
