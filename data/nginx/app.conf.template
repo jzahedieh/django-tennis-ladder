@@ -28,4 +28,18 @@ server {
         proxy_set_header Host $host;
         proxy_redirect off;
     }
+
+    location /adminer/ {
+        fastcgi_index index.php;
+        include /etc/nginx/fastcgi_params;
+        fastcgi_param  SCRIPT_FILENAME /var/www/html/index.php;
+        fastcgi_param  DOCUMENT_ROOT   /var/www/html/;
+        fastcgi_pass adminer:9000;
+
+        auth_basic "Adminer";
+        auth_basic_user_file /etc/nginx/conf.d/.adminer.htpasswd;
+
+        client_max_body_size 50M;
+
+    }
 }

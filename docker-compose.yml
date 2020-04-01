@@ -14,8 +14,10 @@ services:
     ports:
       - 8001:8080
   web:
-    build: .
-    command: ["./wait-for-it.sh", "db:3306", "--", "python", "./manage.py", "runserver", "0.0.0.0:8000"]
+    build:
+      context: .
+      dockerfile: ./docker/web/Dockerfile
+    command: ["./docker/web/wait-for-it.sh", "db:3306", "--", "python", "./manage.py", "runserver", "0.0.0.0:8000"]
     env_file:
       - ./.env.dev
     volumes:
