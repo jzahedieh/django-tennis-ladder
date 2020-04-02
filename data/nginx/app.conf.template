@@ -29,6 +29,11 @@ server {
         proxy_redirect off;
     }
 
+    location /static/ {
+        autoindex on;
+        alias /var/www/static/;
+    }
+
     location /adminer/ {
         fastcgi_index index.php;
         include /etc/nginx/fastcgi_params;

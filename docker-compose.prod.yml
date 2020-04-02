@@ -10,6 +10,7 @@ services:
       - ./data/nginx:/etc/nginx/conf.d
       - ./data/certbot/conf:/etc/letsencrypt
       - ./data/certbot/www:/var/www/certbot
+      - ./static:/var/www/static
     env_file:
       - ./.env.prod
     command: /bin/sh -c "envsubst '\$$NGINX_HOST' < /etc/nginx/conf.d/app.conf.template > /etc/nginx/conf.d/app.conf
@@ -38,10 +39,11 @@ services:
     build:
       context: .
       dockerfile: ./docker/web/Dockerfile
-    command: ["./docker/web/wait-for-it.sh", "db:3306", "--", "gunicorn", "tennis.wsgi:application", "--bind", "0.0.0.0:8000"]
+    command: ./docker/web/start.sh
     env_file:
       - ./.env.prod
     volumes:
       - .:/code
+      - ./static:/static
     depends_on:
       - db
