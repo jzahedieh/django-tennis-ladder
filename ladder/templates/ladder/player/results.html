@@ -7,7 +7,7 @@
         <table class="table table-condensed">
             {% for player in players %}
                 <tr>
-                    <td><a href="{% url 'ladder:player_history' player.id %}"> {{ player }} </a></td>
+                    <td><a href="{% url 'player_history' player.id %}"> {{ player }} </a></td>
                 </tr>
             {% endfor %}
         </table>

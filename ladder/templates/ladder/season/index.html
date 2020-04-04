@@ -13,7 +13,7 @@
 
     {% for ladder in ladders %}
 
-        <a href="{% url 'ladder:ladder' ladder.season.start_date|date:"Y" ladder.season.season_round ladder.division %}"> Division:  {{ ladder.division }} </a>
+        <a href="{% url 'ladder' ladder.season.start_date|date:"Y" ladder.season.season_round ladder.division %}"> Division:  {{ ladder.division }} </a>
         <table cellspacing="1" id="ladderTable{{ ladder.id }}" class="tablesorter ladder-table">
         <thead>
         <tr>

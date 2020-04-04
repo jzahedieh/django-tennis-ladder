@@ -54,20 +54,20 @@
                     <div class="nav-collapse collapse">
                         <ul class="nav">
                             <li><a href="/">Home</a></li>
-                            <li><a href="{% url 'ladder:season' season_first.start_date|date:"Y" season_first.season_round %}">Current Ladder</a></li>
+                            <li><a href="{% url 'season' season_first.start_date|date:"Y" season_first.season_round %}">Current Ladder</a></li>
                             <li class="dropdown">
                                 <a href="#" class="dropdown-toggle" data-toggle="dropdown">Previous Ladders<b class="caret"></b></a>
                                 <ul class="dropdown-menu">
                                     {% for season in navigation %}
-                                        <li><a href="{% url 'ladder:season' season.start_date|date:"Y" season.season_round %}">{{ season.start_date|date:"Y" }} Round {{ season.season_round }}</a></li>
+                                        <li><a href="{% url 'season' season.start_date|date:"Y" season.season_round %}">{{ season.start_date|date:"Y" }} Round {{ season.season_round }}</a></li>
                                     {% endfor %}
                                     {% if season_count > 0 %}
-                                        <li><a href="{% url 'ladder:list'%}">.. view all {{ season_count }} ladders ..</a></li>
+                                        <li><a href="{% url 'list'%}">.. view all {{ season_count }} ladders ..</a></li>
                                     {% endif %}
                                 </ul>
                             </li>
                         </ul>
-                        <form class="navbar-form pull-right" id="find_player_form" action="{% url 'ladder:player_result' %}" method="get">
+                        <form class="navbar-form pull-right" id="find_player_form" action="{% url 'player_result' %}" method="get">
                             <input id="player-search" type="text" name="player_name" placeholder="Search Players" data-provide="typeahead"  autocomplete="off">
                             <button type="submit" class="btn">Find</button>
                         </form>

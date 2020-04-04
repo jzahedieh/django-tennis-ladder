@@ -138,7 +138,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.AutoField(auto_created=True, serialize=False, primary_key=True, verbose_name='ID')),
                 ('sort_order', models.IntegerField(default=0)),
-                ('ladder', models.ForeignKey(to='ladder.Ladder')),
+                ('ladder', models.ForeignKey(to='ladder.Ladder', on_delete=models.CASCADE)),
             ],
             options={
                 'ordering': ['sort_order'],
@@ -163,7 +163,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='league',
             name='player',
-            field=models.ForeignKey(to='ladder.Player'),
+            field=models.ForeignKey(to='ladder.Player', on_delete=models.CASCADE),
             preserve_default=True,
         ),
         migrations.CreateModel(
@@ -173,9 +173,9 @@ class Migration(migrations.Migration):
                 ('result', models.IntegerField()),
                 ('date_added', models.DateField(verbose_name='Date added')),
                 ('inaccurate_flag', models.BooleanField(default=None)),
-                ('ladder', models.ForeignKey(to='ladder.Ladder')),
-                ('opponent', models.ForeignKey(to='ladder.Player')),
-                ('player', models.ForeignKey(to='ladder.Player')),
+                ('ladder', models.ForeignKey(to='ladder.Ladder', on_delete=models.CASCADE)),
+                ('opponent', models.ForeignKey(to='ladder.Player', on_delete=models.CASCADE)),
+                ('player', models.ForeignKey(to='ladder.Player', on_delete=models.CASCADE)),
             ],
             options={
             },
@@ -197,7 +197,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='ladder',
             name='season',
-            field=models.ForeignKey(to='ladder.Season'),
+            field=models.ForeignKey(to='ladder.Season', on_delete=models.CASCADE),
             preserve_default=True,
         ),
         migrations.RunPython(create_season_data),

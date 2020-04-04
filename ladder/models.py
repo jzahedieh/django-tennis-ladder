@@ -152,7 +152,7 @@ class Player(models.Model):
 
 
 class Ladder(models.Model):
-    season = models.ForeignKey(Season)
+    season = models.ForeignKey(Season, on_delete=models.CASCADE)
     division = models.IntegerField()
     ladder_type = models.CharField(max_length=100)
 
@@ -229,8 +229,8 @@ class Ladder(models.Model):
 
 
 class League(models.Model):
-    ladder = models.ForeignKey(Ladder)
-    player = models.ForeignKey(Player)
+    ladder = models.ForeignKey(Ladder, on_delete=models.CASCADE)
+    player = models.ForeignKey(Player, on_delete=models.CASCADE)
     sort_order = models.IntegerField(default=0)
 
     class Meta(object):
@@ -273,9 +273,9 @@ class League(models.Model):
 
 
 class Result(models.Model):
-    ladder = models.ForeignKey(Ladder)
-    player = models.ForeignKey(Player, related_name='result_player')
-    opponent = models.ForeignKey(Player, related_name='result_opponent')
+    ladder = models.ForeignKey(Ladder, on_delete=models.CASCADE)
+    player = models.ForeignKey(Player,on_delete=models.CASCADE, related_name='result_player')
+    opponent = models.ForeignKey(Player, on_delete=models.CASCADE, related_name='result_opponent')
     result = models.IntegerField()
     date_added = models.DateField('Date added')
     inaccurate_flag = models.BooleanField(default=None)

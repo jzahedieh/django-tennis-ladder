@@ -40,7 +40,7 @@ $(document).ready(function()
             {% with player_counter=forloop.counter %}
                 <tr>
                     <td class="player_position"><strong> {{ player_counter }} </strong></td>
-                    <td class="player_name"> <a href="{% url 'ladder:player_history' league.player.id %}"> {{ league.player }} </a> </td>
+                    <td class="player_name"> <a href="{% url 'player_history' league.player.id %}"> {{ league.player }} </a> </td>
                         {% for opponent in ladder.league_set.all %}
                             {% with column_counter=forloop.counter %}
                                 {% if column_counter == player_counter %}
@@ -48,8 +48,8 @@ $(document).ready(function()
                                 {% else %}
                                     <td class="score_field selectable" data-player="{{ league.player.id }}"
                                         data-opp="{{ opponent.player.id }}"
-                                        onclick="location.href='{% url 'ladder:head_to_head' league.player.id opponent.player.id %}'">
-                                        <a href="{% url 'ladder:head_to_head' league.player.id opponent.player.id %}">
+                                        onclick="location.href='{% url 'head_to_head' league.player.id opponent.player.id %}'">
+                                        <a href="{% url 'head_to_head' league.player.id opponent.player.id %}">
                                             <div style="height:100%;width:100%">
                                                 {% for result in results_dict|getkey:league.player.id %}
                                                     {% if league.player == result.player and opponent.player == result.opponent %}

@@ -1,7 +1,7 @@
 from django.core.management.base import BaseCommand, CommandError
 from django.test.client import RequestFactory
 from django.conf import settings
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 
 from ladder.models import Season
 from ladder.views import season as season_view

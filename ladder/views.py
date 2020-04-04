@@ -4,7 +4,7 @@ import json
 from django.http import HttpResponseRedirect, Http404, HttpResponse
 from django.shortcuts import render, get_object_or_404
 from django.utils.html import escape
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.views.decorators.cache import cache_page
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q, Count, Max
@@ -51,7 +51,7 @@ def list_rounds(request):
 def current_season_redirect(request):
     season_first = Season.objects.latest('start_date')
 
-    return HttpResponseRedirect(reverse('ladder:season', args=(
+    return HttpResponseRedirect(reverse('season', args=(
         season_first.start_date.year, season_first.season_round)
     ))
 
@@ -134,7 +134,7 @@ def add(request, year, season_round, division_id):
             losing_result.save()
             winning_result.save()
 
-            return HttpResponseRedirect(reverse('ladder:add', args=(
+            return HttpResponseRedirect(reverse('add', args=(
                 ladder_object.season.start_date.year, ladder_object.season.season_round, ladder_object.division)))
     else:
         form = AddResultForm(ladder_object, instance=result)

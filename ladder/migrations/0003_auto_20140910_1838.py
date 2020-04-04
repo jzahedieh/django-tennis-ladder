@@ -28,11 +28,11 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='result',
             name='opponent',
-            field=models.ForeignKey(to='ladder.Player', related_name='result_opponent'),
+            field=models.ForeignKey(to='ladder.Player', related_name='result_opponent', on_delete=models.CASCADE),
         ),
         migrations.AlterField(
             model_name='result',
             name='player',
-            field=models.ForeignKey(to='ladder.Player', related_name='result_player'),
+            field=models.ForeignKey(to='ladder.Player', related_name='result_player', on_delete=models.CASCADE),
         ),
     ]

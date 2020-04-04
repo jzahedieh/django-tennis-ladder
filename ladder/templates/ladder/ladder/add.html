@@ -72,10 +72,10 @@ function updateForm() {
 
 <div class="add_navigation">
     {% if previous_ladder %}
-        <a href="{% url 'ladder:add' ladder.season.start_date|date:"Y" ladder.season.season_round previous_ladder.division %}">Previous</a>
+        <a href="{% url 'add' ladder.season.start_date|date:"Y" ladder.season.season_round previous_ladder.division %}">Previous</a>
     {% endif %}
     {% if next_ladder %}
-        <a href="{% url 'ladder:add' ladder.season.start_date|date:"Y" ladder.season.season_round next_ladder.division %}">Next </a>
+        <a href="{% url 'add' ladder.season.start_date|date:"Y" ladder.season.season_round next_ladder.division %}">Next </a>
     {% endif %}
 </div>
 
@@ -127,7 +127,7 @@ function updateForm() {
         </tbody>
     </table>
 
-    <form id="add_result_form" action="{% url 'ladder:add' ladder.season.start_date.year ladder.season.season_round ladder.division %}" method="post">{% csrf_token %}
+    <form id="add_result_form" action="{% url 'add' ladder.season.start_date.year ladder.season.season_round ladder.division %}" method="post">{% csrf_token %}
         {{ form.as_p }}
         <input type="submit" value="Add Result"/>
     </form>

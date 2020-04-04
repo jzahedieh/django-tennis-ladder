@@ -16,7 +16,7 @@
             <tbody>
             {% for season in seasons %}
                 <tr class="season" data-season={{ season.id }}>
-                <td><a href="{% url 'ladder:season' season.start_date|date:"Y" season.season_round  %}">{{ season }}</a></td>
+                <td><a href="{% url 'season' season.start_date|date:"Y" season.season_round  %}">{{ season }}</a></td>
                     <td>{{ season.ladder_set.all.count }}</td>
                 </tr>
             {% endfor %}
