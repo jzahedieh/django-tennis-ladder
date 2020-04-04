@@ -1,4 +1,4 @@
-FROM python:3.7
+FROM python:3.8
 
 # Stream logs instead of buffer
 ENV PYTHONUNBUFFERED 1

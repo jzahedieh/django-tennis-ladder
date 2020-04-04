@@ -36,11 +36,11 @@ to Digital Ocean using docker-compose with production configuration:
 * nginx
 * certbot
 
-## Django 1.11 - 2.2.11
+## Django 1.11 - 2.2.11 [&check;]
 
 Upgrade to 2.2 LTS
 
-## Python 3.7 - 3.8
+## Python 3.7 - 3.8 [&check;]
 
 Upgrade to latest Python 3
 

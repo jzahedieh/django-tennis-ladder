@@ -3,7 +3,7 @@ import os
 
 SETTINGS_DIR = os.path.abspath(os.path.dirname(__file__))
 
-DEBUG = os.environ.get("DEBUG", 1)
+DEBUG = os.environ.get("DEBUG_VALUE") == 'True'
 
 ADMINS = (
     ('Admin User', 'admin@highgate-ladder.co.uk'),
