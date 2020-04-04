@@ -44,7 +44,7 @@ Upgrade to 2.2 LTS
 
 Upgrade to latest Python 3
 
-## Django 2.2 - 3.0
+## Django 2.2 - 3.0 [&check;]
 
 Upgrade to latest 3.0
 
