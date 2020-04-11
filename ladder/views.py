@@ -1,22 +1,23 @@
 import datetime
 import json
 
-from django.http import HttpResponseRedirect, Http404, HttpResponse
-from django.shortcuts import render, get_object_or_404
-from django.utils.html import escape
-from django.urls import reverse
-from django.views.decorators.cache import cache_page
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q, Count, Max
+from django.http import HttpResponseRedirect, Http404, HttpResponse
+from django.shortcuts import render, get_object_or_404
+from django.urls import reverse
+from django.utils.html import escape
+from django.views.decorators.cache import cache_page
 from django.views.decorators.gzip import gzip_page
 
-from ladder.models import Ladder, Player, Result, Season, League
 from ladder.forms import AddResultForm
+from ladder.models import Ladder, Player, Result, Season, League
 
 
 @gzip_page
 @cache_page(60 * 60 * 24 * 2, key_prefix='index')  # 2 day page cache
 def index(request):
+    print (request.META.get('HTTP_X_FORWARDED_FOR', request.META.get('REMOTE_ADDR', '')).split(',')[0].strip());
     current_season = Season.objects.latest('start_date')
     os_year = Season.objects.order_by('start_date')[0].start_date.year
     cs_year = current_season.start_date.year
