@@ -15,7 +15,6 @@ from ladder.models import Ladder, Player, Result, Season, League
 
 @cache_page(60 * 60 * 24 * 2, key_prefix='index')  # 2 day page cache
 def index(request):
-    print (request.META.get('HTTP_X_FORWARDED_FOR', request.META.get('REMOTE_ADDR', '')).split(',')[0].strip());
     current_season = Season.objects.latest('start_date')
     os_year = Season.objects.order_by('start_date')[0].start_date.year
     cs_year = current_season.start_date.year
