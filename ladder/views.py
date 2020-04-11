@@ -1,20 +1,18 @@
 import datetime
 import json
 
-from django.http import HttpResponseRedirect, Http404, HttpResponse
-from django.shortcuts import render, get_object_or_404
-from django.utils.html import escape
-from django.urls import reverse
-from django.views.decorators.cache import cache_page
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q, Count, Max
-from django.views.decorators.gzip import gzip_page
+from django.http import HttpResponseRedirect, Http404, HttpResponse
+from django.shortcuts import render, get_object_or_404
+from django.urls import reverse
+from django.utils.html import escape
+from django.views.decorators.cache import cache_page
 
-from ladder.models import Ladder, Player, Result, Season, League
 from ladder.forms import AddResultForm
+from ladder.models import Ladder, Player, Result, Season, League
 
 
-@gzip_page
 @cache_page(60 * 60 * 24 * 2, key_prefix='index')  # 2 day page cache
 def index(request):
     current_season = Season.objects.latest('start_date')
@@ -38,7 +36,6 @@ def index(request):
     return render(request, 'ladder/index.html', context)
 
 
-@gzip_page
 @cache_page(60 * 60 * 24, key_prefix='round')  # 1 day page cache
 def list_rounds(request):
     seasons = Season.objects.order_by('-start_date')
@@ -56,7 +53,6 @@ def current_season_redirect(request):
     ))
 
 
-@gzip_page
 @cache_page(60 * 60, key_prefix='season')  # 1 hour page cache
 def season(request, year, season_round):
     season_object = get_object_or_404(Season, start_date__year=year, season_round=season_round)
@@ -77,7 +73,6 @@ def season(request, year, season_round):
     )
 
 
-@gzip_page
 def ladder(request, year, season_round, division_id):
     ladder_object = get_object_or_404(Ladder, division=division_id, season__start_date__year=year,
                                       season__season_round=season_round)
@@ -150,7 +145,6 @@ def add(request, year, season_round, division_id):
                    'next_ladder': next_ladder, 'previous_ladder': previous_ladder})
 
 
-@gzip_page
 def player_history(request, player_id):
     player = get_object_or_404(Player, pk=player_id)
     league_set = player.league_set.order_by('-ladder__season__start_date')
@@ -167,7 +161,6 @@ def player_history(request, player_id):
                   {'player': player, 'league_set': league_set, 'ladder_set': league_set, 'head': head})
 
 
-@gzip_page
 def head_to_head(request, player_id, opponent_id):
     player = get_object_or_404(Player, pk=player_id)
     opponent = get_object_or_404(Player, pk=opponent_id)
@@ -185,7 +178,6 @@ def head_to_head(request, player_id, opponent_id):
                   {'stats': stats, 'results': results, 'player': player, 'opponent': opponent})
 
 
-@gzip_page
 def player_result(request):
     query = request.GET.get('player_name', False)
     if query is False:

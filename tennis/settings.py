@@ -53,7 +53,7 @@ TEMPLATES = [
 
 # Hosts/domain names that are valid for this site; required if DEBUG is False
 # See https://docs.djangoproject.com/en/1.5/ref/settings/#allowed-hosts
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = '*'
 
 # Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
@@ -109,12 +109,12 @@ STATICFILES_FINDERS = (
 SECRET_KEY = os.environ.get("SECRET_KEY", "this_should_be_kept_a_secret")
 
 MIDDLEWARE = (
+    'debug_toolbar.middleware.DebugToolbarMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
-    'ladder.middleware.DisableClientCachingMiddleware'
     # Uncomment the next line for simple clickjacking protection:
     # 'django.middleware.clickjacking.XFrameOptionsMiddleware',
 )
@@ -135,6 +135,7 @@ INSTALLED_APPS = (
     'django.contrib.admin',
     # Uncomment the next line to enable admin documentation:
     # 'django.contrib.admindocs',
+    'debug_toolbar',
     'ladder',
 )
 
@@ -175,4 +176,9 @@ LOGGING = {
     }
 }
 
-ALLOWED_HOSTS = '*'
+INTERNAL_IPS = (
+    '127.0.0.1',
+    '0.0.0.0',
+    '172.21.0.1',
+    '172.23.0.1'
+)
