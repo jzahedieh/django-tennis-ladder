@@ -1,5 +1,7 @@
 {% extends 'base.html' %}
 {% load ladder_extras %}
+{% load render_table from django_tables2 %}
+
 
 {% block container %}
 <link rel="stylesheet" type="text/css" href="/static/css/theme.ice.css" />
@@ -22,61 +24,8 @@ $(document).ready(function()
     <a href="javascript:history.go(-1)">Back</a>
 
     <span class="score_error" style="color:red; font-weight: bold; display: none">* Flagged as inaccurate, please double check physical copy.</span>
-    <table id="ladderTable" class="tablesorter">
-        <thead>
-       	    <tr>
-                <th></th>
-                <th class="{sorter: false}">Name</th>
-                {% for i in ladder.league_set.all %}
-                    <th class="score_field {sorter: false}"><strong> {{ forloop.counter }} </strong></th>
-                {% endfor %}
-                <th class="score_field score_total score_average">Average</th>
-                <th class="score_field score_total">Total</th>
-            </tr>
-        </thead>
 
-       <tbody>
-        {% for league in ladder.league_set.all %}
-            {% with player_counter=forloop.counter %}
-                <tr>
-                    <td class="player_position"><strong> {{ player_counter }} </strong></td>
-                    <td class="player_name"> <a href="{% url 'player_history' league.player.id %}"> {{ league.player }} </a> </td>
-                        {% for opponent in ladder.league_set.all %}
-                            {% with column_counter=forloop.counter %}
-                                {% if column_counter == player_counter %}
-                                    <td class="box_grey score_field"></td>
-                                {% else %}
-                                    <td class="score_field selectable" data-player="{{ league.player.id }}"
-                                        data-opp="{{ opponent.player.id }}"
-                                        onclick="location.href='{% url 'head_to_head' league.player.id opponent.player.id %}'">
-                                        <a href="{% url 'head_to_head' league.player.id opponent.player.id %}">
-                                            <div style="height:100%;width:100%">
-                                                {% for result in results_dict|getkey:league.player.id %}
-                                                    {% if league.player == result.player and opponent.player == result.opponent %}
-                                           {% if result.inaccurate_flag %}
-                                                <span style="color:red; font-weight: bold"> {{ result.result }} <span class="astrix">*</span></span>
-                                                <script type="text/javascript">
-                                                    $('.score_error').show();
-                                                </script>
-                                            {% else %}
-                                                {{ result.result }}
-                                            {% endif %}
-                                        {% endif %}
-                                    {% endfor %}
-                                            </div>
-                                        </a>
-                                    </td>
-                                {% endif %}
-                            {% endwith %}
-                        {% endfor %}
-
-                    <td class="score_field score_total score_average"> {{ results_dict|getaverage:league.player.id }} </td>
-                    <td class="score_field score_total"> {{ results_dict|gettotal:league.player.id }} </td>
-                </tr>
-            {% endwith %}
-        {% endfor %}
-        </tbody>
-    </table>
+    {% render_table table %}
 
     <div class="row">
         <div class="span6">

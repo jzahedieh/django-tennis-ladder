@@ -9,8 +9,11 @@ from django.urls import reverse
 from django.utils.html import escape
 from django.views.decorators.cache import cache_page
 
+from django_tables2 import SingleTableView
+
 from ladder.forms import AddResultForm
 from ladder.models import Ladder, Player, Result, Season, League
+from ladder.tables import LeagueResultTable
 
 
 @cache_page(60 * 60 * 24 * 2, key_prefix='index')  # 2 day page cache
@@ -71,6 +74,11 @@ def season(request, year, season_round):
         request, 'ladder/season/index.html',
         dict(season=season_object, ladders=ladders, results_dict=results_dict, league=league)
     )
+
+class LeagueView(SingleTableView):
+    model = League
+    table_class = LeagueResultTable
+    template_name = 'ladder/ladder/index.html'
 
 
 def ladder(request, year, season_round, division_id):
