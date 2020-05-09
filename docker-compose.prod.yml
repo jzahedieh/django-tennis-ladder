@@ -28,12 +28,15 @@ services:
       - ./data/certbot/www:/var/www/certbot
     entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
   db:
-    image: mariadb:10.1
+    build:
+      context: .
+      dockerfile: ./docker/db/Dockerfile
     restart: unless-stopped
     env_file:
       - ./.env.prod
     volumes:
       - ./data/db:/var/lib/mysql
+      - ./data/db-backup:/backup
   adminer:
     image: adminer:4-fastcgi
     restart: unless-stopped
