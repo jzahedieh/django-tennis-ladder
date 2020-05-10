@@ -1,5 +1,6 @@
 import datetime
 import json
+import django_tables2 as tables
 
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q, Count, Max
@@ -95,21 +96,23 @@ def ladder(request, year, season_round, division_round):
     for league_object in leagues:
         player_order.append(league_object.player_id)
 
+    player_columns = []
     for league_object in leagues:
         player_row = player_order.index(league_object.player_id) + 1
+        player_columns.append((str(player_row), tables.Column()))
         row = {
             "id": player_row,
             "name": league_object.player,
-            "player_" + str(player_row): 'X'
+            str(player_row): 'X'
         }
 
         for b_result in results_dict.get(league_object.player_id) or []:
             opponent_row = player_order.index(b_result.opponent_id) + 1
-            row.update({"player_" + str(opponent_row): b_result.result})
+            row.update({str(opponent_row): b_result.result})
 
         rows.append(row)
 
-    table = LeagueResultTable(rows)
+    table = LeagueResultTable(data=rows, extra_columns=player_columns)
 
     return render(request, 'ladder/ladder/index.html', {'table': table})
 
