@@ -9,7 +9,7 @@ urlpatterns = [
     # ex: /2013/round/1/
     re_path(r'^(?P<year>\d+)/round/(?P<season_round>\d+)/$', views.season, name='season'),
     # ex: /2013/round/1/division/1-n
-    re_path(r'^(?P<year>\d+)/round/(?P<season_round>\d+)/division/(?P<division_id>\w+)/$', views.LeagueView.as_view(), name='ladder'),
+    re_path(r'^(?P<year>\d+)/round/(?P<season_round>\d+)/division/(?P<division_round>\w+)/$', views.ladder, name='ladder'),
     # ex: /2013/round/1/division/1-n/add/
     re_path(r'^(?P<year>\d+)/round/(?P<season_round>\d+)/division/(?P<division_id>\w+)/add/$', views.add, name='add'),
     # ex: /head_to_head/1/vs/2

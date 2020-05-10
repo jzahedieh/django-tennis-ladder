@@ -13,7 +13,7 @@ from django_tables2 import SingleTableView
 
 from ladder.forms import AddResultForm
 from ladder.models import Ladder, Player, Result, Season, League
-from ladder.tables import LeagueResultTable
+from ladder.tables import LeagueResultTable, TestTable
 
 
 @cache_page(60 * 60 * 24 * 2, key_prefix='index')  # 2 day page cache
@@ -75,24 +75,45 @@ def season(request, year, season_round):
         dict(season=season_object, ladders=ladders, results_dict=results_dict, league=league)
     )
 
-class LeagueView(SingleTableView):
-    model = League
-    table_class = LeagueResultTable
-    template_name = 'ladder/ladder/index.html'
+def ladder(request, year, season_round, division_round):
+    leagues = League.objects.filter(
+        ladder__division=division_round,
+        ladder__season__start_date__year=year,
+        ladder__season__season_round=season_round
+    ).order_by('sort_order')
 
-
-def ladder(request, year, season_round, division_id):
-    ladder_object = get_object_or_404(Ladder, division=division_id, season__start_date__year=year,
-                                      season__season_round=season_round)
-
-    results = Result.objects.filter(ladder=ladder_object)
+    results = Result.objects.filter(
+        ladder__division=division_round,
+        ladder__season__start_date__year=year,
+        ladder__season__season_round=season_round
+    )
 
     results_dict = {}
-
     for result in results:
         results_dict.setdefault(result.player.id, []).append(result)
 
-    return render(request, 'ladder/ladder/index.html', {'ladder': ladder_object, 'results_dict': results_dict})
+    rows = []
+    player_order = []
+    for league_object in leagues:
+        player_order.append(league_object.player_id)
+
+    for league_object in leagues:
+        player_row = player_order.index(league_object.player_id) + 1
+        row = {
+            "id": player_row,
+            "name": league_object.player,
+            "player_" + str(player_row): 'X'
+        }
+
+        for b_result in results_dict.get(league_object.player_id) or []:
+            opponent_row = player_order.index(b_result.opponent_id) + 1
+            row.update({"player_" + str(opponent_row): b_result.result})
+
+        rows.append(row)
+
+    table = TestTable(rows)
+
+    return render(request, 'ladder/ladder/index.html', {'table': table})
 
 
 @login_required
