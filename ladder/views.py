@@ -9,11 +9,9 @@ from django.urls import reverse
 from django.utils.html import escape
 from django.views.decorators.cache import cache_page
 
-from django_tables2 import SingleTableView
-
 from ladder.forms import AddResultForm
 from ladder.models import Ladder, Player, Result, Season, League
-from ladder.tables import LeagueResultTable, TestTable
+from ladder.tables import LeagueResultTable
 
 
 @cache_page(60 * 60 * 24 * 2, key_prefix='index')  # 2 day page cache
@@ -111,7 +109,7 @@ def ladder(request, year, season_round, division_round):
 
         rows.append(row)
 
-    table = TestTable(rows)
+    table = LeagueResultTable(rows)
 
     return render(request, 'ladder/ladder/index.html', {'table': table})
 
