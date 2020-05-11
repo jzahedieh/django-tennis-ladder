@@ -13,7 +13,7 @@ from django.views.decorators.cache import cache_page
 from ladder.forms import AddResultForm
 from ladder.models import Ladder, Player, Result, Season, League
 from ladder.tables import LeagueResultTable
-
+from ladder.templatetags import ladder_extras
 
 @cache_page(60 * 60 * 24 * 2, key_prefix='index')  # 2 day page cache
 def index(request):
@@ -96,10 +96,10 @@ def ladder(request, year, season_round, division_round):
     for league_object in leagues:
         player_order.append(league_object.player_id)
 
-    player_columns = []
+    columns = []
     for league_object in leagues:
         player_row = player_order.index(league_object.player_id) + 1
-        player_columns.append((str(player_row), tables.Column()))
+        columns.append((str(player_row), tables.Column()))
         row = {
             "id": player_row,
             "name": league_object.player,
@@ -110,9 +110,15 @@ def ladder(request, year, season_round, division_round):
             opponent_row = player_order.index(b_result.opponent_id) + 1
             row.update({str(opponent_row): b_result.result})
 
+        row.update({
+            'average': ladder_extras.getaverage(results_dict, league_object.player_id),
+            'total': ladder_extras.gettotal(results_dict, league_object.player_id)
+        })
         rows.append(row)
 
-    table = LeagueResultTable(data=rows, extra_columns=player_columns)
+    columns.append(('average', tables.Column()))
+    columns.append(('total', tables.Column()))
+    table = LeagueResultTable(data=rows, extra_columns=columns)
 
     return render(request, 'ladder/ladder/index.html', {'table': table})
 
