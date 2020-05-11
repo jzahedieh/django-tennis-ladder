@@ -99,7 +99,19 @@ def ladder(request, year, season_round, division_round):
     columns = []
     for league_object in leagues:
         player_row = player_order.index(league_object.player_id) + 1
-        columns.append((str(player_row), tables.Column()))
+
+        columns.append((str(player_row), tables.Column(
+            attrs={
+                "th": {"class": "sorter-false"},
+                "td": {
+                    "class": "score_field selectable",
+                    "data-self": lambda value: int(str(value) == 'X'),
+                    "data-player": league_object.player_id,
+                    "data-opp": 'todo lookup'
+                }
+            }
+        )))
+
         row = {
             "id": player_row,
             "name": league_object.player,

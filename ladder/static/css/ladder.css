@@ -13,6 +13,15 @@ table.tablesorter td.box_grey {
     background-color: grey;
 }
 
+table.tablesorter tr.odd td {
+    background-color: white;
+}
+
+table.tablesorter td[data-self="1"] {
+    background-color: grey !important;
+    font-size: 0;
+}
+
 table.tablesorter td.score_field {
     min-width: 30px;
     text-align: center;

@@ -1,12 +1,38 @@
 {% extends 'base.html' %}
-{% load ladder_extras %}
 {% load render_table from django_tables2 %}
 
 
 {% block container %}
+    <link rel="stylesheet" type="text/css" href="/static/css/theme.ice.css" />
+    <link rel="stylesheet" type="text/css" href="/static/css/ladder.css" />
+    <script type="text/javascript" src="/static/js/jquery.tablesorter.min.js"></script>
+    <script type="text/javascript" src="/static/js/jquery.metadata.js"></script>
 
-    todo
+    <script type="text/javascript">
+    $(document).ready(function()
+        {
+            $(".ladderTable").tablesorter({
+                theme: 'ice'
+            });
+        }
+    );
+    </script>
 
     {% render_table table %}
 
+    <script type="text/javascript">
+
+        $(document).ready(function () {
+                    $(".selectable").hover(function () {
+                        opponentSelector(this).css("background-color", "black")
+                    }, function () {
+                        opponentSelector(this).css("background-color", "");
+                    });
+
+                }
+        );
+        function opponentSelector(element) {
+            return $('td[data-player=' + $(element).data('opp') + '][data-opp=' + $(element).data('player') + ']');
+        }
+    </script>
 {% endblock %}
