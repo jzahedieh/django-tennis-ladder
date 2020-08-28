@@ -1,6 +1,7 @@
 import operator
 from django.db import models
 from django.db.models import Avg
+from django.contrib.auth.models import User
 
 
 class Season(models.Model):
@@ -100,6 +101,7 @@ class Season(models.Model):
 class Player(models.Model):
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
+    user = models.ForeignKey(User, null=True, on_delete=models.SET_NULL)
 
     def __str__(self):
         string = self.first_name

@@ -273,3 +273,9 @@ def season_ajax_progress(request):
         raise Http404
 
     return HttpResponse(json.dumps(season_object.get_progress()), content_type="application/json")
+
+
+def result_entry(request):
+    user = request.user
+
+    return render(request, 'ladder/result/entry.html', {'user': user})

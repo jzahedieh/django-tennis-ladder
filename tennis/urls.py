@@ -7,8 +7,8 @@ admin.autodiscover()
 
 urlpatterns = [
                   re_path(r'^admin/', admin.site.urls),
-                  re_path(r'^accounts/login/$', admin.site.login, name='login'),
                   re_path(r'', include('ladder.urls')),
+                  path('accounts/', include('django.contrib.auth.urls')),
               ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 
 if settings.DEBUG:

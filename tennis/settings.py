@@ -119,6 +119,8 @@ MIDDLEWARE = (
     # 'django.middleware.clickjacking.XFrameOptionsMiddleware',
 )
 
+LOGIN_REDIRECT_URL = '/result/entry/'
+
 ROOT_URLCONF = 'tennis.urls'
 
 # Python dotted path to the WSGI application used by Django's runserver.
