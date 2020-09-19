@@ -101,7 +101,7 @@ class Season(models.Model):
 class Player(models.Model):
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
-    user = models.ForeignKey(User, null=True, on_delete=models.SET_NULL)
+    user = models.ForeignKey(User, null=True, on_delete=models.SET_NULL, blank=True)
 
     def __str__(self):
         string = self.first_name
