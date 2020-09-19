@@ -119,12 +119,17 @@ MIDDLEWARE = (
     # 'django.middleware.clickjacking.XFrameOptionsMiddleware',
 )
 
+LOGIN_REDIRECT_URL = '/result/entry/'
+LOGOUT_REDIRECT_URL = '/'
+
 ROOT_URLCONF = 'tennis.urls'
 
 # Python dotted path to the WSGI application used by Django's runserver.
 WSGI_APPLICATION = 'tennis.wsgi.application'
 
 INSTALLED_APPS = (
+    'debug_toolbar',
+    'ladder',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -135,8 +140,6 @@ INSTALLED_APPS = (
     'django.contrib.admin',
     # Uncomment the next line to enable admin documentation:
     # 'django.contrib.admindocs',
-    'debug_toolbar',
-    'ladder',
 )
 
 CACHES = {
@@ -175,6 +178,11 @@ LOGGING = {
         },
     }
 }
+
+EMAIL_PORT = os.environ.get('EMAIL_PORT')
+EMAIL_HOST = os.environ.get('EMAIL_HOST')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 
 INTERNAL_IPS = (
     '127.0.0.1',
