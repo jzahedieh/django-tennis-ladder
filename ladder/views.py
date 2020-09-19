@@ -331,4 +331,8 @@ def result_entry_add(request):
         return HttpResponseRedirect(reverse('add', args=(
             ladder_object.season.start_date.year, ladder_object.season.season_round, ladder_object.division)))
 
-    return render(request, 'ladder/result/entry.html', {'user': user})
+    return render(request, 'ladder/result/entry.html', {
+        'user': user,
+        'ladder': ladder_object,
+        'form': form
+    })
