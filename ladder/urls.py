@@ -23,5 +23,5 @@ urlpatterns = [
     re_path(r'^season/ajax/stats/$', views.season_ajax_stats, name='season_ajax_stats'),
     re_path(r'^season/ajax/progress/$', views.season_ajax_progress, name='season_ajax_progress'),
     re_path(r'^result/entry/$', views.result_entry, name='result_entry'),
-
+    re_path(r'^result/entry/add/$', views.result_entry_add, name='result_entry_add'),
 ]

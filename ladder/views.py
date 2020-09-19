@@ -9,7 +9,7 @@ from django.urls import reverse
 from django.utils.html import escape
 from django.views.decorators.cache import cache_page
 
-from ladder.forms import AddResultForm
+from ladder.forms import AddResultForm, AddEntryForm
 from ladder.models import Ladder, Player, Result, Season, League
 
 
@@ -274,8 +274,61 @@ def season_ajax_progress(request):
 
     return HttpResponse(json.dumps(season_object.get_progress()), content_type="application/json")
 
-
+@login_required
 def result_entry(request):
+    user_object = request.user
+    try:
+        ladder_object = Ladder.objects.filter(league__player__user=user_object).order_by('-id')[0]
+    except IndexError:
+        raise Http404
+
+    result = Result(ladder=ladder_object, date_added=datetime.datetime.now())
+    form = AddEntryForm(ladder_object, user_object, instance=result)
+
+    return render(request, 'ladder/result/entry.html', {
+        'user': user_object,
+        'ladder': ladder_object,
+        'form': form
+    })
+
+@login_required
+def result_entry_add(request):
     user = request.user
+    ladder_object = Ladder.objects.filter(league__player__user=user).order_by('-id')[0]
+    result = Result(ladder=ladder_object, date_added=datetime.datetime.now(), inaccurate_flag=0)
+
+    form = AddEntryForm(ladder_object, user, request.POST, instance=result)
+
+    if form.is_valid():
+        user_result = form.save(commit=False)
+        is_user_winner = form.cleaned_data['winner'] == 1
+        losing_result = form.cleaned_data['result']
+
+        # check for existing results, assume update if find a match aka delete
+        try:
+            existing_player_result = Result.objects.get(ladder=ladder_object, player=user_result.player,
+                                                        opponent=user_result.opponent)
+            existing_player_result.delete()
+            existing_opponent_result = Result.objects.get(ladder=ladder_object, player=user_result.opponent,
+                                                          opponent=user_result.player)
+            existing_opponent_result.delete()
+        except Result.DoesNotExist:
+            pass
+
+        # build the mirror result (aka opponent) from losing form data
+        opponent_result = Result(ladder=user_result.ladder, player=user_result.opponent,
+                                opponent=user_result.player, result=9, date_added=user_result.date_added,
+                                inaccurate_flag=user_result.inaccurate_flag)
+
+        # switch flag if user is winner
+        if is_user_winner:
+            opponent_result.result = losing_result
+            user_result.result = 9
+
+        user_result.save()
+        opponent_result.save()
+
+        return HttpResponseRedirect(reverse('add', args=(
+            ladder_object.season.start_date.year, ladder_object.season.season_round, ladder_object.division)))
 
     return render(request, 'ladder/result/entry.html', {'user': user})

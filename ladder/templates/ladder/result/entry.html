@@ -2,8 +2,12 @@
 
 {% block container %}
     {{ user }}
+    {{ ladder }}
 
-    <form id="add_result_form" action="#" method="post">{% csrf_token %}
+    <form id="add_result_form"
+          action="{% url 'result_entry_add' %}"
+          method="post">
+        {% csrf_token %}
         {{ form.as_p }}
         <input type="submit" value="Add Result"/>
     </form>
