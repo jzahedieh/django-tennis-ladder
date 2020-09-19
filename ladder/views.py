@@ -89,6 +89,9 @@ def ladder(request, year, season_round, division_id):
 
 @login_required
 def add(request, year, season_round, division_id):
+    if not request.user.is_superuser:
+        return HttpResponseRedirect(reverse('ladder', args=(year, season_round, division_id)))
+
     ladder_object = get_object_or_404(Ladder, division=division_id, season__start_date__year=year,
                                       season__season_round=season_round)
 
@@ -328,7 +331,7 @@ def result_entry_add(request):
         user_result.save()
         opponent_result.save()
 
-        return HttpResponseRedirect(reverse('add', args=(
+        return HttpResponseRedirect(reverse('ladder', args=(
             ladder_object.season.start_date.year, ladder_object.season.season_round, ladder_object.division)))
 
     return render(request, 'ladder/result/entry.html', {
