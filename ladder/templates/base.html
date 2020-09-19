@@ -53,7 +53,7 @@
                     <a class="brand" href="/">HIGHGATE <span style="font-size:12px;">LADDER TRACKER</span></a>
                     <div class="nav-collapse collapse">
                         <ul class="nav">
-                            <li><a href="/">Home</a></li>
+                            <li><a href="{% url 'result_entry' %}">Enter Result</a></li>
                             <li><a href="{% url 'season' season_first.start_date|date:"Y" season_first.season_round %}">Current Ladder</a></li>
                             <li class="dropdown">
                                 <a href="#" class="dropdown-toggle" data-toggle="dropdown">Previous Ladders<b class="caret"></b></a>
@@ -66,6 +66,9 @@
                                     {% endif %}
                                 </ul>
                             </li>
+                            {% if user.is_authenticated %}
+                                <li><a href="{% url 'logout' %}">Log Out</a></li>
+                            {% endif %}
                         </ul>
                         <form class="navbar-form pull-right" id="find_player_form" action="{% url 'player_result' %}" method="get">
                             <input id="player-search" type="text" name="player_name" placeholder="Search Players" data-provide="typeahead"  autocomplete="off">

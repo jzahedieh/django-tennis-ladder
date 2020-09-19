@@ -1,8 +1,7 @@
 {% extends 'base.html' %}
 
 {% block container %}
-    {{ user }}
-    {{ ladder }}
+    <p>{{ ladder }}</p>
 
     <form id="add_result_form"
           action="{% url 'result_entry_add' %}"

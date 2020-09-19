@@ -120,6 +120,7 @@ MIDDLEWARE = (
 )
 
 LOGIN_REDIRECT_URL = '/result/entry/'
+LOGOUT_REDIRECT_URL = '/'
 
 ROOT_URLCONF = 'tennis.urls'
 
@@ -127,6 +128,8 @@ ROOT_URLCONF = 'tennis.urls'
 WSGI_APPLICATION = 'tennis.wsgi.application'
 
 INSTALLED_APPS = (
+    'debug_toolbar',
+    'ladder',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -137,8 +140,6 @@ INSTALLED_APPS = (
     'django.contrib.admin',
     # Uncomment the next line to enable admin documentation:
     # 'django.contrib.admindocs',
-    'debug_toolbar',
-    'ladder',
 )
 
 CACHES = {
