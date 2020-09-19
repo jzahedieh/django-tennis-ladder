@@ -29,3 +29,8 @@ services:
       - "8000:8000"
     depends_on:
       - db
+  mail:
+    image: mailhog/mailhog
+    restart: unless-stopped
+    ports:
+      - 8002:8025
