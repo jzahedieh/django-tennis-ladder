@@ -178,6 +178,11 @@ LOGGING = {
     }
 }
 
+EMAIL_PORT = os.environ.get('EMAIL_PORT')
+EMAIL_HOST = os.environ.get('EMAIL_HOST')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+
 INTERNAL_IPS = (
     '127.0.0.1',
     '0.0.0.0',
