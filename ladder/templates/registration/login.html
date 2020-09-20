@@ -10,7 +10,7 @@
     <p>Your account doesn't have access to this page. To proceed,
     please login with an account that has access.</p>
     {% else %}
-    <p>Please login to see this page.</p>
+    <p>Please log in to enter your results</p>
     {% endif %}
 {% endif %}
 
@@ -18,7 +18,7 @@
 {% csrf_token %}
 <table>
 <tr>
-    <td>{{ form.username.label_tag }}</td>
+    <td>Email:</td>
     <td>{{ form.username }}</td>
 </tr>
 <tr>
@@ -31,7 +31,14 @@
 <input type="hidden" name="next" value="{{ next }}">
 </form>
 
-{# Assumes you setup the password_reset view in your URLconf #}
-<p><a href="{% url 'password_reset' %}">Lost password?</a></p>
+<p><a href="{% url 'password_reset' %}">Reset password?</a></p>
+
+<p>You will need to reset your password with the above link the first time you use the system</p>
+
+<p>All players in the current ladder have a user setup with their email in the membership list,
+    if you are having any issues please use the feedback email below and assistance will be provided.</p>
+
+<p>If you would rather not use this system, please send your results to
+    <a href="mailto:results@highgate-ladder.co.uk">results@highgate-ladder.co.uk</a></p>
 
 {% endblock %}

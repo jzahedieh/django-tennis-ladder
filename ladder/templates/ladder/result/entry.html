@@ -1,7 +1,9 @@
 {% extends 'base.html' %}
 
 {% block container %}
-    <p>{{ ladder }}</p>
+    <h1>Enter Result</h1>
+    <h3>{{ ladder }}</h3>
+    <h4>{{ user.first_name }} {{ user.last_name }}</h4>
 
     <form id="add_result_form"
           action="{% url 'result_entry_add' %}"
@@ -35,4 +37,7 @@
         </p>
     </form>
 
+    <p>If you need to submit an incomplete result, remove an incorrect result
+        or would just rather submit results via email please contact us at
+        <a href="mailto:results@highgate-ladder.co.uk">results@highgate-ladder.co.uk</a></p>
 {% endblock %}
