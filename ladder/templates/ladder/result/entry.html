@@ -17,10 +17,6 @@
             {{ form.opponent.label_tag }}
         </label>
         {{ form.opponent }}
-        <label for="{{ form.result.id_for_label }}">
-            {{ form.result.label_tag }}
-        </label>
-        {{ form.result }}
 
         <label for="{{ form.winner.id_for_label }}">
             {{ form.winner.label_tag }}
@@ -30,6 +26,10 @@
             <div class="slider round"></div>
         </label>
 
+        <label for="{{ form.result.id_for_label }}">
+            {{ form.result.label_tag }}
+        </label>
+        {{ form.result }}
         {{ form.player }}
 
         <p>
