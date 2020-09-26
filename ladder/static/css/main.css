@@ -99,6 +99,22 @@
     }
 }
 
+
+/*
+ * Chart styles
+ */
+.c3-axis-x g {
+  visibility: hidden;
+}
+
+.c3-axis-x g:nth-last-child(-n+3) {
+  visibility: visible;
+}
+
+.c3-axis-x g:nth-child(3) {
+  visibility: visible;
+}
+
 /*
  * Entry win slider
  */
