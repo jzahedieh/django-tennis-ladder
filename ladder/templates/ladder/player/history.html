@@ -27,7 +27,8 @@
             <tbody>
             {% for h in head %}
                 <tr>
-                    <td>{{ h.opponent__first_name }}</td>
+                    <td>{{ h.opponent__first_name }} {{ h.opponent__last_name|slice:":1" }}.</td>
+
                     <td>{{ h.times_played|floatformat:"0" }}</td>
                     <td>{{ h.last_played }}</td>
                     <td><a href="{% url 'head_to_head' player.id h.opponent %}">More Detail</a></td>
