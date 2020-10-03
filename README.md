@@ -12,7 +12,7 @@ Issue Tracker
 -------------
 Please raise any issues / feature requests you have with the code base or live website here.
 
-[Contributions](https://github.com/jzahedieh/blob/master/CONTRIBUTING.md)
+[Contributions](https://github.com/jzahedieh/django-tennis-ladder/blob/master/CONTRIBUTING.md)
 -------------
 
 Contributions are welcome, please see the guide linked above.
