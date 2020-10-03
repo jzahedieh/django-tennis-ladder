@@ -1,20 +1,18 @@
 import datetime
 import json
 
-from django.http import HttpResponseRedirect, Http404, HttpResponse
-from django.shortcuts import render, get_object_or_404
-from django.utils.html import escape
-from django.urls import reverse
-from django.views.decorators.cache import cache_page
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q, Count, Max
-from django.views.decorators.gzip import gzip_page
+from django.http import HttpResponseRedirect, Http404, HttpResponse
+from django.shortcuts import render, get_object_or_404
+from django.urls import reverse
+from django.utils.html import escape
+from django.views.decorators.cache import cache_page
 
+from ladder.forms import AddResultForm, AddEntryForm
 from ladder.models import Ladder, Player, Result, Season, League
-from ladder.forms import AddResultForm
 
 
-@gzip_page
 @cache_page(60 * 60 * 24 * 2, key_prefix='index')  # 2 day page cache
 def index(request):
     current_season = Season.objects.latest('start_date')
@@ -38,7 +36,6 @@ def index(request):
     return render(request, 'ladder/index.html', context)
 
 
-@gzip_page
 @cache_page(60 * 60 * 24, key_prefix='round')  # 1 day page cache
 def list_rounds(request):
     seasons = Season.objects.order_by('-start_date')
@@ -56,7 +53,6 @@ def current_season_redirect(request):
     ))
 
 
-@gzip_page
 @cache_page(60 * 60, key_prefix='season')  # 1 hour page cache
 def season(request, year, season_round):
     season_object = get_object_or_404(Season, start_date__year=year, season_round=season_round)
@@ -77,7 +73,6 @@ def season(request, year, season_round):
     )
 
 
-@gzip_page
 def ladder(request, year, season_round, division_id):
     ladder_object = get_object_or_404(Ladder, division=division_id, season__start_date__year=year,
                                       season__season_round=season_round)
@@ -94,6 +89,9 @@ def ladder(request, year, season_round, division_id):
 
 @login_required
 def add(request, year, season_round, division_id):
+    if not request.user.is_superuser:
+        return HttpResponseRedirect(reverse('ladder', args=(year, season_round, division_id)))
+
     ladder_object = get_object_or_404(Ladder, division=division_id, season__start_date__year=year,
                                       season__season_round=season_round)
 
@@ -150,7 +148,6 @@ def add(request, year, season_round, division_id):
                    'next_ladder': next_ladder, 'previous_ladder': previous_ladder})
 
 
-@gzip_page
 def player_history(request, player_id):
     player = get_object_or_404(Player, pk=player_id)
     league_set = player.league_set.order_by('-ladder__season__start_date')
@@ -167,7 +164,6 @@ def player_history(request, player_id):
                   {'player': player, 'league_set': league_set, 'ladder_set': league_set, 'head': head})
 
 
-@gzip_page
 def head_to_head(request, player_id, opponent_id):
     player = get_object_or_404(Player, pk=player_id)
     opponent = get_object_or_404(Player, pk=opponent_id)
@@ -185,7 +181,6 @@ def head_to_head(request, player_id, opponent_id):
                   {'stats': stats, 'results': results, 'player': player, 'opponent': opponent})
 
 
-@gzip_page
 def player_result(request):
     query = request.GET.get('player_name', False)
     if query is False:
@@ -281,3 +276,66 @@ def season_ajax_progress(request):
         raise Http404
 
     return HttpResponse(json.dumps(season_object.get_progress()), content_type="application/json")
+
+@login_required
+def result_entry(request):
+    user_object = request.user
+    try:
+        ladder_object = Ladder.objects.filter(league__player__user=user_object).order_by('-id')[0]
+    except IndexError:
+        raise Http404
+
+    result = Result(ladder=ladder_object, date_added=datetime.datetime.now())
+    form = AddEntryForm(ladder_object, user_object, instance=result)
+
+    return render(request, 'ladder/result/entry.html', {
+        'user': user_object,
+        'ladder': ladder_object,
+        'form': form
+    })
+
+@login_required
+def result_entry_add(request):
+    user = request.user
+    ladder_object = Ladder.objects.filter(league__player__user=user).order_by('-id')[0]
+    result = Result(ladder=ladder_object, date_added=datetime.datetime.now(), inaccurate_flag=0)
+
+    form = AddEntryForm(ladder_object, user, request.POST, instance=result)
+
+    if form.is_valid():
+        user_result = form.save(commit=False)
+        is_user_winner = form.cleaned_data['winner'] == 1
+        losing_result = form.cleaned_data['result']
+
+        # check for existing results, assume update if find a match aka delete
+        try:
+            existing_player_result = Result.objects.get(ladder=ladder_object, player=user_result.player,
+                                                        opponent=user_result.opponent)
+            existing_player_result.delete()
+            existing_opponent_result = Result.objects.get(ladder=ladder_object, player=user_result.opponent,
+                                                          opponent=user_result.player)
+            existing_opponent_result.delete()
+        except Result.DoesNotExist:
+            pass
+
+        # build the mirror result (aka opponent) from losing form data
+        opponent_result = Result(ladder=user_result.ladder, player=user_result.opponent,
+                                opponent=user_result.player, result=9, date_added=user_result.date_added,
+                                inaccurate_flag=user_result.inaccurate_flag)
+
+        # switch flag if user is winner
+        if is_user_winner:
+            opponent_result.result = losing_result
+            user_result.result = 9
+
+        user_result.save()
+        opponent_result.save()
+
+        return HttpResponseRedirect(reverse('ladder', args=(
+            ladder_object.season.start_date.year, ladder_object.season.season_round, ladder_object.division)))
+
+    return render(request, 'ladder/result/entry.html', {
+        'user': user,
+        'ladder': ladder_object,
+        'form': form
+    })

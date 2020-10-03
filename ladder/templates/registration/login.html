@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block container %}
+{% if form.errors %}
+<p>Your username and password didn't match. Please try again.</p>
+{% endif %}
+
+{% if next %}
+    {% if user.is_authenticated %}
+    <p>Your account doesn't have access to this page. To proceed,
+    please login with an account that has access.</p>
+    {% else %}
+    <p>Please log in to enter your results</p>
+    {% endif %}
+{% endif %}
+
+<form method="post" action="{% url 'login' %}">
+{% csrf_token %}
+<table>
+<tr>
+    <td>Email:</td>
+    <td>{{ form.username }}</td>
+</tr>
+<tr>
+    <td>{{ form.password.label_tag }}</td>
+    <td>{{ form.password }}</td>
+</tr>
+</table>
+
+<input type="submit" class="btn btn-primary btn-lg" value="login">
+<input type="hidden" name="next" value="{{ next }}">
+</form>
+
+<p><a href="{% url 'password_reset' %}">Reset password?</a></p>
+
+<p>You will need to reset your password with the above link the first time you use the system.</p>
+
+<p>All players in the current ladder have a user setup with their email in the membership list,
+    if you are having any issues please use the feedback email below and assistance will be provided.</p>
+
+<p>If you would rather not use this system, please send your results to
+    <a href="mailto:results@highgate-ladder.co.uk">results@highgate-ladder.co.uk</a></p>
+
+{% endblock %}

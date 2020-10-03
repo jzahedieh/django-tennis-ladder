@@ -14,7 +14,7 @@
     <h2>Head-to-Head</h2>
 
     <div class="span12">
-        <table cellspacing="1" id="head-table" class="table table">
+        <table id="head-table" class="table">
             <thead>
             <tr>
                 <th>Player</th>
@@ -28,23 +28,21 @@
             {% for h in head %}
                 <tr>
                     <td>{{ h.opponent__first_name }} {{ h.opponent__last_name|slice:":1" }}.</td>
+
                     <td>{{ h.times_played|floatformat:"0" }}</td>
                     <td>{{ h.last_played }}</td>
                     <td><a href="{% url 'head_to_head' player.id h.opponent %}">More Detail</a></td>
                 </tr>
             {% endfor %}
             </tbody>
-            <tr>
-                <td>
+        </table>
+
                     <form class="pull-left input-append" id="h2h_form">
                         <input id="h2h-search" type="text" name="player_name" placeholder="Not in list? Search Rival"
                                data-provide="typeahead"
                                autocomplete="off">
                         <button id="h2h_button" type="submit" disabled="disabled" class="btn">More Details</button>
                     </form>
-                </td>
-            </tr>
-        </table>
 
         <script type="text/javascript">
             (function () {
@@ -81,7 +79,7 @@
 
     <h2>History</h2>
     <div class="span12">
-        <table cellspacing="1" id="seasons-table" class="table">
+        <table id="seasons-table" class="table">
             <thead>
             <tr>
                 <th>Ladder</th>

@@ -2,15 +2,18 @@ version: '3'
 
 services:
   db:
-    image: mariadb:10.1
-    restart: always
+    build:
+      context: .
+      dockerfile: ./docker/db/Dockerfile
+    restart: unless-stopped
     env_file:
       - ./.env.dev
     volumes:
       - ./data/db:/var/lib/mysql
+      - ./data/db-backup:/backup
   adminer:
     image: adminer
-    restart: always
+    restart: unless-stopped
     ports:
       - 8001:8080
   web:
@@ -26,3 +29,8 @@ services:
       - "8000:8000"
     depends_on:
       - db
+  mail:
+    image: mailhog/mailhog
+    restart: unless-stopped
+    ports:
+      - 8002:8025

@@ -62,7 +62,7 @@ REST_FRAMEWORK = {
 
 # Hosts/domain names that are valid for this site; required if DEBUG is False
 # See https://docs.djangoproject.com/en/1.5/ref/settings/#allowed-hosts
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = '*'
 
 # Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
@@ -118,15 +118,18 @@ STATICFILES_FINDERS = (
 SECRET_KEY = os.environ.get("SECRET_KEY", "this_should_be_kept_a_secret")
 
 MIDDLEWARE = (
+    'debug_toolbar.middleware.DebugToolbarMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
-    'ladder.middleware.DisableClientCachingMiddleware'
     # Uncomment the next line for simple clickjacking protection:
     # 'django.middleware.clickjacking.XFrameOptionsMiddleware',
 )
+
+LOGIN_REDIRECT_URL = '/result/entry/'
+LOGOUT_REDIRECT_URL = '/'
 
 ROOT_URLCONF = 'tennis.urls'
 
@@ -134,6 +137,9 @@ ROOT_URLCONF = 'tennis.urls'
 WSGI_APPLICATION = 'tennis.wsgi.application'
 
 INSTALLED_APPS = (
+    'debug_toolbar',
+    'rest_framework',
+    'ladder',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -144,8 +150,6 @@ INSTALLED_APPS = (
     'django.contrib.admin',
     # Uncomment the next line to enable admin documentation:
     # 'django.contrib.admindocs',
-    'rest_framework',
-    'ladder',
 )
 
 CACHES = {
@@ -185,4 +189,17 @@ LOGGING = {
     }
 }
 
-ALLOWED_HOSTS = '*'
+EMAIL_PORT = os.environ.get('EMAIL_PORT')
+EMAIL_HOST = os.environ.get('EMAIL_HOST')
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
+DEFAULT_FROM_EMAIL = os.environ.get('EMAIL_DEFAULT_FROM')
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+
+INTERNAL_IPS = (
+    '127.0.0.1',
+    '0.0.0.0',
+    '172.18.0.1',
+    '172.21.0.1',
+    '172.23.0.1'
+)

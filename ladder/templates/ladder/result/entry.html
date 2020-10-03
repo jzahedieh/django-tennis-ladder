@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+
+{% block container %}
+    <h1>Enter Result</h1>
+    <h3>{{ ladder }}</h3>
+    <h4>{{ user.first_name }} {{ user.last_name }}</h4>
+
+    <form id="add_result_form"
+          action="{% url 'result_entry_add' %}"
+          method="post">
+        {% csrf_token %}
+
+        {{ form.non_field_errors }}
+        {{ form.source.errors }}
+        {{ form.source }}
+        <label for="{{ form.opponent.id_for_label }}">
+            {{ form.opponent.label_tag }}
+        </label>
+        {{ form.opponent }}
+
+        <label for="{{ form.winner.id_for_label }}">
+            {{ form.winner.label_tag }}
+        </label>
+        <label class="switch" for="{{ form.winner.id_for_label }}">
+            {{ form.winner }}
+            <div class="slider round"></div>
+        </label>
+
+        <label for="{{ form.result.id_for_label }}">
+            {{ form.result.label_tag }}
+        </label>
+        {{ form.result }}
+        {{ form.player }}
+
+        <p>
+            <input type="submit" class="btn btn-primary btn-lg" value="Add Result"/>
+        </p>
+    </form>
+
+    <p>If you need to submit an incomplete result, remove an incorrect result
+        or would just rather submit results via email please contact us at
+        <a href="mailto:results@highgate-ladder.co.uk">results@highgate-ladder.co.uk</a></p>
+{% endblock %}
