@@ -26,9 +26,22 @@ services:
     volumes:
       - .:/code
     ports:
-      - "8000:8000"
+      - 8000:8000
     depends_on:
       - db
+  nuxt:
+    build:
+      context: .
+      dockerfile: ./docker/nuxt/Dockerfile
+    command: ["yarn", "dev"]
+    env_file:
+      - ./.env.dev
+    volumes:
+      - ./nuxt:/code
+    ports:
+      - 3000:3000
+    depends_on:
+      - web
   mail:
     image: mailhog/mailhog
     restart: unless-stopped
