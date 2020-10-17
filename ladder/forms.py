@@ -40,12 +40,17 @@ class AddEntryForm(forms.ModelForm):
     def __init__(self, ladder, user, *args, **kwargs):
         super(AddEntryForm, self).__init__(*args, **kwargs)
         self.fields['opponent'].queryset = Player.objects.filter(league__ladder=ladder).exclude(user=user)
+        self.fields['opponent'].label_from_instance = self.opponent_label
         self.fields['player'].widget.attrs['value'] = Player.objects.get(user=user).id
 
     class Meta(object):
         model = Result
         exclude = ['date_added', 'ladder', 'inaccurate_flag']
         widgets = {'player': forms.HiddenInput()}
+
+    @staticmethod
+    def opponent_label(player):
+        return player.first_name + " " + player.last_name
 
     def clean(self):
         """
