@@ -1,11 +1,12 @@
 {% extends 'base.html' %}
 {% load ladder_extras %}
+{% load static %}
 
 {% block container %}
-<link rel="stylesheet" type="text/css" href="/static/css/theme.ice.css" />
-<link rel="stylesheet" type="text/css" href="/static/css/ladder.css" />
-<script type="text/javascript" src="/static/js/jquery.tablesorter.min.js"></script>
-<script type="text/javascript" src="/static/js/jquery.metadata.js"></script>
+<link rel="stylesheet" type="text/css" href="{% static "css/theme.ice.css" %}"/>
+<link rel="stylesheet" type="text/css" href="{% static "css/ladder.css" %}"/>
+<script type="text/javascript" src="{% static "js/jquery.tablesorter.min.js" %}"></script>
+<script type="text/javascript" src="{% static "js/jquery.metadata.js" %}"></script>
 
 <script type="text/javascript">
 var can_submit = false;
