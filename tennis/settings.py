@@ -114,6 +114,10 @@ STATICFILES_FINDERS = (
     #    'django.contrib.staticfiles.finders.DefaultStorageFinder',
 )
 
+# ManifestStaticFilesStorage hashes assets for versioning
+# which ensures all users see the same content
+STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.ManifestStaticFilesStorage'
+
 # Make this unique, and don't share it with anybody.
 SECRET_KEY = os.environ.get("SECRET_KEY", "this_should_be_kept_a_secret")
 
