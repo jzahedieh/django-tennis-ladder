@@ -37,11 +37,18 @@ export default {
   // Modules (https://go.nuxtjs.dev/config-modules)
   modules: [
     // https://go.nuxtjs.dev/axios
-    '@nuxtjs/axios'
+    '@nuxtjs/axios',
+    // https://auth.nuxtjs.org/
+    '@nuxtjs/auth'
   ],
 
   // Axios module configuration (https://go.nuxtjs.dev/config-axios)
-  axios: {},
+  axios: {
+    baseURL: 'http://0.0.0.0:8000/',
+  },
+
+  // Auth module configuration (https://auth.nuxtjs.org/guide/setup.html)
+  auth: {},
 
   // Vuetify module configuration (https://go.nuxtjs.dev/config-vuetify)
   vuetify: {

@@ -22,8 +22,12 @@
       <v-app-bar-nav-icon @click.stop="drawer = !drawer" />
       <v-toolbar-title v-text="title" />
       <v-spacer />
-      <v-btn icon>
-        <v-icon>mdi-account</v-icon>
+      <v-btn icon to="/logout" class="logout-btn" v-if="$auth.loggedIn">
+        {{ $auth.user.email }}
+        <v-icon light @click="$auth.logout()">mdi-logout</v-icon>
+      </v-btn>
+      <v-btn icon to="/login" class="login-btn" v-else>
+        <v-icon aria-label="My Account">mdi-login</v-icon>
       </v-btn>
     </v-app-bar>
     <v-main>
