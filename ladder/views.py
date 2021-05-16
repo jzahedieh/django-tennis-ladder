@@ -258,7 +258,7 @@ def season_ajax_stats(request):
 
     include_leader = request.GET.get('leader', False)
     if include_leader:
-        stats.update(season_object.get_leader_stats())
+        stats.update(season_object.get_leader_stats(user=request.user))
 
     return HttpResponse(json.dumps(stats), content_type="application/json")
 

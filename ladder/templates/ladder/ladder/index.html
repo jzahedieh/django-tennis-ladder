@@ -41,7 +41,7 @@ $(document).ready(function()
             {% with player_counter=forloop.counter %}
                 <tr>
                     <td class="player_position"><strong> {{ player_counter }} </strong></td>
-                    <td class="player_name"> <a href="{% url 'player_history' league.player.id %}"> {{ league.player }} </a> </td>
+                    <td class="player_name"> <a href="{% url 'player_history' league.player.id %}">{% get_player_name league.player user %}</a> </td>
                         {% for opponent in ladder.league_set.all %}
                             {% with column_counter=forloop.counter %}
                                 {% if column_counter == player_counter %}
@@ -99,11 +99,11 @@ $(document).ready(function()
                 <th>Date Added</th>
                 {% for key, value in ladder.get_latest_results %}
                     <tr>
-                        <td>{{ value.player }}</td>
+                        <td>{% get_player_name value.player user %}</td>
                         <td style="text-align: center;">{{ value.player_result }}</td>
                         <td>vs</td>
                         <td style="text-align: center;">{{ value.opponent_result }}</td>
-                        <td>{{ value.opponent }}</td>
+                        <td>{% get_player_name value.opponent user %}</td>
                         <td>{{ value.date_added }}</td>
                     </tr>
                 {% endfor %}

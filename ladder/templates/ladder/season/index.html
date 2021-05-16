@@ -31,7 +31,7 @@
             {% with player_counter=forloop.counter %}
                 <tr>
                 <td class="player_position"><strong> {{ player_counter }} </strong></td>
-                <td class="player_name"><span>{{ league.player }}</span></td>
+                <td class="player_name"><span>{% get_player_name league.player user %}</span></td>
                 {% for opponent in ladder.league_set.all %}
                     {% with column_counter=forloop.counter %}
                         {% if column_counter == player_counter %}
