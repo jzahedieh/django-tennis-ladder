@@ -1,3 +1,4 @@
+from datetime import date
 import operator
 from django.db import models
 from django.db.models import Avg
@@ -165,6 +166,12 @@ class Ladder(models.Model):
     def __str__(self):
         return str(self.season.start_date.year) + ' Round ' + str(self.season.season_round) + ' - Division: ' + str(
             self.division)
+
+    def is_closed(self):
+        """
+        Is the ladder finished
+        """
+        return date.today() > self.season.end_date
 
     def get_leader(self, user):
         """

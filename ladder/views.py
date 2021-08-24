@@ -291,7 +291,8 @@ def result_entry(request):
     return render(request, 'ladder/result/entry.html', {
         'user': user_object,
         'ladder': ladder_object,
-        'form': form
+        'form': form,
+        'is_closed': ladder_object.is_closed()
     })
 
 @login_required
