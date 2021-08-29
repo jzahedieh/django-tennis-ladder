@@ -5,6 +5,11 @@
     <h3>{{ ladder }}</h3>
     <h4>{{ user.first_name }} {{ user.last_name }}</h4>
 
+{% if is_closed %}
+    <h2>This ladder is now closed.</h2>
+
+    <p>If you have a result which you have not yet submitted or need to remove an incorrect result please contact us at <a href="mailto:results@highgate-ladder.co.uk">results@highgate-ladder.co.uk</a></p>
+{% else %}
     <form id="add_result_form"
           action="{% url 'result_entry_add' %}"
           method="post">
@@ -37,4 +42,5 @@
     <p>If you need to submit an incomplete result, remove an incorrect result
         or would just rather submit results via email please contact us at
         <a href="mailto:results@highgate-ladder.co.uk">results@highgate-ladder.co.uk</a></p>
+{% endif %}
 {% endblock %}

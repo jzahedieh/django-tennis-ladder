@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load ladder_extras %}
 {% block container %}
     <h2>{{ player }} Vs {{ opponent }}</h2>
     <a href="javascript:history.go(-1)">Back</a>
@@ -24,9 +25,9 @@
                 <tr>
                     <td>{{ result.date_added }}</td>
                     <td><a href="{% url 'ladder' result.ladder.season.start_date|date:"Y" result.ladder.season.season_round result.ladder.division %}">{{ result.ladder }}</a></td>
-                    <td>{{ result.opponent }}</td>
+                    <td>{% get_player_name result.opponent user %}</td>
                     <td>9</td>
-                    <td>{{ result.player }}</td>
+                    <td>{% get_player_name result.player user %}</td>
                     <td>{{ result.result }}</td>
                 </tr>
             {% endfor %}

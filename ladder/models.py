@@ -1,3 +1,4 @@
+from datetime import date
 import operator
 from django.db import models
 from django.db.models import Avg
@@ -38,14 +39,14 @@ class Season(models.Model):
             'player_count': player_count
         }
 
-    def get_leader_stats(self):
+    def get_leader_stats(self, user):
         """
         Generates the list of leaders for current season
         """
         current_leaders = {}
 
         for ladder in self.ladder_set.all():
-            current_leaders[ladder.id] = ladder.get_leader()
+            current_leaders[ladder.id] = ladder.get_leader(user=user)
 
         return {
             'current_leaders': current_leaders,
@@ -104,10 +105,14 @@ class Player(models.Model):
     user = models.ForeignKey(User, null=True, on_delete=models.SET_NULL, blank=True)
 
     def __str__(self):
+        return self.full_name(authenticated=False)
+
+    def full_name(self, authenticated = False):
         string = self.first_name
         if self.last_name:
             last_names = self.last_name.split()
-            last_names[-1] = last_names[-1][:1].capitalize() + '.'  # abbreviate last name
+            if not authenticated:
+                last_names[-1] = last_names[-1][:1].capitalize() + '.'  # abbreviate last name
             string += ' ' + ' '.join(last_names)
 
         return string
@@ -162,7 +167,13 @@ class Ladder(models.Model):
         return str(self.season.start_date.year) + ' Round ' + str(self.season.season_round) + ' - Division: ' + str(
             self.division)
 
-    def get_leader(self):
+    def is_closed(self):
+        """
+        Is the ladder finished
+        """
+        return date.today() > self.season.end_date
+
+    def get_leader(self, user):
         """
         Finds the leader of the ladder
         """
@@ -184,7 +195,7 @@ class Ladder(models.Model):
         else:
             return {'player': 'No Results', 'player_id': '../#', 'total': '-', 'division': self.division}
 
-        return {'player': player.__str__(), 'player_id': player.id, 'total': totals[player], 'division': self.division}
+        return {'player': player.full_name(authenticated=user.is_authenticated), 'player_id': player.id, 'total': totals[player], 'division': self.division}
 
     def get_latest_results(self):
         """

@@ -97,7 +97,7 @@ function updateForm() {
             {% with player_counter=forloop.counter %}
                 <tr>
                     <td class="player_position"><strong> {{ player_counter }} </strong></td>
-                    <td class="player_name"> {{ league.player }} </td>
+                    <td class="player_name"> {% get_player_name league.player user %}</td>
                         {% for opponent in ladder.league_set.all %}
                             {% with column_counter=forloop.counter %}
                                 {% if column_counter == player_counter %}
