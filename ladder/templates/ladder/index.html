@@ -139,7 +139,10 @@
                 $('#perc_played').text(data.percentage_played + ' %');
 
                 $.each(data.current_leaders, function (i, item) {
-                    $("#leader_table").append("<tr><td>" + item.division + "</td><td><a href='/player/" + item.player_id + "'>" + item.player + "</a></td><td>" + item.total + "</td></tr>");
+                    $("#leader_table").append(
+                        "<tr><td><a href='" + item.url + "'>" + item.division + "</a></td>" +
+                        "<td><a href='/player/" + item.player_id + "'>" + item.player + "</a></td><td>" + item.total + "</td></tr>"
+                    );
                 })
             });
         });

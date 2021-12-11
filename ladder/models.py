@@ -3,6 +3,7 @@ import operator
 from django.db import models
 from django.db.models import Avg
 from django.contrib.auth.models import User
+from django.urls import reverse
 
 
 class Season(models.Model):
@@ -190,12 +191,15 @@ class Ladder(models.Model):
                 else:
                     totals[result.player] = int(result.result) + 1
 
+        url = reverse('ladder', kwargs={'year': self.season.start_date.year, 'season_round': self.season.season_round, 'division_id': self.division})
+
         if totals:
             player = max(iter(totals.items()), key=operator.itemgetter(1))[0]
         else:
-            return {'player': 'No Results', 'player_id': '../#', 'total': '-', 'division': self.division}
+            return {'player': 'No Results', 'player_id': '../#', 'total': '-', 'division': self.division, 'url': url}
 
-        return {'player': player.full_name(authenticated=user.is_authenticated), 'player_id': player.id, 'total': totals[player], 'division': self.division}
+        return {'player': player.full_name(authenticated=user.is_authenticated), 'player_id': player.id,
+                'total': totals[player], 'division': self.division, 'url': url}
 
     def get_latest_results(self):
         """

@@ -9,6 +9,7 @@
 
 #Ignore prod enviroment variables
 .env.prod
+.env.dev.*
 
 #Ignore run_script folder
 /run_script/*
