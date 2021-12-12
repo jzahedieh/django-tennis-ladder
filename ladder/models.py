@@ -249,6 +249,9 @@ class LadderSubscription(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     subscribed_at = models.DateField()
 
+    def __str__(self):
+        return self.user.email
+
 class League(models.Model):
     ladder = models.ForeignKey(Ladder, on_delete=models.CASCADE)
     player = models.ForeignKey(Player, on_delete=models.CASCADE)
