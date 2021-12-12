@@ -1,5 +1,6 @@
 # Django settings for tennis project.
 import os
+from distutils.util import strtobool
 
 SETTINGS_DIR = os.path.abspath(os.path.dirname(__file__))
 
@@ -203,7 +204,8 @@ EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = os.environ.get('EMAIL_DEFAULT_FROM')
 SERVER_EMAIL = os.environ.get('EMAIL_SERVER_FROM')
-EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS')
+SUBSCRIPTION_EMAIL = os.environ.get('SUBSCRIPTION_EMAIL')
+EMAIL_USE_TLS = bool(strtobool(os.environ['EMAIL_USE_TLS']))
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 
 INTERNAL_IPS = (
