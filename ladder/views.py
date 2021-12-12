@@ -79,12 +79,14 @@ def ladder(request, year, season_round, division_id):
     ladder_object = get_object_or_404(Ladder, division=division_id, season__start_date__year=year,
                                       season__season_round=season_round)
 
-    subscribed = LadderSubscription.objects.filter(
-        user=request.user,
-        ladder__division=division_id,
-        ladder__season__start_date__year=year,
-        ladder__season__season_round=season_round
-    ).count() > 0
+    subscribed = False
+    if request.user.is_authenticated and not request.user.is_superuser:
+        subscribed = LadderSubscription.objects.filter(
+            user=request.user,
+            ladder__division=division_id,
+            ladder__season__start_date__year=year,
+            ladder__season__season_round=season_round
+        ).count() > 0
 
     results = Result.objects.filter(ladder=ladder_object)
 
