@@ -12,6 +12,8 @@ urlpatterns = [
     re_path(r'^(?P<year>\d+)/round/(?P<season_round>\d+)/division/(?P<division_id>\w+)/$', views.ladder, name='ladder'),
     # ex: /2013/round/1/division/1-n/add/
     re_path(r'^(?P<year>\d+)/round/(?P<season_round>\d+)/division/(?P<division_id>\w+)/add/$', views.add, name='add'),
+    # ex: /2013/round/1/division/1-n/subscription/
+    re_path(r'^(?P<year>\d+)/round/(?P<season_round>\d+)/division/(?P<division_id>\w+)/subscription/$', views.ladder_subscription, name='ladder_subscription'),
     # ex: /head_to_head/1/vs/2
     re_path(r'^head_to_head/(?P<player_id>\d+)/vs/(?P<opponent_id>\w+)/$', views.head_to_head, name='head_to_head'),
     # ex: /player/1/
