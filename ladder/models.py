@@ -244,6 +244,10 @@ class Ladder(models.Model):
             'perc_matches_played': perc_matches_played
         }
 
+class LadderSubscription(models.Model):
+    ladder = models.ForeignKey(Ladder, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    subscribed_at = models.DateField()
 
 class League(models.Model):
     ladder = models.ForeignKey(Ladder, on_delete=models.CASCADE)

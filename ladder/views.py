@@ -3,14 +3,16 @@ import json
 
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q, Count, Max
-from django.http import HttpResponseRedirect, Http404, HttpResponse
+from django.http import HttpResponseRedirect, Http404, HttpResponse, HttpResponseForbidden
 from django.shortcuts import render, get_object_or_404
 from django.urls import reverse
 from django.utils.html import escape
-from django.views.decorators.cache import cache_page
+from django.views.decorators.cache import cache_page, never_cache
+from django.contrib import messages
+
 
 from ladder.forms import AddResultForm, AddEntryForm
-from ladder.models import Ladder, Player, Result, Season, League
+from ladder.models import Ladder, Player, Result, Season, League, LadderSubscription
 
 
 @cache_page(60 * 60 * 24 * 2, key_prefix='index')  # 2 day page cache
@@ -77,6 +79,13 @@ def ladder(request, year, season_round, division_id):
     ladder_object = get_object_or_404(Ladder, division=division_id, season__start_date__year=year,
                                       season__season_round=season_round)
 
+    subscribed = LadderSubscription.objects.filter(
+        user=request.user,
+        ladder__division=division_id,
+        ladder__season__start_date__year=year,
+        ladder__season__season_round=season_round
+    ).count() > 0
+
     results = Result.objects.filter(ladder=ladder_object)
 
     results_dict = {}
@@ -84,8 +93,41 @@ def ladder(request, year, season_round, division_id):
     for result in results:
         results_dict.setdefault(result.player.id, []).append(result)
 
-    return render(request, 'ladder/ladder/index.html', {'ladder': ladder_object, 'results_dict': results_dict})
+    return render(request, 'ladder/ladder/index.html',
+                  {'ladder': ladder_object, 'results_dict': results_dict, 'subscribed': subscribed})
 
+@login_required
+@never_cache
+def ladder_subscription(request, year, season_round, division_id):
+
+    if request.user.is_superuser or not request.user.is_authenticated:
+        return HttpResponseForbidden()
+
+    existing_subscription = LadderSubscription.objects.filter(
+        user=request.user,
+        ladder__division=division_id,
+        ladder__season__start_date__year=year,
+        ladder__season__season_round=season_round
+    )
+
+    # unsubscribe
+    if existing_subscription.count() > 0:
+        existing_subscription.delete()
+        messages.success(request, 'Unsubscribed from email notifications.')
+        return HttpResponseRedirect(reverse('ladder', args=(year, season_round, division_id)))
+
+    ladder_object = get_object_or_404(Ladder, division=division_id, season__start_date__year=year,
+                                      season__season_round=season_round)
+
+    # subscribe
+    LadderSubscription(
+        user=request.user,
+        ladder=ladder_object,
+        subscribed_at=datetime.datetime.now()
+    ).save()
+
+    messages.success(request, 'Subscribed to email notifications.')
+    return HttpResponseRedirect(reverse('ladder', args=(year, season_round, division_id)))
 
 @login_required
 def add(request, year, season_round, division_id):
