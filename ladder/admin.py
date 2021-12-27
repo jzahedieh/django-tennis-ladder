@@ -1,5 +1,5 @@
 from django.contrib import admin
-from ladder.models import Season, Player, Ladder, Result, League
+from ladder.models import Season, Player, Ladder, Result, League, LadderSubscription
 
 
 class SeasonAdmin(admin.ModelAdmin):
@@ -72,3 +72,12 @@ class ResultAdmin(admin.ModelAdmin):
 
 
 admin.site.register(Result, ResultAdmin)
+
+
+class LadderSubscriptionAdmin(admin.ModelAdmin):
+    list_display = ('ladder', 'user', 'subscribed_at')
+    search_fields = ('ladder', 'user')
+    ordering = ('ladder',)
+
+
+admin.site.register(LadderSubscription, LadderSubscriptionAdmin)
