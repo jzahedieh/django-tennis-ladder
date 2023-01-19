@@ -180,6 +180,7 @@ class Ladder(models.Model):
         Finds the leader of the ladder
         """
         totals = {}
+        stats = self.get_stats()
         for result in self.result_set.filter(ladder=self):
             try:
                 if result.result == 9:
@@ -197,10 +198,10 @@ class Ladder(models.Model):
         if totals:
             player = max(iter(totals.items()), key=operator.itemgetter(1))[0]
         else:
-            return {'player': 'No Results', 'player_id': '../#', 'total': '-', 'division': self.division, 'url': url}
+            return {'player': 'No Results', 'player_id': '../#', 'total': '-', 'division': self.division, 'url': url, 'played': stats['perc_matches_played']}
 
         return {'player': player.full_name(authenticated=user.is_authenticated), 'player_id': player.id,
-                'total': totals[player], 'division': self.division, 'url': url}
+                'total': totals[player], 'division': self.division, 'url': url, 'played': round(stats['perc_matches_played'], 2)}
 
     def get_latest_results(self):
         """

@@ -120,12 +120,12 @@
             </table>
         </div>
         <div class="span6">
-            <h2>Current Leaders</h2>
+            <h2>Division Stats</h2>
             <table id="leader_table" class="table table-condensed">
                 <th>Div</th>
-                <th>Player</th>
-                <th>Total</th>
-
+                <th>Played</th>
+                <th>Leader</th>
+                <th>Leader Total</th>
             </table>
         </div>
     </div>
@@ -140,8 +140,8 @@
 
                 $.each(data.current_leaders, function (i, item) {
                     $("#leader_table").append(
-                        "<tr><td><a href='" + item.url + "'>" + item.division + "</a></td>" +
-                        "<td><a href='/player/" + item.player_id + "'>" + item.player + "</a></td><td>" + item.total + "</td></tr>"
+                        "<tr><td><a href='" + item.url + "'>" + item.division + "</a></td><td>" + item.played + " %</td>" +
+                        "<td><a href='/player/" + item.player_id + "'>" + item.player + "</a></td><td>" + item.total + "</td>"
                     );
                 })
             });
