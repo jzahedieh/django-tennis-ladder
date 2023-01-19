@@ -104,9 +104,10 @@ class Player(models.Model):
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
     user = models.ForeignKey(User, null=True, on_delete=models.SET_NULL, blank=True)
+    is_authed = False
 
     def __str__(self):
-        return self.full_name(authenticated=False)
+        return self.full_name(authenticated=self.is_authed)
 
     def full_name(self, authenticated = False):
         string = self.first_name
