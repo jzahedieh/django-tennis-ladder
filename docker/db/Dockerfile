@@ -1,4 +1,4 @@
-FROM mariadb:10.1
+FROM mariadb:10.3
 
 # backup setup
 RUN mkdir /backup
