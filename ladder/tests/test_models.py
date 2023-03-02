@@ -10,6 +10,7 @@ class PlayerModelTest(TestCase):
         """
         # fresh player test
         player = Player(first_name='New', last_name='Player')
+        player.save()
         self.assertEqual(player.player_stats(), {
             'played': "-",
             'win_rate': "- %",
