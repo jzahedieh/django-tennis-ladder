@@ -1,5 +1,7 @@
+from django.contrib.auth.models import User
 from ladder.models import Season, Player, Ladder, League, Result
 from rest_framework import serializers
+
 
 
 class SeasonSerializer(serializers.HyperlinkedModelSerializer):
@@ -8,16 +10,23 @@ class SeasonSerializer(serializers.HyperlinkedModelSerializer):
         fields = ['name', 'start_date', 'end_date', 'season_round']
 
 
-class PlayerSerializer(serializers.HyperlinkedModelSerializer):
+class PlayerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Player
-        fields = ['first_name', 'last_name']
+        fields = ['id', 'first_name', 'last_name']
 
 
-class LadderSerializer(serializers.HyperlinkedModelSerializer):
+class LadderSerializer(serializers.ModelSerializer):
     class Meta:
         model = Ladder
-        fields = ['season', 'division', 'ladder_type']
+        fields = ['id', 'season', 'division', 'ladder_type']
+
+
+class ResultPlayerSerializer(serializers.ModelSerializer):
+    player = PlayerSerializer()
+    class Meta:
+        model = League
+        fields = ['id', 'player']
 
 
 class LeagueSerializer(serializers.HyperlinkedModelSerializer):

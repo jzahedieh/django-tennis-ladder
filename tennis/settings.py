@@ -1,5 +1,6 @@
 # Django settings for tennis project.
 import os
+from datetime import timedelta
 from distutils.util import strtobool
 
 SETTINGS_DIR = os.path.abspath(os.path.dirname(__file__))
@@ -63,6 +64,10 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
     'PAGE_SIZE': 100
+}
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=5),
 }
 
 # Hosts/domain names that are valid for this site; required if DEBUG is False
@@ -132,8 +137,10 @@ SECRET_KEY = os.environ.get("SECRET_KEY", "this_should_be_kept_a_secret")
 
 MIDDLEWARE = (
     'debug_toolbar.middleware.DebugToolbarMiddleware',
-    'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    "corsheaders.middleware.CorsMiddleware",
+    'django.middleware.common.CommonMiddleware',
+    "django.middleware.common.CommonMiddleware",
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
@@ -151,6 +158,7 @@ WSGI_APPLICATION = 'tennis.wsgi.application'
 
 INSTALLED_APPS = (
     'debug_toolbar',
+    'corsheaders',
     'rest_framework',
     'ladder',
     'django.contrib.auth',
@@ -164,6 +172,10 @@ INSTALLED_APPS = (
     # Uncomment the next line to enable admin documentation:
     # 'django.contrib.admindocs',
 )
+
+CORS_ALLOWED_ORIGINS = [
+    'http://localhost:3000',
+]
 
 CACHES = {
     'default': {
