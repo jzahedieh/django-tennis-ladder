@@ -13,7 +13,7 @@ from ladder.api.serializers import (
     PlayerSerializer,
     LadderSerializer,
     LeagueSerializer,
-    ResultSerializer, ResultPlayerSerializer
+    ResultSerializer, ResultPlayerSerializer, PlayerDetailSerializer, PlayerDetailHeadSerializer
 )
 from ladder.models import Season, Player, Ladder, League, Result
 from rest_framework import permissions, viewsets
@@ -79,11 +79,25 @@ class SeasonViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.DjangoModelPermissionsOrAnonReadOnly]
 
 
-class PlayerViewSet(viewsets.ModelViewSet):
-    queryset = Player.objects.all()
-    serializer_class = PlayerSerializer
-    permission_classes = [permissions.DjangoModelPermissions]
+class PlayerViewSet(viewsets.ViewSet):
+    permission_classes = [IsAuthenticatedOrReadOnly]
+    def list(self, request):
+        queryset = Player.objects.all()
+        serializer = PlayerSerializer(queryset, many=True)
+        return Response(serializer.data)
 
+    def retrieve(self, request, pk=None):
+        queryset = Player.objects.all()
+        player = get_object_or_404(queryset, pk=pk)
+        serializer = PlayerDetailSerializer(player)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['get'])
+    def head_to_head(self, request, pk=None):
+        queryset = Player.objects.all()
+        player = get_object_or_404(queryset, pk=pk)
+        serializer = PlayerDetailHeadSerializer(player)
+        return Response(serializer.data)
 
 class LadderViewSet(viewsets.ModelViewSet):
     queryset = Ladder.objects.all()

@@ -16,6 +16,17 @@ class PlayerSerializer(serializers.ModelSerializer):
         fields = ['id', 'first_name', 'last_name']
 
 
+class PlayerDetailSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Player
+        fields = ['first_name', 'last_name', 'player_stats']
+
+
+class PlayerDetailHeadSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Player
+        fields = ['first_name', 'last_name', 'head']
+
 class LadderSerializer(serializers.ModelSerializer):
     class Meta:
         model = Ladder

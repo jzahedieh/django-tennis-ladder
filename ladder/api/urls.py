@@ -5,7 +5,7 @@ from rest_framework_simplejwt.views import (TokenObtainPairView, TokenRefreshVie
 
 router = routers.DefaultRouter()
 router.register('seasons', views.SeasonViewSet)
-router.register('players', views.PlayerViewSet)
+router.register('players', views.PlayerViewSet, basename='players')
 router.register('ladders', views.LadderViewSet)
 router.register('leagues', views.LeagueViewSet)
 router.register('results', views.ResultPlayerViewSet, basename='result_player')

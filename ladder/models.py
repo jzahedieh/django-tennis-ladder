@@ -1,7 +1,7 @@
 from datetime import date
 import operator
 from django.db import models
-from django.db.models import Avg
+from django.db.models import Avg, Count, Max
 from django.contrib.auth.models import User
 from django.urls import reverse
 
@@ -159,6 +159,11 @@ class Player(models.Model):
             'average': "{0:.2f}".format(average_with_additional)
         }
 
+    def head(self):
+        head = Result.objects.values('opponent', 'opponent__first_name', 'opponent__last_name').filter(
+            player=self).annotate(times_played=Count('opponent'), last_played=Max('date_added')).order_by(
+                '-times_played')[:10]
+        return head
 
 class Ladder(models.Model):
     season = models.ForeignKey(Season, on_delete=models.CASCADE)
