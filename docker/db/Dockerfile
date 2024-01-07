@@ -1,4 +1,4 @@
-FROM mariadb:10.3
+FROM mariadb:10.11
 
 # backup setup
 RUN mkdir /backup
@@ -6,7 +6,9 @@ COPY docker/db/backup.sh .
 RUN chmod 0744 /backup.sh
 
 # cron setup
-RUN apt-get update && apt-get -y install cron
+RUN apt-get update
+RUN apt-get -y install cron
+
 COPY docker/db/backup-cron /etc/cron.d/backup-cron
 RUN chmod 0644 /etc/cron.d/backup-cron
 RUN crontab /etc/cron.d/backup-cron
