@@ -1,4 +1,4 @@
-Django==4.2.11
+Django==4.2.14
 djangorestframework==3.14.0
 gunicorn==20.1.0
 mysqlclient==2.2.1
