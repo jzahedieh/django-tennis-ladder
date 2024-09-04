@@ -144,7 +144,6 @@ class Command(BaseCommand):
             # names and row numbers
             count = 1
             for i in ladder.league_set.all():
-                ws.col(col + count).width = 256 * 26
                 ws.row(col + count).height_mismatch = 1
                 ws.row(col + count).height = 450
                 # row numbers and name
