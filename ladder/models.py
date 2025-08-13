@@ -4,6 +4,9 @@ from django.db import models
 from django.db.models import Avg
 from django.contrib.auth.models import User
 from django.urls import reverse
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+import datetime
 
 
 class Season(models.Model):
@@ -11,6 +14,10 @@ class Season(models.Model):
     start_date = models.DateField('Start date')
     end_date = models.DateField('End date')
     season_round = models.IntegerField()
+    is_draft = models.BooleanField(
+        default=False,
+        help_text="If enabled, this season is a draft and not yet published."
+    )
 
     class Meta:
         ordering = ['-start_date',]
@@ -369,3 +376,16 @@ class Result(models.Model):
     def __str__(self):
         return (self.player.first_name + ' ' + self.player.last_name) + ' vs ' + (
             self.opponent.first_name + ' ' + self.opponent.last_name) + (' score: ' + str(self.result))
+
+@receiver(post_save, sender=League)
+def auto_subscribe_on_league_create(sender, instance: League, created, **kwargs):
+    if not created:
+        return
+    player = instance.player
+    # only if the player has a linked user
+    if getattr(player, "user_id", None):
+        LadderSubscription.objects.get_or_create(
+            ladder=instance.ladder,
+            user=player.user,
+            defaults={'subscribed_at': datetime.date.today()}
+        )

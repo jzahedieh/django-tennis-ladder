@@ -15,9 +15,8 @@ from ladder.forms import AddResultForm, AddEntryForm
 from ladder.models import Ladder, Player, Result, Season, League, LadderSubscription
 
 
-@cache_page(60 * 60 * 24 * 2, key_prefix='index')  # 2 day page cache
 def index(request):
-    current_season = Season.objects.latest('start_date')
+    current_season = Season.objects.filter(is_draft=False).latest('start_date')
     os_year = Season.objects.order_by('start_date')[0].start_date.year
     cs_year = current_season.start_date.year
 
@@ -38,9 +37,8 @@ def index(request):
     return render(request, 'ladder/index.html', context)
 
 
-@cache_page(60 * 60 * 24, key_prefix='round')  # 1 day page cache
 def list_rounds(request):
-    seasons = Season.objects.order_by('-start_date')
+    seasons = Season.objects.filter(is_draft=False).order_by('-start_date')
     context = {
         'seasons': seasons,
     }
@@ -48,7 +46,7 @@ def list_rounds(request):
 
 
 def current_season_redirect(request):
-    season_first = Season.objects.latest('start_date')
+    season_first = Season.objects.filter(is_draft=False).latest('start_date')
 
     return HttpResponseRedirect(reverse('season', args=(
         season_first.start_date.year, season_first.season_round)
@@ -57,6 +55,15 @@ def current_season_redirect(request):
 
 def season(request, year, season_round):
     season_object = get_object_or_404(Season, start_date__year=year, season_round=season_round)
+
+    if season_object.is_draft and not request.user.is_superuser:
+        prev = (Season.objects
+                .filter(is_draft=False, start_date__lt=season_object.start_date)
+                .order_by('-start_date')
+                .first())
+        if prev:
+            return HttpResponseRedirect(reverse('season', args=(prev.start_date.year, prev.season_round)))
+        raise Http404  # no published season to show
 
     # Optimize with prefetch_related to avoid N+1 queries
     ladders = Ladder.objects.filter(season=season_object).prefetch_related(
@@ -84,7 +91,7 @@ def season(request, year, season_round):
 
 def ladder(request, year, season_round, division_id):
     ladder_object = get_object_or_404(
-        Ladder.objects.prefetch_related('league_set__player__user'),
+        Ladder.objects.filter(season__is_draft=False).prefetch_related('league_set__player__user'),
         division=division_id,
         season__start_date__year=year,
         season__season_round=season_round
@@ -122,7 +129,8 @@ def ladder_subscription(request, year, season_round, division_id):
         user=request.user,
         ladder__division=division_id,
         ladder__season__start_date__year=year,
-        ladder__season__season_round=season_round
+        ladder__season__season_round=season_round,
+        ladder__season__is_draft=False,
     )
 
     # unsubscribe
@@ -131,8 +139,13 @@ def ladder_subscription(request, year, season_round, division_id):
         messages.success(request, 'Unsubscribed from email notifications.')
         return HttpResponseRedirect(reverse('ladder', args=(year, season_round, division_id)))
 
-    ladder_object = get_object_or_404(Ladder, division=division_id, season__start_date__year=year,
-                                      season__season_round=season_round)
+    ladder_object = get_object_or_404(
+        Ladder,
+        division=division_id,
+        season__start_date__year=year,
+        season__season_round=season_round,
+        season__is_draft=False,
+    )
 
     # subscribe
     LadderSubscription(
@@ -149,8 +162,13 @@ def add(request, year, season_round, division_id):
     if not request.user.is_superuser:
         return HttpResponseRedirect(reverse('ladder', args=(year, season_round, division_id)))
 
-    ladder_object = get_object_or_404(Ladder, division=division_id, season__start_date__year=year,
-                                      season__season_round=season_round)
+    ladder_object = get_object_or_404(
+        Ladder,
+        division=division_id,
+        season__start_date__year=year,
+        season__season_round=season_round,
+        season__is_draft=False,
+    )
 
     result = Result(ladder=ladder_object, date_added=datetime.datetime.now())
 
@@ -358,7 +376,9 @@ def season_ajax_progress(request):
 def result_entry(request):
     user_object = request.user
     try:
-        ladder_object = Ladder.objects.filter(league__player__user=user_object).order_by('-id')[0]
+        ladder_object = (Ladder.objects
+        .filter(league__player__user=user_object, season__is_draft=False)
+        .order_by('-id')[0])
     except IndexError:
         raise Http404
 
@@ -375,7 +395,9 @@ def result_entry(request):
 @login_required
 def result_entry_add(request):
     user = request.user
-    ladder_object = Ladder.objects.filter(league__player__user=user).order_by('-id')[0]
+    ladder_object = (Ladder.objects
+    .filter(league__player__user=user, season__is_draft=False)
+    .order_by('-id')[0])
     result = Result(ladder=ladder_object, date_added=datetime.datetime.now(), inaccurate_flag=0)
 
     form = AddEntryForm(ladder_object, user, request.POST, instance=result)

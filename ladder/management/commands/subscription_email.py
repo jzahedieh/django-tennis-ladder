@@ -9,7 +9,7 @@ from tennis.settings import SUBSCRIPTION_EMAIL
 
 def send_ladder_emails(days=1, dry_run=False):
     # search current season ladders that have result in last `days`
-    season = Season.objects.latest('start_date')
+    season = Season.objects.filter(is_draft=False).latest('start_date')
     print(f"Season: {season}")
     ladders = season.ladder_set.all()
 
