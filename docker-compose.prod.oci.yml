@@ -41,6 +41,8 @@ services:
     volumes:
       - ./data/db:/var/lib/mysql
       - ./data/db-backup:/backup
+    environment:
+      TZ: Europe/London
   adminer:
     image: adminer:5-fastcgi
     restart: unless-stopped

@@ -1,2 +1,4 @@
-5 0 * * * /backup.sh > /var/log/cron.log
-# An empty line is required at the end of this file for a valid cron file.
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+55 23 * * * root /backup.sh >> /var/log/cron.log 2>&1
+# <— keep a trailing newline
