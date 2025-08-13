@@ -52,6 +52,7 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'django.contrib.auth.context_processors.auth',
                 'ladder.context_processors.navigation',
+                'ladder.context_processors.umami_context',
             ],
         },
     },
@@ -213,6 +214,7 @@ SERVER_EMAIL = os.environ.get('EMAIL_SERVER_FROM')
 SUBSCRIPTION_EMAIL = os.environ.get('SUBSCRIPTION_EMAIL')
 EMAIL_USE_TLS = bool(strtobool(os.environ['EMAIL_USE_TLS']))
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+UMAMI_WEBSITE_ID = os.environ.get('UMAMI_WEBSITE_ID', '')
 
 INTERNAL_IPS = (
     '127.0.0.1',
