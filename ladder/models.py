@@ -67,38 +67,49 @@ class Season(models.Model):
         """
         Query how many games have been played so far.
         """
-        results = Result.objects.raw("""
-            SELECT ladder_result.id, ladder_id, season_id, date_added, COUNT(*) AS added_count
-            FROM ladder_result LEFT JOIN ladder_ladder
-            ON ladder_result.ladder_id=ladder_ladder.id
-            WHERE season_id = %s GROUP BY DATE(date_added)
-            ORDER BY DATE(date_added) ASC;
-        """, [self.id])
+        from django.db.models import Count
+        from django.db.models.functions import TruncDate
 
-        leagues = League.objects.raw("""
-            SELECT ladder_league.id, COUNT(*) AS player_count
-            FROM ladder_league LEFT JOIN ladder_ladder
-            ON ladder_league.ladder_id=ladder_ladder.id
-            WHERE season_id = %s GROUP BY ladder_id;
-        """, [self.id])
+        # Get daily result counts using Django ORM
+        daily_results = (
+            Result.objects
+            .filter(ladder__season=self)
+            .annotate(date_only=TruncDate('date_added'))
+            .values('date_only')
+            .annotate(added_count=Count('id'))
+            .order_by('date_only')
+        )
 
+        # Get player counts per ladder
+        ladder_player_counts = (
+            self.ladder_set
+            .annotate(player_count=Count('league'))
+            .values_list('player_count', flat=True)
+        )
+
+        # Process results data
         played = []
         played_days = []
         played_cumulative = []
         played_cumulative_count = 0
-        latest_result = False
+        latest_result = None
 
-        for result in results:
-            played.append(result.added_count)
-            played_days.append((result.date_added - self.start_date).days)
+        for result_data in daily_results:
+            date_added = result_data['date_only']
+            added_count = result_data['added_count']
 
-            played_cumulative_count += result.added_count / 2
+            played.append(added_count)
+            played_days.append((date_added - self.start_date).days)
+
+            played_cumulative_count += added_count / 2
             played_cumulative.append(played_cumulative_count)
-            latest_result = result.date_added
+            latest_result = date_added
 
-        total_matches = 0
-        for league in leagues:
-            total_matches += (league.player_count-1) * league.player_count / 2
+        # Calculate total possible matches
+        total_matches = sum(
+            (player_count - 1) * player_count / 2
+            for player_count in ladder_player_counts
+        )
 
         return {
             "season_days": [0, (self.end_date - self.start_date).days],
