@@ -207,18 +207,38 @@ def add(request, year, season_round, division_id):
 
 def player_history(request, player_id):
     player = get_object_or_404(Player, pk=player_id)
-    league_set = player.league_set.order_by('-ladder__season__start_date')
 
-    #return top 10 played against
+    # Prefetch player results at the player level
+    player = Player.objects.prefetch_related('result_player').get(pk=player_id)
+
+    # Get league_set with comprehensive prefetching
+    league_set = player.league_set.select_related(
+        'ladder__season'
+    ).prefetch_related(
+        'ladder__league_set'  # For league counts
+    ).order_by('-ladder__season__start_date')
+
+    # Force evaluation of league_set to ensure prefetching works
+    league_list = list(league_set)
+
+    # Pre-calculate player stats
+    player_stats = player.player_stats()
+
+    # Return top 10 played against
     try:
         head = Result.objects.values('opponent', 'opponent__first_name', 'opponent__last_name').filter(
             player=player).annotate(times_played=Count('opponent'), last_played=Max('date_added')).order_by(
-                '-times_played')[:10]
+            '-times_played')[:10]
     except Result.DoesNotExist:
         raise Http404
 
-    return render(request, 'ladder/player/history.html',
-                  {'player': player, 'league_set': league_set, 'ladder_set': league_set, 'head': head})
+    return render(request, 'ladder/player/history.html', {
+        'player': player,
+        'league_set': league_list,  # Use the evaluated list
+        'ladder_set': league_list,
+        'head': head,
+        'player_stats': player_stats
+    })
 
 
 def head_to_head(request, player_id, opponent_id):

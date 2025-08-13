@@ -316,27 +316,38 @@ class League(models.Model):
 
     def player_stats(self):
         """
-        Generates the player stats for player listings
+        Generates the player stats for player listings - Optimized to use prefetched data
         """
-        total_points = 0.00
-        games = 0.00
-        won_count = 0
-        for result in self.player.result_player.filter(player=self.player, ladder=self.ladder):
+        # Get all results for this player in this ladder
+        # This should use prefetched data from 'player__result_player'
+        results = [r for r in self.player.result_player.all() if r.ladder_id == self.ladder.id]
 
+        if not results:
+            return {
+                'total_points': 0,
+                'games': 0,
+                'pointsdivgames': 0,
+                'won_count': 0,
+                'percplayed': 0
+            }
+
+        total_points = 0.0
+        games = len(results)
+        won_count = 0
+
+        for result in results:
             if result.result == 9:
                 total_points += (result.result + 2 + 1)  # two for winning one for playing
                 won_count += 1
             else:
                 total_points += (result.result + 1)  # one for playing
 
-            games += 1
+        # Calculate stats
+        pointsdivgames = total_points / games if games > 0 else 0
 
-        # work out points per match
-        if games > 0:
-            pointsdivgames = total_points / games
-            percplayed = games / (self.ladder.league_set.count() - 1) * 100
-        else:
-            percplayed = pointsdivgames = 0
+        # Use prefetched league_set instead of .count() which always hits DB
+        league_count = len(self.ladder.league_set.all())  # Uses prefetched data
+        percplayed = games / (league_count - 1) * 100 if league_count > 1 else 0
 
         return {
             'total_points': total_points,
