@@ -1,6 +1,10 @@
 # Django settings for tennis project.
 import os
 from distutils.util import strtobool
+from dotenv import load_dotenv
+
+# Load local environment variables from .env.local file
+load_dotenv('.env.local')
 
 SETTINGS_DIR = os.path.abspath(os.path.dirname(__file__))
 
@@ -19,9 +23,10 @@ DATABASES = {
         'USER':  os.environ.get("SQL_USER", "root"),
         'PASSWORD': os.environ.get("SQL_PASSWORD", ""),
         'HOST':  os.environ.get("SQL_HOST", ""),
-        'PORT': '',
+        'PORT': os.environ.get("SQL_PORT", "3306"),
         'OPTIONS': {
             'autocommit': True,
+            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
         },
     }
 }
