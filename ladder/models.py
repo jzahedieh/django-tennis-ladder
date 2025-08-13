@@ -1,5 +1,4 @@
 from datetime import date
-import operator
 import uuid
 from django.db import models
 from django.db.models import Avg
@@ -23,15 +22,22 @@ class Season(models.Model):
         """
         Generates the season stats
         """
-        player_count = 0
-        results_count = 0
-        total_games_count = 0.0
-        for ladder in self.ladder_set.all():
-            player_count += ladder.league_set.count()
-            results_count += ladder.result_set.count() / 2
-            total_games_count += (ladder.league_set.count() * (ladder.league_set.count() - 1)) / 2
+        # Get aggregated counts directly from related tables
+        player_count = League.objects.filter(ladder__season=self).count()
+        results_count = Result.objects.filter(ladder__season=self).count() / 2
 
-        percentage_played = (results_count / total_games_count) * 100
+        # Calculate total possible games by iterating through ladders
+        # but get league counts efficiently
+        ladder_league_counts = self.ladder_set.annotate(
+            league_count=models.Count('league')
+        ).values_list('league_count', flat=True)
+
+        total_games_count = 0.0
+        for league_count in ladder_league_counts:
+            total_games_count += (league_count * (league_count - 1)) / 2
+
+        # Avoid division by zero
+        percentage_played = (results_count / total_games_count) * 100 if total_games_count > 0 else 0
 
         return {
             'divisions': self.ladder_set.count(),
@@ -47,7 +53,10 @@ class Season(models.Model):
         """
         current_leaders = {}
 
-        for ladder in self.ladder_set.all():
+        # Prefetch related data to avoid N+1 queries
+        ladders = self.ladder_set.prefetch_related('league_set__player')
+
+        for ladder in ladders:
             current_leaders[ladder.id] = ladder.get_leader(user=user)
 
         return {
@@ -180,29 +189,56 @@ class Ladder(models.Model):
         """
         Finds the leader of the ladder
         """
-        totals = {}
-        stats = self.get_stats()
-        for result in self.result_set.filter(ladder=self):
-            try:
-                if result.result == 9:
-                    totals[result.player] += int(result.result) + 3
-                else:
-                    totals[result.player] += int(result.result) + 1
-            except KeyError:
-                if result.result == 9:
-                    totals[result.player] = int(result.result) + 3
-                else:
-                    totals[result.player] = int(result.result) + 1
+        from collections import defaultdict
 
-        url = reverse('ladder', kwargs={'year': self.season.start_date.year, 'season_round': self.season.season_round, 'division_id': self.division})
+        # Use defaultdict to avoid KeyError handling
+        totals = defaultdict(int)
 
-        if totals:
-            player = max(iter(totals.items()), key=operator.itemgetter(1))[0]
+        # Get results with player data in one query
+        results = self.result_set.select_related('player').filter(ladder=self)
+
+        for result in results:
+            if result.result == 9:
+                totals[result.player] += int(result.result) + 3
+            else:
+                totals[result.player] += int(result.result) + 1
+
+        url = reverse('ladder', kwargs={
+            'year': self.season.start_date.year,
+            'season_round': self.season.season_round,
+            'division_id': self.division
+        })
+
+        if not totals:
+            return {
+                'player': 'No Results',
+                'player_id': '../#',
+                'total': '-',
+                'division': self.division,
+                'url': url,
+                'played': 0
+            }
+
+        # Find the leader
+        player = max(totals.items(), key=lambda x: x[1])[0]
+
+        # Calculate percentage played more efficiently
+        league_count = self.league_set.count()
+        if league_count > 1:
+            total_matches = league_count * (league_count - 1) / 2
+            matches_played = self.result_set.count() / 2
+            perc_matches_played = (matches_played / total_matches) * 100 if total_matches > 0 else 0
         else:
-            return {'player': 'No Results', 'player_id': '../#', 'total': '-', 'division': self.division, 'url': url, 'played': stats['perc_matches_played']}
+            perc_matches_played = 0
 
-        return {'player': player.full_name(authenticated=user.is_authenticated), 'player_id': player.id,
-                'total': totals[player], 'division': self.division, 'url': url, 'played': round(stats['perc_matches_played'], 2)}
+        return {
+            'player': player.full_name(authenticated=user.is_authenticated),
+            'player_id': player.id,
+            'total': totals[player],
+            'division': self.division,
+            'url': url,
+            'played': round(perc_matches_played, 2)
+        }
 
     def get_latest_results(self):
         """
