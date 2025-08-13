@@ -1,0 +1,6 @@
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+30 7 * * * root . /root/.env.sh && /usr/local/bin/python /code/manage.py subscription_email >> /var/log/subscription.log 2>&1
+
+# An empty line is required at the end of this file for a valid cron file.

@@ -59,6 +59,8 @@ services:
     volumes:
       - .:/code
       - ./static:/static
+    environment:
+      TZ: Europe/London
     depends_on:
       - db
   umami:
