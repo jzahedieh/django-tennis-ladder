@@ -64,5 +64,7 @@ services:
     restart: unless-stopped
     env_file:
       - ./.env.prod
+    ports:
+      - "3000:3000"
     depends_on:
       - db
