@@ -55,29 +55,40 @@ def current_season_redirect(request):
     ))
 
 
-@cache_page(60 * 60, key_prefix='season')  # 1 hour page cache
 def season(request, year, season_round):
     season_object = get_object_or_404(Season, start_date__year=year, season_round=season_round)
 
-    ladders = Ladder.objects.filter(season=season_object)
+    # Optimize with prefetch_related to avoid N+1 queries
+    ladders = Ladder.objects.filter(season=season_object).prefetch_related(
+        'league_set__player__user'  # Prefetch leagues, players, and users
+    )
 
-    results = Result.objects.filter(ladder__season=season_object)
-    league = League.objects.filter(ladder__season=season_object)
+    # Get all results for this season with related data in one query
+    results = Result.objects.filter(
+        ladder__season=season_object
+    ).select_related(
+        'player', 'opponent', 'ladder'
+    )
 
+    # Build results dictionary efficiently
     results_dict = {}
-
     for result in results:
         results_dict.setdefault(result.player.id, []).append(result)
 
+    # No need to fetch league separately as it's prefetched
     return render(
         request, 'ladder/season/index.html',
-        dict(season=season_object, ladders=ladders, results_dict=results_dict, league=league)
+        dict(season=season_object, ladders=ladders, results_dict=results_dict)
     )
 
 
 def ladder(request, year, season_round, division_id):
-    ladder_object = get_object_or_404(Ladder, division=division_id, season__start_date__year=year,
-                                      season__season_round=season_round)
+    ladder_object = get_object_or_404(
+        Ladder.objects.prefetch_related('league_set__player__user'),
+        division=division_id,
+        season__start_date__year=year,
+        season__season_round=season_round
+    )
 
     subscribed = False
     if request.user.is_authenticated and not request.user.is_superuser:
@@ -86,12 +97,14 @@ def ladder(request, year, season_round, division_id):
             ladder__division=division_id,
             ladder__season__start_date__year=year,
             ladder__season__season_round=season_round
-        ).count() > 0
+        ).exists()  # Use exists() instead of count() > 0
 
-    results = Result.objects.filter(ladder=ladder_object)
+    # Optimize results query with select_related
+    results = Result.objects.filter(ladder=ladder_object).select_related(
+        'player', 'opponent'
+    )
 
     results_dict = {}
-
     for result in results:
         results_dict.setdefault(result.player.id, []).append(result)
 
