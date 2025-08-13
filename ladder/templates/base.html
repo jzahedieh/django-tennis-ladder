@@ -67,7 +67,14 @@
                                 </ul>
                             </li>
                             {% if user.is_authenticated %}
-                                <li><a href="{% url 'logout' %}">Log Out</a></li>
+                                <li>
+                                    <a href="#" onclick="event.preventDefault(); document.getElementById('logout-form-nav').submit();">
+                                        Log Out
+                                    </a>
+                                    <form id="logout-form-nav" action="{% url 'logout' %}" method="post" style="display:none;">
+                                        {% csrf_token %}
+                                    </form>
+                                </li>
                             {% endif %}
                         </ul>
                         <form class="navbar-form pull-right" id="find_player_form" action="{% url 'player_result' %}" method="get">

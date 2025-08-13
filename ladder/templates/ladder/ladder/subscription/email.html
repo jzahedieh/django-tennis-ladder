@@ -419,9 +419,9 @@
                   <td class="content-block">
                     <span class="apple-link">Highgate Ladder Tracker</span>
                     <br> Wish to unsubscribe from updates about this ladder?
-                      <a href="{{ protocol }}://{{ domain }}{% url 'ladder_subscription' year=ladder.season.start_date|date:"Y" season_round=ladder.season.season_round division_id=ladder.division %}">
-                          Unsubscribe
-                      </a>
+                    <a href="{{ unsubscribe_url }}">
+                        Unsubscribe
+                    </a>
                   </td>
                 </tr>
               </table>

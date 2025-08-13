@@ -384,3 +384,21 @@ def result_entry_add(request):
         'ladder': ladder_object,
         'form': form
     })
+
+
+def unsubscribe_token(request, token):
+    """Public unsubscribe via token - no login required"""
+    subscription = get_object_or_404(LadderSubscription, unsubscribe_token=token)
+
+    # Extract division details
+    ladder = subscription.ladder
+    year = ladder.season.start_date.year
+    season_round = ladder.season.season_round
+    division_id = ladder.division
+
+    # Delete the subscription
+    subscription.delete()
+
+    # Add success message and redirect to the ladder (division) page
+    messages.success(request, f'Successfully unsubscribed from {ladder} email notifications.')
+    return HttpResponseRedirect(reverse('ladder', args=(year, season_round, division_id)))

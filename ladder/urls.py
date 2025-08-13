@@ -26,4 +26,5 @@ urlpatterns = [
     re_path(r'^season/ajax/progress/$', views.season_ajax_progress, name='season_ajax_progress'),
     re_path(r'^result/entry/$', views.result_entry, name='result_entry'),
     re_path(r'^result/entry/add/$', views.result_entry_add, name='result_entry_add'),
+    re_path(r'^unsubscribe/(?P<token>[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/$', views.unsubscribe_token, name='unsubscribe_token'),
 ]

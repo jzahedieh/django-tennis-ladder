@@ -1,5 +1,6 @@
 from datetime import date
 import operator
+import uuid
 from django.db import models
 from django.db.models import Avg
 from django.contrib.auth.models import User
@@ -250,6 +251,7 @@ class LadderSubscription(models.Model):
     ladder = models.ForeignKey(Ladder, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     subscribed_at = models.DateField()
+    unsubscribe_token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
 
     def __str__(self):
         return self.user.email
