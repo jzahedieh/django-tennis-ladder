@@ -10,6 +10,6 @@ mysqldump --user=root --password="${MYSQL_ROOT_PASSWORD}" "${SQL_DATABASE}" > $f
 echo "export finished: $filename"
 
 # clean up old exports, does not support filename spaces
-old=$(ls -t | awk 'NR>14')
+old=$(ls -t | awk 'NR>30')
 echo "$old" | xargs -d '\n' rm
 echo "export deleted: $old"
