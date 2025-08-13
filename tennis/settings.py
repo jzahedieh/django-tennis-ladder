@@ -223,4 +223,19 @@ INTERNAL_IPS = (
 )
 
 DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
-CSRF_TRUSTED_ORIGINS = ["http://127.0.0.1", "https://highgate-ladder.co.uk"]
+
+CSRF_TRUSTED_ORIGINS = [
+    "http://127.0.0.1",
+    "https://highgate-ladder.co.uk"
+]
+
+# Add additional domains from environment variable
+additional_domains = os.environ.get('CSRF_ADDITIONAL_DOMAINS', '')
+if additional_domains:
+    # Split by comma and strip whitespace, add https:// prefix if not present
+    for domain in additional_domains.split(','):
+        domain = domain.strip()
+        if domain:
+            if not domain.startswith(('http://', 'https://')):
+                domain = f"https://{domain}"
+            CSRF_TRUSTED_ORIGINS.append(domain)
