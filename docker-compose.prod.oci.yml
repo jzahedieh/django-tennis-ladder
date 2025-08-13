@@ -42,7 +42,7 @@ services:
       - ./data/db:/var/lib/mysql
       - ./data/db-backup:/backup
   adminer:
-    image: adminer:4-fastcgi
+    image: adminer:5-fastcgi
     restart: unless-stopped
   web:
     build:
