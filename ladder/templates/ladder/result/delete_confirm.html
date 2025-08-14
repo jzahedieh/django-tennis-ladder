@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+{% block container %}
+<h1>Delete Result</h1>
+<p>Are you sure you want to remove this result?</p>
+<form method="post">
+  {% csrf_token %}
+  <button class="btn btn-danger">Yes, delete</button>
+  <a href="{% url 'result_entry' %}" class="btn btn-secondary">Cancel</a>
+</form>
+{% endblock %}

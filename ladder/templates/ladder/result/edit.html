@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+{% block container %}
+    <style>
+        /* Keep labels stacked for this form only */
+        #edit_result_form .control-label {
+            float: none;
+            width: auto;
+            text-align: left;
+            padding-top: 0;
+        }
+
+        #edit_result_form .controls {
+            margin-left: 0;
+        }
+
+        /* Fix BS2 extra padding on first checkbox */
+        #edit_result_form .controls > .checkbox:first-child {
+            padding-top: 0;
+        }
+
+        #edit_result_form label.checkbox {
+            margin-top: 0;
+        }
+
+        /* Small red helper like BS2’s .text-error */
+        .text-error {
+            color: #b94a48;
+        }
+
+        /* Make number field compact but readable */
+        #edit_result_form .input-mini {
+            width: 70px;
+        }
+
+        #edit_result_form .form-actions {
+            background: transparent;
+            border: 0;
+            padding: 0;
+            margin-top: 10px;
+            text-align: left; /* align buttons left */
+        }
+    </style>
+    <h1>Edit Result</h1>
+    <h3>{{ ladder }}</h3>
+
+    <form id="edit_result_form" class="form-horizontal" method="post">
+        {% csrf_token %}
+
+        <div class="control-group">
+            <label class="control-label" for="winner_id">Winner:</label>
+            <div class="controls">
+                <select name="winner_id" id="winner_id" class="input-xlarge">
+                    <option value="{{ winner.id }}">{{ winner.first_name }} {{ winner.last_name }}</option>
+                    <option value="{{ loser.id }}">{{ loser.first_name }} {{ loser.last_name }}</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <label class="control-label" for="losing_score">Losing Result:</label>
+            <div class="controls">
+                <input type="number" name="losing_score" id="losing_score" min="0" max="8"
+                       value="{{ losing_score }}" class="input-mini">
+            </div>
+        </div>
+
+        <div class="control-group">
+            <div class="controls">
+                <label class="checkbox">
+                    <input type="checkbox" id="confirmBox" name="confirm" required aria-required="true"
+                           title="Please tick to confirm the update.">
+                    I confirm I want to update this result
+                </label>
+                <div id="confirmHelp" class="help-inline text-error" style="display:none;">Please tick to confirm the
+                    update.
+                </div>
+            </div>
+        </div>
+
+
+        <div class="form-actions">
+            <button id="saveBtn" class="btn btn-primary" type="submit">Save</button>
+            <a class="btn btn-danger" href="{% url 'result_entry_delete' pair_key %}">Delete</a>
+        </div>
+    </form>
+{% endblock %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var form  = document.getElementById('edit_result_form');
+  var box   = document.getElementById('confirmBox');
+  var help  = document.getElementById('confirmHelp');
+  if (!form || !box) return;
+
+  // Show/hide helper when user toggles the checkbox
+  box.addEventListener('change', function () {
+    if (help) help.style.display = box.checked ? 'none' : '';
+  });
+
+  // If user tries to submit without ticking, native required will block.
+  // We also reveal our helper for clarity.
+  form.addEventListener('submit', function (e) {
+    if (!box.checked) {
+      if (help) help.style.display = '';
+      box.focus();
+      // Let the browser show its native "please check this box" too.
+    }
+  });
+});
+</script>

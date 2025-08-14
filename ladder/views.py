@@ -7,13 +7,28 @@ from django.http import HttpResponseRedirect, Http404, HttpResponse, HttpRespons
 from django.shortcuts import render, get_object_or_404
 from django.urls import reverse
 from django.utils.html import escape
-from django.views.decorators.cache import cache_page, never_cache
+from django.views.decorators.cache import never_cache
 from django.contrib import messages
-
 
 from ladder.forms import AddResultForm, AddEntryForm
 from ladder.models import Ladder, Player, Result, Season, League, LadderSubscription
 
+def _unplayed_opponents_for(user_player, ladder):
+    # players in this ladder, in ladder order
+    league_players = [l.player for l in ladder.league_set.select_related('player').all()]
+    # all pairings already played (either direction)
+    played_pairs = set()
+    for r in Result.objects.filter(ladder=ladder).values_list('player_id', 'opponent_id'):
+        played_pairs.add(tuple(sorted(r)))
+    # opponents the user hasn't played yet, in league (sort_order) order
+    unplayed = []
+    for p in league_players:
+        if p.id == user_player.id:
+            continue
+        pair = tuple(sorted((user_player.id, p.id)))
+        if pair not in played_pairs:
+            unplayed.append(p)
+    return unplayed
 
 def index(request):
     current_season = Season.objects.filter(is_draft=False).latest('start_date')
@@ -372,74 +387,220 @@ def season_ajax_progress(request):
 
     return HttpResponse(json.dumps(season_object.get_progress()), content_type="application/json")
 
+# views.py
+# views.py  (replace the body of result_entry with this improved part)
+
 @login_required
 def result_entry(request):
-    user_object = request.user
+    user = request.user
     try:
-        ladder_object = (Ladder.objects
-        .filter(league__player__user=user_object, season__is_draft=False)
-        .order_by('-id')[0])
+        ladder = (Ladder.objects
+                  .filter(league__player__user=user, season__is_draft=False)
+                  .order_by('-id')[0])
     except IndexError:
         raise Http404
 
-    result = Result(ladder=ladder_object, date_added=datetime.datetime.now())
-    form = AddEntryForm(ladder_object, user_object, instance=result)
+    me = Player.objects.get(user=user)
 
-    return render(request, 'ladder/result/entry.html', {
-        'user': user_object,
-        'ladder': ladder_object,
-        'form': form,
-        'is_closed': ladder_object.is_closed()
-    })
+    # Unplayed (kept as before)
+    unplayed = _unplayed_opponents_for(me, ladder)
 
-@login_required
-def result_entry_add(request):
-    user = request.user
-    ladder_object = (Ladder.objects
-    .filter(league__player__user=user, season__is_draft=False)
-    .order_by('-id')[0])
-    result = Result(ladder=ladder_object, date_added=datetime.datetime.now(), inaccurate_flag=0)
+    # Entered: only matches where the logged-in player took part
+    entered_raw = (
+        Result.objects
+        .filter(ladder=ladder)
+        .filter(Q(player=me) | Q(opponent=me))  # <-- change models.Q -> Q
+        .select_related('player', 'opponent', 'entered_by')
+        .order_by('-date_added')
+    )
 
-    form = AddEntryForm(ladder_object, user, request.POST, instance=result)
+    # Collapse mirror rows to a single “match”
+    pairs = {}
+    for r in entered_raw:
+        key = tuple(sorted((r.player_id, r.opponent_id)))
+        pairs.setdefault(key, []).append(r)
 
-    if form.is_valid():
-        user_result = form.save(commit=False)
-        is_user_winner = form.cleaned_data['winner'] == 1
-        losing_result = form.cleaned_data['result']
+    entered = []
+    for (a_id, b_id), rows in pairs.items():
+        if len(rows) == 1:
+            r = rows[0]
+            # find mirror so we can compute losing score reliably
+            try:
+                mirror = Result.objects.get(ladder=ladder, player_id=r.opponent_id, opponent_id=r.player_id)
+                rows = [r, mirror]
+            except Result.DoesNotExist:
+                continue
 
-        # check for existing results, assume update if find a match aka delete
-        try:
-            existing_player_result = Result.objects.get(ladder=ladder_object, player=user_result.player,
-                                                        opponent=user_result.opponent)
-            existing_player_result.delete()
-            existing_opponent_result = Result.objects.get(ladder=ladder_object, player=user_result.opponent,
-                                                          opponent=user_result.player)
-            existing_opponent_result.delete()
-        except Result.DoesNotExist:
-            pass
+        # normalize winner/loser
+        ra, rb = rows[0], rows[1]
+        if ra.result == 9:
+            winner_row, loser_row = ra, rb
+        elif rb.result == 9:
+            winner_row, loser_row = rb, ra
+        else:
+            # invalid pair (shouldn’t happen), skip
+            continue
 
-        # build the mirror result (aka opponent) from losing form data
-        opponent_result = Result(ladder=user_result.ladder, player=user_result.opponent,
-                                opponent=user_result.player, result=9, date_added=user_result.date_added,
-                                inaccurate_flag=user_result.inaccurate_flag)
+        entered.append({
+            'winner': winner_row.player,
+            'loser': loser_row.player,
+            'losing_score': loser_row.result,
+            'date_added': winner_row.date_added,     # use winner row date
+            'entered_by': winner_row.entered_by or loser_row.entered_by,
+            'pair_key': f'{a_id}-{b_id}',
+        })
 
-        # switch flag if user is winner
-        if is_user_winner:
-            opponent_result.result = losing_result
-            user_result.result = 9
-
-        user_result.save()
-        opponent_result.save()
-
-        return HttpResponseRedirect(reverse('ladder', args=(
-            ladder_object.season.start_date.year, ladder_object.season.season_round, ladder_object.division)))
+    # form as before
+    result = Result(ladder=ladder, date_added=datetime.datetime.now(), result=0)
+    form = AddEntryForm(ladder, user, instance=result)
+    if unplayed:
+        form.fields['opponent'].queryset = Player.objects.filter(id__in=[p.id for p in unplayed])
+    else:
+        form.fields['opponent'].queryset = Player.objects.none()
 
     return render(request, 'ladder/result/entry.html', {
         'user': user,
-        'ladder': ladder_object,
-        'form': form
+        'ladder': ladder,
+        'form': form,
+        'unplayed': unplayed,
+        'entered': entered,
+        'is_closed': ladder.is_closed(),
     })
 
+# views.py
+@login_required
+def result_entry_add(request):
+    user = request.user
+    ladder = (Ladder.objects
+              .filter(league__player__user=user, season__is_draft=False)
+              .order_by('-id')[0])
+
+    result = Result(ladder=ladder, date_added=datetime.datetime.now(), inaccurate_flag=0)
+    form = AddEntryForm(ladder, user, request.POST, instance=result)
+
+    if not form.is_valid():
+        return render(request, 'ladder/result/entry.html', {
+            'user': user, 'ladder': ladder, 'form': form,
+            'unplayed': _unplayed_opponents_for(Player.objects.get(user=user), ladder),
+            'entered': [],  # keep it simple on error; can repopulate if you prefer
+        })
+
+    user_result = form.save(commit=False)
+    is_user_winner = form.cleaned_data['winner'] == 1
+    losing_result = form.cleaned_data['result']
+    me = user_result.player
+    opp = user_result.opponent
+
+    # de-duplicate if the pair already exists
+    Result.objects.filter(ladder=ladder, player=me, opponent=opp).delete()
+    Result.objects.filter(ladder=ladder, player=opp, opponent=me).delete()
+
+    # build mirror
+    opponent_result = Result(
+        ladder=user_result.ladder,
+        player=opp, opponent=me,
+        result=9, date_added=user_result.date_added,
+        inaccurate_flag=user_result.inaccurate_flag
+    )
+
+    if is_user_winner:
+        opponent_result.result = losing_result
+        user_result.result = 9
+    else:
+        # user lost; their result already is losing_result
+        pass
+
+    # log who entered
+    user_result.entered_by = user
+    opponent_result.entered_by = user
+
+    user_result.save()
+    opponent_result.save()
+
+    return HttpResponseRedirect(reverse('result_entry'))
+
+def _can_edit(user, ladder, player_a_id, player_b_id):
+    if user.is_superuser:
+        return True
+    try:
+        me = Player.objects.get(user=user)
+    except Player.DoesNotExist:
+        return False
+    return me.id in (player_a_id, player_b_id)
+
+@login_required
+def result_entry_edit(request, pair_key):
+    # pair_key format "<idA>-<idB>" sorted asc when created
+    try:
+        a_id, b_id = map(int, pair_key.split('-'))
+    except ValueError:
+        raise Http404
+
+    ladder = (Ladder.objects
+              .filter(league__player__user=request.user, season__is_draft=False)
+              .order_by('-id')[0])
+
+    if not _can_edit(request.user, ladder, a_id, b_id):
+        return HttpResponseForbidden()
+
+    # fetch the two rows
+    try:
+        r_ab = Result.objects.get(ladder=ladder, player_id=a_id, opponent_id=b_id)
+        r_ba = Result.objects.get(ladder=ladder, player_id=b_id, opponent_id=a_id)
+    except Result.DoesNotExist:
+        raise Http404
+
+    # normalize to winner/loser
+    if r_ab.result == 9:
+        winner, loser, losing_score = r_ab.player, r_ba.player, r_ba.result
+    else:
+        winner, loser, losing_score = r_ba.player, r_ab.player, r_ab.result
+
+    if request.method == 'POST':
+        # light friction: require a checkbox confirm and the new losing score
+        confirmed = request.POST.get('confirm') == 'on'
+        if not confirmed:
+            messages.error(request, 'Please confirm you want to update this result.')
+        else:
+            new_winner_id = int(request.POST['winner_id'])
+            new_losing_score = int(request.POST['losing_score'])
+            if new_winner_id == winner.id and new_losing_score == losing_score:
+                messages.info(request, 'No changes made.')
+                return HttpResponseRedirect(reverse('result_entry'))
+
+            # rewrite both rows
+            win_id, lose_id = (a_id, b_id) if new_winner_id == a_id else (b_id, a_id)
+            Result.objects.filter(ladder=ladder, player_id=a_id, opponent_id=b_id).delete()
+            Result.objects.filter(ladder=ladder, player_id=b_id, opponent_id=a_id).delete()
+
+            win_row = Result(ladder=ladder, player_id=win_id, opponent_id=lose_id, inaccurate_flag=0,
+                             result=9, date_added=datetime.datetime.now(), entered_by=request.user)
+            lose_row = Result(ladder=ladder, player_id=lose_id, opponent_id=win_id, inaccurate_flag=0,
+                              result=new_losing_score, date_added=win_row.date_added, entered_by=request.user)
+            win_row.save(); lose_row.save()
+            messages.success(request, 'Result updated.')
+            return HttpResponseRedirect(reverse('result_entry'))
+
+    return render(request, 'ladder/result/edit.html', {
+        'ladder': ladder,
+        'pair_key': pair_key,
+        'winner': winner, 'loser': loser, 'losing_score': losing_score
+    })
+
+@login_required
+def result_entry_delete(request, pair_key):
+    a_id, b_id = map(int, pair_key.split('-'))
+    ladder = (Ladder.objects
+              .filter(league__player__user=request.user, season__is_draft=False)
+              .order_by('-id')[0])
+    if not _can_edit(request.user, ladder, a_id, b_id):
+        return HttpResponseForbidden()
+    if request.method == 'POST':
+        Result.objects.filter(ladder=ladder, player_id=a_id, opponent_id=b_id).delete()
+        Result.objects.filter(ladder=ladder, player_id=b_id, opponent_id=a_id).delete()
+        messages.success(request, 'Result removed.')
+        return HttpResponseRedirect(reverse('result_entry'))
+    return render(request, 'ladder/result/delete_confirm.html', {'pair_key': pair_key, 'ladder': ladder})
 
 def unsubscribe_token(request, token):
     """Public unsubscribe via token - no login required"""

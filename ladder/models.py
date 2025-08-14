@@ -372,6 +372,7 @@ class Result(models.Model):
     result = models.IntegerField()
     date_added = models.DateField('Date added')
     inaccurate_flag = models.BooleanField(default=None)
+    entered_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name='entered_results')
 
     def __str__(self):
         return (self.player.first_name + ' ' + self.player.last_name) + ' vs ' + (
