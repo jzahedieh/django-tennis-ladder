@@ -2,7 +2,6 @@
 {% load ladder_extras %}
 {% block container %}
     <h2>{{ player }} Vs {{ opponent }}</h2>
-    <a href="javascript:history.go(-1)">Back</a>
     {% if not results %}
         No results for match up.
     {% else %}
