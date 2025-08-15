@@ -414,3 +414,18 @@ class Prospect(models.Model):
 
     def __str__(self):
         return f"{self.last_name}, {self.first_name} <{self.email}>"
+
+class DraftRemoval(models.Model):
+    season        = models.ForeignKey("Season", on_delete=models.CASCADE, related_name="draft_removals")
+    player        = models.ForeignKey("Player", on_delete=models.CASCADE)
+    from_division = models.PositiveIntegerField()
+    note          = models.CharField(max_length=200, blank=True)
+    removed_at    = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ("-removed_at",)
+        indexes = [models.Index(fields=["season", "from_division"])]
+
+    def __str__(self):
+        return f"{self.player} from {self.season.name} division {self.from_division}"
+

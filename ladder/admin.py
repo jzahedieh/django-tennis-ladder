@@ -10,7 +10,7 @@ from django.shortcuts import get_object_or_404, redirect
 from django.template.response import TemplateResponse
 from django.urls import path, reverse
 
-from ladder.models import Season, Player, Ladder, Result, League, LadderSubscription, Prospect
+from ladder.models import Season, Player, Ladder, Result, League, LadderSubscription, Prospect, DraftRemoval
 
 
 # ------------------------------
@@ -199,6 +199,16 @@ class SeasonAdmin(DraftHelpers, admin.ModelAdmin):
                 self.admin_site.admin_view(self.invite_prospect),
                 name="ladder_season_invite_prospect",
             ),
+            path(
+                "<int:season_id>/draft/restore/<int:removal_id>/",
+                self.admin_site.admin_view(self.restore_removed),
+                name="ladder_season_restore_removed",
+            ),
+            path(
+                "<int:season_id>/draft/restore/<int:removal_id>/to/<int:division>/",
+                self.admin_site.admin_view(self.restore_removed_to),
+                name="ladder_season_restore_removed_to",
+            ),
         ]
         return custom + urls
 
@@ -329,12 +339,20 @@ class SeasonAdmin(DraftHelpers, admin.ModelAdmin):
             .values("id", "first_name", "last_name", "email", "ability_note", "status")
         )
 
+        removals = (
+            DraftRemoval.objects
+            .filter(season=season)
+            .select_related("player")
+            .order_by("-removed_at")
+        )
+
         context = {
             **self.admin_site.each_context(request),
             "season": season,
             "divisions": divisions,
             "candidates": list(candidates),
             "prospects": list(prospects),
+            "removals": removals,
         }
         return TemplateResponse(
             request, "admin/ladder/season/draft_workspace.html", context
@@ -400,12 +418,18 @@ class SeasonAdmin(DraftHelpers, admin.ModelAdmin):
         src = self._get_ladder(season, division)
         league = get_object_or_404(League, pk=league_id, ladder=src)
 
+        # record a draft removal before deleting
+        DraftRemoval.objects.create(
+            season=season, player=league.player, from_division=division
+        )
+
         if getattr(league.player, "user_id", None):
             LadderSubscription.objects.filter(ladder=src, user=league.player.user).delete()
 
         league.delete()
         self._renumber_positions(src)
-        messages.success(request, "Removed from division.")
+
+        messages.success(request, f"Removed {league.player.full_name(authenticated=True)} (now listed under ‘Removed players’).")
         return self._to_workspace(season, f"#div-{division}")
 
     @transaction.atomic
@@ -575,6 +599,41 @@ class SeasonAdmin(DraftHelpers, admin.ModelAdmin):
 
         messages.success(request, f"Added {player.full_name(authenticated=True)} from prospects.")
         return self._to_workspace(season, f"#div-{division}")
+
+    @transaction.atomic
+    def restore_removed(self, request, season_id: int, removal_id: int):
+        """Restore to the original division recorded in the log."""
+        season = get_object_or_404(Season, pk=season_id)
+        removal = get_object_or_404(DraftRemoval, pk=removal_id, season=season)
+        target_div = removal.from_division
+        return self._restore_common(request, season, removal, target_div)
+
+    @transaction.atomic
+    def restore_removed_to(self, request, season_id: int, removal_id: int, division: int):
+        """Restore to a chosen division."""
+        season = get_object_or_404(Season, pk=season_id)
+        removal = get_object_or_404(DraftRemoval, pk=removal_id, season=season)
+        return self._restore_common(request, season, removal, division)
+
+    def _restore_common(self, request, season: Season, removal: DraftRemoval, target_div: int):
+        dst = self._get_ladder(season, target_div)
+        if not dst:
+            messages.error(request, f"Division {target_div} doesn’t exist.")
+            return self._to_workspace(season, "#removed")
+
+        # don’t double-assign within the draft season
+        if League.objects.filter(ladder__season=season, player=removal.player).exists():
+            removal.delete()
+            messages.info(request, "Player is already assigned; removed entry cleared.")
+            return self._to_workspace(season, "#removed")
+
+        # add to TOP of the division
+        League.objects.create(ladder=dst, player=removal.player, sort_order=self._top_sort(dst))
+        self._renumber_positions(dst)
+        self._ensure_subscription(dst, removal.player)
+        messages.success(request, f"Restored {removal.player.full_name(authenticated=True)} to Division {target_div}.")
+        removal.delete()
+        return self._to_workspace(season, f"#div-{target_div}")
 
 
 # ------------------------------

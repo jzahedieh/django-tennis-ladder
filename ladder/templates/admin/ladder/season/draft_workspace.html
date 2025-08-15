@@ -185,6 +185,62 @@
   </div>
 {% endfor %}
 
+<div class="module" id="removed" style="margin-top:1.25rem;">
+  <h2>Removed players ({{ removals|length }})</h2>
+
+  {% if removals %}
+    <table class="listing" style="width:100%;">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th style="width:10%">From div</th>
+          <th style="width:18%">Removed at</th>
+          <th style="width:32%">Restore</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in removals %}
+          <tr>
+            <td>{{ r.player.first_name }} {{ r.player.last_name }}</td>
+            <td>{{ r.from_division }}</td>
+            <td>{{ r.removed_at|date:"Y-m-d H:i" }}</td>
+            <td>
+              <form method="post"
+                    action="{% url 'admin:ladder_season_restore_removed' season.id r.id %}"
+                    data-div-anchor="removed"
+                    style="display:inline;">
+                {% csrf_token %}
+                <button class="button">Restore to {{ r.from_division }}</button>
+              </form>
+
+              <span style="opacity:.5">or</span>
+
+              <form method="post"
+                    action=""
+                    data-div-anchor="removed"
+                    style="display:inline;"
+                    onsubmit="
+                      var sel=this.querySelector('select');
+                      this.action='{% url 'admin:ladder_season_restore_removed_to' season.id r.id 999 %}'.replace('999', sel.value);
+                    ">
+                {% csrf_token %}
+                <select>
+                  {% for d in divisions %}
+                    <option value="{{ d.division }}">{{ d.division }}</option>
+                  {% endfor %}
+                </select>
+                <button class="button">Restore</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p style="opacity:.7">No players removed in this draft.</p>
+  {% endif %}
+</div>
+
 <div class="actions-bar" style="margin-bottom:1rem;">
   <form method="post" action="{% url 'admin:ladder_season_add_div' season.id %}" data-div-anchor="top">
     {% csrf_token %}
