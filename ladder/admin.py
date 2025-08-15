@@ -1,6 +1,8 @@
 from datetime import date
 
 from django.contrib import admin, messages
+from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 from django.db import transaction
 from django.db.models import Case, When, Value, FloatField, F, Sum, Count
 from django.db.models.functions import Coalesce
@@ -8,7 +10,7 @@ from django.shortcuts import get_object_or_404, redirect
 from django.template.response import TemplateResponse
 from django.urls import path, reverse
 
-from ladder.models import Season, Player, Ladder, Result, League, LadderSubscription
+from ladder.models import Season, Player, Ladder, Result, League, LadderSubscription, Prospect
 
 
 # ------------------------------
@@ -192,6 +194,11 @@ class SeasonAdmin(DraftHelpers, admin.ModelAdmin):
                 self.admin_site.admin_view(self.move_down),
                 name="ladder_season_move_down",
             ),
+            path(
+                "<int:season_id>/draft/<int:division>/invite_prospect/",
+                self.admin_site.admin_view(self.invite_prospect),
+                name="ladder_season_invite_prospect",
+            ),
         ]
         return custom + urls
 
@@ -315,12 +322,19 @@ class SeasonAdmin(DraftHelpers, admin.ModelAdmin):
             .order_by("last_name", "first_name")
             .values("id", "first_name", "last_name")
         )
+        prospects = (
+            Prospect.objects
+            .exclude(status__in=[Prospect.Status.REJECTED, Prospect.Status.ADDED])
+            .order_by("last_name", "first_name")
+            .values("id", "first_name", "last_name", "email", "ability_note", "status")
+        )
 
         context = {
             **self.admin_site.each_context(request),
             "season": season,
             "divisions": divisions,
             "candidates": list(candidates),
+            "prospects": list(prospects),
         }
         return TemplateResponse(
             request, "admin/ladder/season/draft_workspace.html", context
@@ -488,6 +502,80 @@ class SeasonAdmin(DraftHelpers, admin.ModelAdmin):
             messages.success(request, "Moved down.")
         return self._to_workspace(season, f"#row-{league_id}")
 
+    @transaction.atomic
+    def invite_prospect(self, request, season_id: int, division: int):
+        season = get_object_or_404(Season, pk=season_id)
+        dst = self._get_ladder(season, division)
+        if not dst or request.method != "POST":
+            return self._to_workspace(season, f"#div-{division}")
+
+        pid = request.POST.get("prospect_id")
+        prospect = get_object_or_404(Prospect, pk=pid)
+
+        # --- guard against duplicate email (case-insensitive) ---
+        User = get_user_model()
+        existing_user = User.objects.filter(email__iexact=prospect.email).first()
+        if existing_user:
+            user = existing_user
+            # keep names up to date if blank
+            changed = False
+            if not user.first_name and prospect.first_name:
+                user.first_name = prospect.first_name;
+                changed = True
+            if not user.last_name and prospect.last_name:
+                user.last_name = prospect.last_name;
+                changed = True
+            if changed:
+                user.save(update_fields=["first_name", "last_name"])
+        else:
+            # username = email for simplicity
+            user = User.objects.create(
+                username=prospect.email.lower(),
+                email=prospect.email.lower(),
+                first_name=prospect.first_name,
+                last_name=prospect.last_name,
+                is_active=True,
+            )
+
+        # ensure a Player linked to this user
+        player = Player.objects.filter(user=user).first()
+        if not player:
+            player = Player.objects.create(
+                first_name=prospect.first_name,
+                last_name=prospect.last_name,
+                user=user,
+            )
+
+        # assign to player group
+        player_group, _ = Group.objects.get_or_create(name="player")
+        if not user.groups.filter(id=player_group.id).exists():
+            user.groups.add(player_group)
+
+        # prevent double-assignments within this season
+        already_assigned = League.objects.filter(ladder__season=season, player=player).exists()
+        if already_assigned:
+            messages.warning(request, "That player is already assigned to a division in this season.")
+            return self._to_workspace(season, f"#div-{division}")
+
+        # add to division
+        League.objects.create(ladder=dst, player=player, sort_order=self._next_sort(dst))
+        self._renumber_positions(dst)
+
+        # auto-subscribe to this ladder (idempotent; make sure NOT NULL for subscribed_at)
+        if getattr(player, "user_id", None):
+            LadderSubscription.objects.get_or_create(
+                ladder=dst, user=player.user,
+                defaults={"subscribed_at": date.today()}
+            )
+
+        # mark prospect as 'added' so it drops out of the picker
+        if prospect.status != "added":
+            prospect.status = "added"
+            prospect.save(update_fields=["status"])
+
+        messages.success(request, f"Added {player.full_name(authenticated=True)} from prospects.")
+        return self._to_workspace(season, f"#div-{division}")
+
 
 # ------------------------------
 # The rest of your admin configs
@@ -527,3 +615,10 @@ class LadderSubscriptionAdmin(admin.ModelAdmin):
     list_display = ("ladder", "user", "subscribed_at")
     search_fields = ("ladder__season__name", "user__email")
     ordering = ("ladder",)
+
+@admin.register(Prospect)
+class ProspectAdmin(admin.ModelAdmin):
+    list_display = ("last_name", "first_name", "email", "status", "ability_note", "created_at")
+    search_fields = ("first_name", "last_name", "email", "ability_note")
+    list_filter = ("status",)
+    ordering = ("last_name", "first_name")

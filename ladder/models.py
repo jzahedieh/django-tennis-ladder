@@ -390,3 +390,27 @@ def auto_subscribe_on_league_create(sender, instance: League, created, **kwargs)
             user=player.user,
             defaults={'subscribed_at': datetime.date.today()}
         )
+
+class Prospect(models.Model):
+    class Status(models.TextChoices):
+        NEW       = "new",       "New"
+        CONTACTED = "contacted", "Contacted"
+        READY     = "ready",     "Ready"
+        ADDED     = "added",     "Added to draft"
+        REJECTED  = "rejected",  "Rejected"
+
+    first_name   = models.CharField(max_length=80)
+    last_name    = models.CharField(max_length=80)
+    email        = models.EmailField(unique=True)
+    ability_note = models.CharField(max_length=200, blank=True)
+    status       = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.NEW,
+        db_index=True,
+    )
+    created_at   = models.DateTimeField(auto_now_add=True)
+    updated_at   = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.last_name}, {self.first_name} <{self.email}>"

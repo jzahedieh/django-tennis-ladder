@@ -42,6 +42,38 @@
   </form>
 </div>
 
+<form method="post"
+      action=""
+      data-div-anchor="top"
+      onsubmit="
+        var divSel=this.querySelector('select[name=division]');
+        this.action='{% url 'admin:ladder_season_invite_prospect' season.id 999 %}'.replace('999', divSel.value);
+      "
+      style="margin-top:1rem; display:flex; gap:.5rem; align-items:center; flex-wrap:wrap;">
+  {% csrf_token %}
+  <label><strong>Add prospect to division</strong></label>
+
+  <select name="division" required>
+    <option value="">— division —</option>
+    {% for d in divisions %}
+      <option value="{{ d.division }}">{{ d.division }}</option>
+    {% endfor %}
+  </select>
+
+  <input type="search" class="player-filter" data-target="prospects-global" placeholder="type to search…" style="min-width:14rem;">
+  <select id="prospects-global" name="prospect_id" style="min-width:22rem;">
+    {% for p in prospects %}
+      <option value="{{ p.id }}">
+        {{ p.last_name }}, {{ p.first_name }} — {{ p.email }}{% if p.ability_note %} ({{ p.ability_note }}){% endif %}
+      </option>
+    {% empty %}
+      <option disabled>No prospects</option>
+    {% endfor %}
+  </select>
+
+  <button class="button">Add</button>
+</form>
+
 {% if not divisions %}
   <div class="module"><p>No divisions yet. Add one to start assigning players.</p></div>
 {% endif %}
