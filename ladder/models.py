@@ -1,12 +1,15 @@
 from datetime import date
 import uuid
 from django.db import models
-from django.db.models import Avg
+from django.db.models import Avg, Count
 from django.contrib.auth.models import User
+from django.db.models.functions import TruncDate
 from django.urls import reverse
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 import datetime
+
+from django.utils.timezone import now
 
 
 class Season(models.Model):
@@ -73,11 +76,11 @@ class Season(models.Model):
     def get_progress(self):
         """
         Query how many games have been played so far.
+        Returns all the existing fields plus:
+          - season_start (YYYY-MM-DD)
+          - today_day (int, clamped to [0, season_length])
         """
-        from django.db.models import Count
-        from django.db.models.functions import TruncDate
-
-        # Get daily result counts using Django ORM
+        # Daily result counts
         daily_results = (
             Result.objects
             .filter(ladder__season=self)
@@ -87,44 +90,52 @@ class Season(models.Model):
             .order_by('date_only')
         )
 
-        # Get player counts per ladder
+        # Player counts per ladder
         ladder_player_counts = (
             self.ladder_set
             .annotate(player_count=Count('league'))
             .values_list('player_count', flat=True)
         )
 
-        # Process results data
+        # Process results
         played = []
         played_days = []
         played_cumulative = []
         played_cumulative_count = 0
         latest_result = None
 
-        for result_data in daily_results:
-            date_added = result_data['date_only']
-            added_count = result_data['added_count']
+        for r in daily_results:
+            date_added = r['date_only']
+            added_count = r['added_count']
 
-            played.append(added_count)
+            played.append(int(added_count))
             played_days.append((date_added - self.start_date).days)
 
-            played_cumulative_count += added_count / 2
-            played_cumulative.append(played_cumulative_count)
+            # Each match creates 2 results -> use integer division
+            played_cumulative_count += (added_count // 2)
+            played_cumulative.append(int(played_cumulative_count))
             latest_result = date_added
 
-        # Calculate total possible matches
+        # Total possible matches across ladders: nC2 per ladder
         total_matches = sum(
-            (player_count - 1) * player_count / 2
-            for player_count in ladder_player_counts
+            (pc - 1) * pc // 2
+            for pc in ladder_player_counts
         )
 
+        season_length = (self.end_date - self.start_date).days
+        # Compute "today" relative to start; clamp to chart domain
+        today_idx = (now().date() - self.start_date).days
+        today_idx = max(0, min(today_idx, season_length))
+
         return {
-            "season_days": [0, (self.end_date - self.start_date).days],
-            "season_total_matches": [0, total_matches],
+            "season_days": [0, season_length],
+            "season_total_matches": [0, int(total_matches)],
             "played_days": played_days,
             "played": played,
             "played_cumulative": played_cumulative,
-            "latest_result": latest_result.strftime("%B %d, %Y") if latest_result else "-"
+            "latest_result": latest_result.strftime("%B %d, %Y") if latest_result else "-",
+            "season_start": self.start_date.isoformat(),  # "YYYY-MM-DD"
+            "today_day": today_idx,
         }
 
 
