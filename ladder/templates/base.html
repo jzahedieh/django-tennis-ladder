@@ -86,23 +86,36 @@
             </div>
         </div>
         <script type="text/javascript">
-            (function () {
-                var timeout;
+          (function () {
+            var timeout;
+            var idByLabel = {};
 
-                $('#player-search').typeahead({
-                    source: function (query, process) {
-                        if (timeout) {
-                            clearTimeout(timeout);
-                        }
-
-                        timeout = setTimeout(function () {
-                            return $.get('/player/search/', { query: query }, function (data) {
-                                return process(data.options);
-                            });
-                        }, 300);
-                    }
-                });
-            })();
+            $('#player-search').typeahead({
+              source: function (query, process) {
+                if (timeout) clearTimeout(timeout);
+                timeout = setTimeout(function () {
+                  $.get('/player/search/', { query: query }, function (data) {
+                    idByLabel = {};
+                    var labels = [];
+                    (data.options || []).forEach(function (o) {
+                      idByLabel[o.label] = o.id;
+                      labels.push(o.label);
+                    });
+                    process(labels);
+                  });
+                }, 300);
+              },
+              updater: function (item) {
+                var id = idByLabel[item];
+                if (id) {
+                  window.location = '/player/' + id + '/';
+                  // Optionally clear the input instead:
+                  // return '';
+                }
+                return item;
+              }
+            });
+          })();
         </script>
 
         <div class="container">

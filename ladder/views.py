@@ -3,7 +3,7 @@ import json
 
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q, Count, Max
-from django.http import HttpResponseRedirect, Http404, HttpResponse, HttpResponseForbidden
+from django.http import HttpResponseRedirect, Http404, HttpResponse, HttpResponseForbidden, JsonResponse
 from django.shortcuts import render, get_object_or_404
 from django.urls import reverse
 from django.utils.html import escape
@@ -292,39 +292,58 @@ def head_to_head(request, player_id, opponent_id):
 
 
 def player_result(request):
-    query = request.GET.get('player_name', False)
-    if query is False:
+    query = request.GET.get('player_name', '').strip()
+    if not query:
         raise Http404
 
+    terms = query.split()
     qs = Player.objects.all()
 
-    for term in query.split():
-        qs = qs.filter(Q(first_name__icontains=term) | Q(last_name__icontains=term))
+    if request.user.is_authenticated:
+        # Member view: allow first or last name search
+        for term in terms:
+            qs = qs.filter(Q(first_name__icontains=term) | Q(last_name__icontains=term))
+    else:
+        # Public view: block last-name enumeration
+        if len(terms) == 1:
+            # single token => treat as first name only
+            first = terms[0]
+            qs = qs.filter(first_name__icontains=first)
+        else:
+            # "First L." pattern allowed; ignore full surnames
+            first = terms[0]
+            last_token = terms[-1].rstrip('.')
+            if len(last_token) == 1:
+                qs = qs.filter(first_name__icontains=first, last_name__istartswith=last_token)
+            else:
+                # if they typed a full surname, fall back to first-name search only
+                qs = qs.filter(first_name__icontains=first)
 
-    results = [x for x in qs]
+    results = list(qs[:25])  # small cap to avoid enumeration
 
     if len(results) == 1:
-        player = results[0]
-        return player_history(request, player.id)
+        return player_history(request, results[0].id)
 
-    return render(request, 'ladder/player/results.html', {'players': results, 'query': escape(query)})
+    # names will be trimmed for anonymous via full_name(authenticated=…)
+    return render(
+        request,
+        'ladder/player/results.html',
+        {'players': results, 'query': escape(query)}
+    )
 
 
 def player_search(request):
-    result_set = {}
-    query = request.GET.get('query', False)
-    if query is False:
-        raise Http404
+    q = (request.GET.get('query') or '').strip()
+    if len(q) < 2:
+        return JsonResponse({"options": []})
 
     qs = Player.objects.all()
-
-    for term in query.split():
+    for term in q.split():
         qs = qs.filter(Q(first_name__icontains=term) | Q(last_name__icontains=term))
 
-    results = [escape(x.first_name.strip() + ' ' + x.last_name.strip()) for x in qs]
-    result_set["options"] = results
-
-    return HttpResponse(json.dumps(result_set), content_type="application/json")
+    authed = request.user.is_authenticated
+    options = [{"id": p.id, "label": p.full_name(authenticated=authed)} for p in qs[:10]]
+    return JsonResponse({"options": options})
 
 
 def h2h_search(request, player_id):
