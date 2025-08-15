@@ -14,16 +14,14 @@
         <div id="chart"></div>
         <p>Results updated on <span id="progress_date"></span></p>
     </div>
-
     <script type="text/javascript">
         $(document).ready(function () {
             $.get('/season/ajax/progress/', {id: {{ current_season.id }}}, function (data) {
 
-                // Build C3 columns
-                var season_days = ['x1'];         // x for total
-                var played_days = ['x2'];         // x for played (cumulative)
-                var played_cumulative = ['played'];     // cumulative matches
-                var season_total_matches = ['total'];      // target line (kept on chart, not in tooltip)
+                var season_days = ['x1'];
+                var played_days = ['x2'];
+                var played_cumulative = ['played'];
+                var season_total_matches = ['total'];
 
                 $('#progress_date').text(data.latest_result);
 
@@ -42,7 +40,6 @@
 
                 var maxDay = season_days.length > 1 ? season_days[season_days.length - 1] : 0;
 
-                // Today line (uses season_start if present)
                 function parseDateOnly(d) {
                     var parts = String(d).split(/[-T]/);
                     if (parts.length >= 3) {
@@ -63,10 +60,15 @@
                     }
                 }
 
-                // Tooltip heading (dd/mm) helpers
-                function formatDDMM(date) {
+                // Tooltip date formatters
+                var weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+                function formatWeekdayDDMM(date) {
                     var d = date.getDate(), m = date.getMonth() + 1;
-                    return (d < 10 ? '0' + d : d) + '/' + (m < 10 ? '0' + m : m);
+                    var dayName = weekdays[date.getDay()];
+                    return dayName + ' ' +
+                        (d < 10 ? '0' + d : d) + '/' +
+                        (m < 10 ? '0' + m : m);
                 }
 
                 function getDateFromX(x) {
@@ -106,14 +108,12 @@
                         y: {lines: [{value: 0}]},
                         x: {lines: todayLine}
                     },
-                    // Tooltip shows: Date, "Matches" (played that day), and "played" (cumulative).
-                    // It hides "total".
                     tooltip: {
                         grouped: true,
                         contents: function (points, titleFmt, valFmt, color) {
                             var p = points[0];
                             var date = getDateFromX(p.x);
-                            var heading = date ? formatDDMM(date) : ('Day ' + p.x);
+                            var heading = date ? formatWeekdayDDMM(date) : ('Day ' + p.x);
 
                             // number of matches completed that day
                             var idx = data.played_days.indexOf(p.x);
@@ -144,6 +144,7 @@
             });
         });
     </script>
+
 
 
 
