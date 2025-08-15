@@ -347,27 +347,64 @@ def player_search(request):
 
 
 def h2h_search(request, player_id):
-    result_set = {}
-    query = request.GET.get('query', False)
-    if query is False:
+    q = (request.GET.get('query') or '').strip()
+    if not q:
         raise Http404
 
-    head = Result.objects.values('opponent', 'opponent__first_name', 'opponent__last_name')
+    terms = q.split()
 
-    for term in query.split():
-        head = head.filter(
-            Q(opponent__first_name__icontains=term) | Q(opponent__last_name__icontains=term),
-            Q(player__id=player_id)).annotate(times_played=Count('opponent')).order_by('-times_played')
+    # Start with this player's results
+    qs = Result.objects.filter(player_id=player_id)
+
+    if request.user.is_authenticated:
+        # Allow first OR last name searches
+        for term in terms:
+            qs = qs.filter(
+                Q(opponent__first_name__icontains=term) |
+                Q(opponent__last_name__icontains=term)
+            )
+    else:
+        # Public: block last-name enumeration
+        if len(terms) == 1:
+            qs = qs.filter(opponent__first_name__icontains=terms[0])
+        else:
+            first = terms[0]
+            last_token = terms[-1].rstrip('.')
+            if len(last_token) == 1:  # allow "First L." pattern
+                qs = qs.filter(
+                    opponent__first_name__icontains=first,
+                    opponent__last_name__istartswith=last_token
+                )
+            else:
+                qs = qs.filter(opponent__first_name__icontains=first)
+
+    # Aggregate and order by frequency
+    head = (qs.values('opponent', 'opponent__first_name', 'opponent__last_name')
+              .annotate(times_played=Count('opponent'))
+              .order_by('-times_played')[:10])
+
+    authed = request.user.is_authenticated
+
+    # Build response: { opponent_id: "N x First Last/LastInitial." }
+    def masked_name(first, last, authenticated):
+        if not last:
+            return first
+        if authenticated:
+            return f"{first} {last}"
+        parts = last.split()
+        parts[-1] = parts[-1][:1].capitalize() + '.'
+        return f"{first} {' '.join(parts)}"
 
     results = {}
-    for x in head:
-        results[x['opponent']] = escape(
-            str(x['times_played']).strip() + ' x ' + x['opponent__first_name'].strip() + ' ' + x[
-                'opponent__last_name'].strip())
+    for row in head:
+        label = f"{row['times_played']} x " + masked_name(
+            row['opponent__first_name'].strip(),
+            row['opponent__last_name'].strip() if row['opponent__last_name'] else '',
+            authed
+        )
+        results[row['opponent']] = escape(label)
 
-    result_set["options"] = results
-
-    return HttpResponse(json.dumps(result_set), content_type="application/json")
+    return HttpResponse(json.dumps({"options": results}), content_type="application/json")
 
 
 def season_ajax_stats(request):
