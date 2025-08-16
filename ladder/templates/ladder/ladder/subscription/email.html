@@ -6,7 +6,7 @@
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    <title>Simple Transactional Email</title>
+    <title>{{ ladder }} Result Update</title>
     <style>
       /* -------------------------------------
           GLOBAL RESETS
@@ -353,37 +353,72 @@
                     <tr>
                       <td>
                         <p>Hi {{ user.first_name }} {{ user.last_name }},</p>
-                        <p>There have been matches played in Ladder {{ ladder.division }} over the past 24 hours!</p>
+                        <p>There have been matches played in Ladder {{ ladder.division }}</p>
 
-
-                        <table role="presentation" border="0" cellpadding="0" cellspacing="0">
-                          <tbody>
-                            <tr>
-                              <td align="left">
-                                <table role="presentation" border="0" cellpadding="0" cellspacing="0">
-                                    <th>Player</th>
-                                    <th>Result</th>
-                                    <th></th>
-                                    <th>Result</th>
-                                    <th>Player</th>
-                                    <th>Date Added</th>
-                                    {% for key, value in ladder.get_latest_results %}
-                                        <tr>
-                                            <td>{% get_player_name value.player user %}</td>
-                                            <td style="text-align: center;">{{ value.player_result }}</td>
-                                            <td>vs</td>
-                                            <td style="text-align: center;">{{ value.opponent_result }}</td>
-                                            <td>{% get_player_name value.opponent user %}</td>
-                                            <td>{{ value.date_added }}</td>
+                        <!-- New results since yesterday -->
+                        {% with buckets=ladder.get_email_latest %}
+                          {% if buckets.new %}
+                            <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="width:100%;margin-top:10px;">
+                              <tr>
+                                <td>
+                                  <h3 class="mt0" style="font-weight:600;font-size:18px;margin:0 0 8px;">New results in the last 24 hours</h3>
+                                  <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="width:100%;border:1px solid #eee;border-radius:6px;">
+                                    <tbody>
+                                      {% for value in buckets.new %}
+                                        <tr style="border-bottom:1px solid #f2f2f2;">
+                                          <td style="padding:10px 12px;">
+                                            <span style="display:inline-block;padding:2px 8px;font-size:12px;border-radius:999px;background:#e8f4ff;color:#1677ff;margin-right:8px;">NEW</span>
+                                            <strong>{% get_player_name value.player user %}</strong>
+                                            <span style="color:#999;margin:0 6px;">{{ value.player_result }}&nbsp;vs&nbsp;{{ value.opponent_result }}</span>
+                                            <strong>{% get_player_name value.opponent user %}</strong>
+                                            <div style="font-size:12px;color:#999;margin-top:4px;">{{ value.date_added }}</div>
+                                          </td>
                                         </tr>
-                                    {% endfor %}
-                                </table>
-                                <br>
-                              </td>
-                            </tr>
-                          </tbody>
-                        </table>
-                        <table role="presentation" border="0" cellpadding="0" cellspacing="0" class="btn btn-primary">
+                                      {% endfor %}
+                                    </tbody>
+                                  </table>
+                                </td>
+                              </tr>
+                            </table>
+                          {% endif %}
+
+                          <!-- Recent results (next five), tidy table -->
+                            {% if buckets.recent %}
+                              <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="width:100%;margin-top:14px;">
+                                <tr>
+                                  <td>
+                                    <h3 class="mt0" style="font-weight:600;font-size:18px;margin:0 0 6px;">More recent results</h3>
+                                    <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="width:100%;border:1px solid #eee;border-radius:6px;font-size:13px;line-height:1.3;">
+                                      <thead>
+                                        <tr style="background:#fafafa;">
+                                          <th style="text-align:left;padding:4px 6px;">Player</th>
+                                          <th style="text-align:center;padding:4px 6px;">Result</th>
+                                          <th style="text-align:center;padding:4px 6px;"></th>
+                                          <th style="text-align:center;padding:4px 6px;">Result</th>
+                                          <th style="text-align:left;padding:4px 6px;">Player</th>
+                                          <th style="text-align:left;padding:4px 6px;">Date Added</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        {% for value in buckets.recent %}
+                                          <tr>
+                                            <td style="padding:4px 6px;">{% get_player_name value.player user %}</td>
+                                            <td style="padding:4px 6px;text-align:center;">{{ value.player_result }}</td>
+                                            <td style="padding:4px 6px;text-align:center;">vs</td>
+                                            <td style="padding:4px 6px;text-align:center;">{{ value.opponent_result }}</td>
+                                            <td style="padding:4px 6px;">{% get_player_name value.opponent user %}</td>
+                                            <td style="padding:4px 6px;color:#999;">{{ value.date_added }}</td>
+                                          </tr>
+                                        {% endfor %}
+                                      </tbody>
+                                    </table>
+                                  </td>
+                                </tr>
+                              </table>
+                            {% endif %}
+                        {% endwith %}
+
+                        <table role="presentation" border="0" cellpadding="0" cellspacing="0" class="btn btn-primary" style="margin-top:18px;">
                           <tbody>
                             <tr>
                               <td align="left">
@@ -391,9 +426,9 @@
                                   <tbody>
                                     <tr>
                                       <td>
-                                          <a href="{{ protocol }}://{{ domain }}{% url 'ladder' year=ladder.season.start_date|date:"Y" season_round=ladder.season.season_round division_id=ladder.division %}" target="_blank">
-                                              Check out the Ladder
-                                          </a>
+                                        <a href="{{ protocol }}://{{ domain }}{% url 'ladder' year=ladder.season.start_date|date:"Y" season_round=ladder.season.season_round division_id=ladder.division %}" target="_blank">
+                                          Check out the Ladder
+                                        </a>
                                       </td>
                                     </tr>
                                   </tbody>
@@ -402,6 +437,7 @@
                             </tr>
                           </tbody>
                         </table>
+
                       </td>
                     </tr>
                   </table>

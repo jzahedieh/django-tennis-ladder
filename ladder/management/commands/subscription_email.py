@@ -52,8 +52,8 @@ def send_ladder_emails(days=1, dry_run=False):
                 reply_to=[SUBSCRIPTION_EMAIL],
             )
             mail.extra_headers = {
-                'List-Unsubscribe': f'<{unsubscribe_url}>',
-                'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click'
+                'List-Unsubscribe': f'<mailto:unsubscribe@highgate-ladder.co.uk>, <{unsubscribe_url}>',
+                'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
             }
             mail.content_subtype = "html"
             mail.send()

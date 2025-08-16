@@ -3,12 +3,14 @@ import json
 
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q, Count, Max
-from django.http import HttpResponseRedirect, Http404, HttpResponse, HttpResponseForbidden, JsonResponse
+from django.http import HttpResponseRedirect, Http404, HttpResponse, HttpResponseForbidden, JsonResponse, \
+    HttpResponseBadRequest
 from django.shortcuts import render, get_object_or_404
 from django.urls import reverse
 from django.utils.html import escape
 from django.views.decorators.cache import never_cache
 from django.contrib import messages
+from django.views.decorators.csrf import csrf_exempt
 
 from ladder.forms import AddResultForm, AddEntryForm
 from ladder.models import Ladder, Player, Result, Season, League, LadderSubscription
@@ -658,19 +660,25 @@ def result_entry_delete(request, pair_key):
         return HttpResponseRedirect(reverse('result_entry'))
     return render(request, 'ladder/result/delete_confirm.html', {'pair_key': pair_key, 'ladder': ladder})
 
+@csrf_exempt
 def unsubscribe_token(request, token):
-    """Public unsubscribe via token - no login required"""
+    """Supports human GET and machine POST (RFC 8058 one-click)."""
     subscription = get_object_or_404(LadderSubscription, unsubscribe_token=token)
-
-    # Extract division details
     ladder = subscription.ladder
     year = ladder.season.start_date.year
     season_round = ladder.season.season_round
     division_id = ladder.division
 
-    # Delete the subscription
-    subscription.delete()
+    if request.method == "POST":
+        # Gmail will send: Content-Type: application/x-www-form-urlencoded
+        # body: "List-Unsubscribe=One-Click"
+        if b"List-Unsubscribe=One-Click" in request.body:
+            subscription.delete()
+            return HttpResponse("Unsubscribed")  # plain 200 OK, no redirect
+        return HttpResponseBadRequest("Malformed one-click request")
 
-    # Add success message and redirect to the ladder (division) page
-    messages.success(request, f'Successfully unsubscribed from {ladder} email notifications.')
-    return HttpResponseRedirect(reverse('ladder', args=(year, season_round, division_id)))
+    # Human GET flow
+    subscription.delete()
+    messages.success(request, f"Successfully unsubscribed from {ladder} email notifications.")
+    return HttpResponseRedirect(reverse("ladder", args=(year, season_round, division_id)))
+

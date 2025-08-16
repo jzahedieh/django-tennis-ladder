@@ -297,6 +297,60 @@ class Ladder(models.Model):
 
         return list(ordered_results.items())
 
+    def get_email_latest(self, days: int = 1, limit: int = 5):
+        """
+        Return two buckets for the email:
+          - 'new': all new results in the last `days` (deduped by pair, newest first)
+          - 'recent': the next `limit` recent results (deduped) excluding those already in 'new'
+        Structure of each item matches get_latest_results():
+        {'player', 'player_result', 'opponent_result', 'opponent', 'date_added'}
+        """
+        since = now().date() - datetime.timedelta(days=days)
+
+        # Helper to build the pairwise, deduped list with optional date filter
+        def _collect(filter_since=None, exclude_keys=None, max_items=None):
+            exclude_keys = exclude_keys or set()
+            out = {}
+            qs = self.result_set.filter(ladder=self)
+            if filter_since is not None:
+                qs = qs.filter(date_added__gte=filter_since)
+            qs = qs.order_by('-date_added')
+
+            for result in qs:
+                try:
+                    opponent = self.result_set.filter(
+                        ladder=self, player=result.opponent, opponent=result.player
+                    )[0]
+                except IndexError:
+                    continue  # skip incomplete pairs
+
+                pair_key = ''.join(str(e) for e in sorted([result.player_id, opponent.player_id]))
+                if pair_key in exclude_keys or pair_key in out:
+                    continue
+
+                out[pair_key] = {
+                    'player': result.player,
+                    'player_result': result.result,
+                    'opponent_result': opponent.result,
+                    'opponent': opponent.player,
+                    'date_added': result.date_added,
+                }
+
+                if max_items is not None and len(out) >= max_items:
+                    break
+
+            # order newest first
+            ordered = sorted(out.values(), key=lambda x: x['date_added'], reverse=True)
+            return ordered, set(out.keys())
+
+        # (1) Everything new in the past `days`
+        new_list, new_keys = _collect(filter_since=since)
+
+        # (2) Next N recent excluding the above
+        recent_list, _ = _collect(filter_since=None, exclude_keys=new_keys, max_items=limit)
+
+        return {'new': new_list, 'recent': recent_list}
+
     def get_stats(self):
         """
         Generates the stats for current division
