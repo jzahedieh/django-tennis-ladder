@@ -1,0 +1,2 @@
+# run at 00:05 Europe/London each day (after your 23:55 dump finishes)
+5 0 * * * /usr/local/bin/backup-sync.sh >> /var/log/backup-sync.log 2>&1

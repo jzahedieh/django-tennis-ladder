@@ -63,6 +63,18 @@ services:
       TZ: Europe/London
     depends_on:
       - db
+  backup_sync:
+    build:
+      context: ./docker/backup-sync
+      platforms:
+        - linux/arm64
+    restart: unless-stopped
+    env_file:
+      - ./.env.prod
+    environment:
+      TZ: Europe/London
+    volumes:
+      - ./data/db-backup:/backups:ro
   umami:
     image: ghcr.io/umami-software/umami:mysql-latest
     restart: unless-stopped
