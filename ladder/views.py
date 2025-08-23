@@ -241,7 +241,7 @@ def add(request, year, season_round, division_id):
 
 
 def player_history(request, player_id):
-    player = get_object_or_404(Player, pk=player_id)
+    get_object_or_404(Player, pk=player_id)
 
     # Prefetch player results at the player level
     player = Player.objects.prefetch_related('result_player').get(pk=player_id)
@@ -254,7 +254,7 @@ def player_history(request, player_id):
     ).order_by('-ladder__season__start_date')
 
     # Force evaluation of league_set to ensure prefetching works
-    league_list = list(league_set)
+    league_list = list(league_set.filter(ladder__season__is_draft=False))
 
     # Pre-calculate player stats
     player_stats = player.player_stats()

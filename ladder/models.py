@@ -182,7 +182,7 @@ class Player(models.Model):
         average = list(self.result_player.aggregate(Avg('result')).values())[0]
         average_with_additional = average + additional_points
 
-        leagues = self.league_set.filter(player=self)
+        leagues = self.league_set.filter(player=self, ladder__season__is_draft=False)
 
         match_count = 0
         for league in leagues:
@@ -252,7 +252,7 @@ class Ladder(models.Model):
         player = max(totals.items(), key=lambda x: x[1])[0]
 
         # Calculate percentage played more efficiently
-        league_count = self.league_set.count()
+        league_count = self.league_set.filter(ladder__season__is_draft=False).count()
         if league_count > 1:
             total_matches = league_count * (league_count - 1) / 2
             matches_played = self.result_set.count() / 2
