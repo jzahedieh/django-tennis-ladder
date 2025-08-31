@@ -106,13 +106,15 @@ class Season(models.Model):
 
         for r in daily_results:
             date_added = r['date_only']
-            added_count = r['added_count']
+            results_today = int(r['added_count'])
 
-            played.append(int(added_count))
+            # Convert results -> matches
+            matches_today = results_today // 2
+
+            played.append(matches_today)
             played_days.append((date_added - self.start_date).days)
 
-            # Each match creates 2 results -> use integer division
-            played_cumulative_count += (added_count // 2)
+            played_cumulative_count += matches_today
             played_cumulative.append(int(played_cumulative_count))
             latest_result = date_added
 
