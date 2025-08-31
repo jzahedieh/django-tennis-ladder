@@ -9,6 +9,7 @@
 
 #Ignore prod enviroment variables
 .env.prod
+.env.local
 .env.dev.*
 
 #Ignore run_script folder
@@ -32,3 +33,6 @@
 #Ignore data directory (import/export + persist)
 /data/*
 !/data/nginx/app.conf.template
+
+.devcontainer/*
+.github/*

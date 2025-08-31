@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+.venv/
+venv/
+
+# VCS/IDE
+.git/
+.gitignore
+.idea/
+.vscode/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Node
+node_modules/
+
+# Project data not needed at build time
+data/
+static/
+media/

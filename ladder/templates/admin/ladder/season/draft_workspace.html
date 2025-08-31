@@ -1,0 +1,307 @@
+{% extends "admin/base_site.html" %}
+
+{# Hide Django admin’s left nav just for this page #}
+{% block nav-sidebar %}{% endblock %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <style>
+    /* remove the toggle button too */
+    #toggle-nav-sidebar { display:none !important; }
+    /* reclaim the space the sidebar would have taken */
+    #content { margin-left: 0 !important; }
+    /* keep things smooth */
+    .module { scroll-margin-top: 80px; }
+    html { scroll-behavior: smooth; }
+  </style>
+{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">Home</a> ›
+  <a href="{% url 'admin:ladder_season_changelist' %}">Seasons</a> ›
+  {{ season.name }} › Draft workspace
+</div>
+{% endblock %}
+
+{% block content %}
+<style>
+  .module { scroll-margin-top: 80px; }
+  html { scroll-behavior: smooth; }
+  .actions-bar { display:flex; gap:.5rem; flex-wrap:wrap; align-items:center; }
+  .actions-bar form { display:inline-block; }
+  .btn-compact { padding: 4px 8px; }
+</style>
+
+<h1>{{ season.name }} — Draft workspace</h1>
+
+<div class="actions-bar" style="margin-bottom:1rem;">
+  <form method="post" action="{% url 'admin:ladder_season_populate' season.id %}" data-div-anchor="top">
+    {% csrf_token %}
+    <button class="button">Populate from previous season</button>
+  </form>
+</div>
+
+<form method="post"
+      action=""
+      data-div-anchor="top"
+      onsubmit="
+        var divSel=this.querySelector('select[name=division]');
+        this.action='{% url 'admin:ladder_season_invite_prospect' season.id 999 %}'.replace('999', divSel.value);
+      "
+      style="margin-top:1rem; display:flex; gap:.5rem; align-items:center; flex-wrap:wrap;">
+  {% csrf_token %}
+  <label><strong>Add prospect to division</strong></label>
+
+  <select name="division" required>
+    <option value="">— division —</option>
+    {% for d in divisions %}
+      <option value="{{ d.division }}">{{ d.division }}</option>
+    {% endfor %}
+  </select>
+
+  <input type="search" class="player-filter" data-target="prospects-global" placeholder="type to search…" style="min-width:14rem;">
+  <select id="prospects-global" name="prospect_id" style="min-width:22rem;">
+    {% for p in prospects %}
+      <option value="{{ p.id }}">
+        {{ p.last_name }}, {{ p.first_name }} — {{ p.email }}{% if p.ability_note %} ({{ p.ability_note }}){% endif %}
+      </option>
+    {% empty %}
+      <option disabled>No prospects</option>
+    {% endfor %}
+  </select>
+
+  <button class="button">Add</button>
+</form>
+
+{% if not divisions %}
+  <div class="module"><p>No divisions yet. Add one to start assigning players.</p></div>
+{% endif %}
+
+{% for d in divisions %}
+  <div class="module" id="div-{{ d.division }}" style="margin-top:1rem;">
+    <h2 style="display:flex; align-items:center; gap:.75rem;">
+      <span>Division {{ d.division }}</span>
+
+      {% if forloop.last %}
+        <form method="post"
+              action="{% url 'admin:ladder_season_del_div' season.id d.division %}"
+              data-div-anchor="div-{{ d.division }}"
+              onsubmit="return confirm('Delete Division {{ d.division }}?');"
+              style="margin-left:auto;">
+          {% csrf_token %}
+          <button class="button deletelink">Delete division</button>
+        </form>
+      {% else %}
+        <span style="margin-left:auto; opacity:.6; font-size:12px;">Only last division can be deleted</span>
+      {% endif %}
+    </h2>
+
+    <table class="listing" style="width:100%;">
+      <thead>
+        <tr>
+          <th style="width:6%">Pos</th>
+          <th>Name</th>
+          <th>Previous ladder</th>
+          <th style="width:10%">Total</th>
+          <th style="width:10%">Avg</th>
+          <th style="width:8%">Played</th>
+          <th style="width:28%">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in d.rows %}
+          <tr id="row-{{ r.league_id }}">
+            <td>{{ r.position }}</td>
+            <td>{{ r.name }}</td>
+            <td>{{ r.prev_title }}</td>
+            <td>{{ r.total|floatformat:1 }}</td>
+            <td>{{ r.avg }}</td>
+            <td>{{ r.played }}</td>
+            <td>
+              <form method="post"
+                    action="{% url 'admin:ladder_season_move_up' season.id d.division r.league_id %}"
+                    data-div-anchor="div-{{ d.division }}"
+                    style="display:inline;">
+                {% csrf_token %}<button class="button btn-compact" title="Move up">↑</button>
+              </form>
+              <form method="post"
+                    action="{% url 'admin:ladder_season_move_down' season.id d.division r.league_id %}"
+                    data-div-anchor="div-{{ d.division }}"
+                    style="display:inline;">
+                {% csrf_token %}<button class="button btn-compact" title="Move down">↓</button>
+              </form>
+              <span style="opacity:.4; margin:0 .25rem;">|</span>
+              <form method="post"
+                    action="{% url 'admin:ladder_season_promote' season.id d.division r.league_id %}"
+                    data-div-anchor="div-{{ d.division }}"
+                    style="display:inline;">
+                {% csrf_token %}<button class="button btn-compact">Promote</button>
+              </form>
+              <form method="post"
+                    action="{% url 'admin:ladder_season_demote' season.id d.division r.league_id %}"
+                    data-div-anchor="div-{{ d.division }}"
+                    style="display:inline;">
+                {% csrf_token %}<button class="button btn-compact">Demote</button>
+              </form>
+              <span style="opacity:.4; margin:0 .25rem;">|</span>
+              <form method="post"
+                    action="{% url 'admin:ladder_season_remove' season.id d.division r.league_id %}"
+                    data-div-anchor="div-{{ d.division }}"
+                    style="display:inline;"
+                    onsubmit="return confirm('Remove {{ r.name }} from Division {{ d.division }}?');">
+                {% csrf_token %}<button class="button deletelink btn-compact">Remove</button>
+              </form>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="7">No players assigned to this division.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    {# Searchable Add player #}
+    <form method="post"
+          action="{% url 'admin:ladder_season_add_player' season.id d.division %}"
+          data-div-anchor="div-{{ d.division }}"
+          class="add-player-form"
+          style="margin-top:.6rem; display:flex; gap:.5rem; align-items:center; flex-wrap:wrap;">
+      {% csrf_token %}
+      <label for="filter-{{ d.division }}"><strong>Add player</strong></label>
+      <input type="search"
+             id="filter-{{ d.division }}"
+             class="player-filter"
+             data-target="player-{{ d.division }}"
+             placeholder="type to search…"
+             style="min-width:14rem;">
+      <select id="player-{{ d.division }}" name="player_id" class="player-select" style="min-width:14rem;">
+        <option value="">— choose —</option>
+        {% for p in candidates %}
+          <option value="{{ p.id }}">{{ p.last_name }}, {{ p.first_name }}</option>
+        {% endfor %}
+      </select>
+      <button class="button">Add</button>
+    </form>
+  </div>
+{% endfor %}
+
+<div class="module" id="removed" style="margin-top:1.25rem;">
+  <h2>Removed players ({{ removals|length }})</h2>
+
+  {% if removals %}
+    <table class="listing" style="width:100%;">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th style="width:10%">From div</th>
+          <th style="width:18%">Removed at</th>
+          <th style="width:32%">Restore</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in removals %}
+          <tr>
+            <td>{{ r.player.first_name }} {{ r.player.last_name }}</td>
+            <td>{{ r.from_division }}</td>
+            <td>{{ r.removed_at|date:"Y-m-d H:i" }}</td>
+            <td>
+              <form method="post"
+                    action="{% url 'admin:ladder_season_restore_removed' season.id r.id %}"
+                    data-div-anchor="removed"
+                    style="display:inline;">
+                {% csrf_token %}
+                <button class="button">Restore to {{ r.from_division }}</button>
+              </form>
+
+              <span style="opacity:.5">or</span>
+
+              <form method="post"
+                    action=""
+                    data-div-anchor="removed"
+                    style="display:inline;"
+                    onsubmit="
+                      var sel=this.querySelector('select');
+                      this.action='{% url 'admin:ladder_season_restore_removed_to' season.id r.id 999 %}'.replace('999', sel.value);
+                    ">
+                {% csrf_token %}
+                <select>
+                  {% for d in divisions %}
+                    <option value="{{ d.division }}">{{ d.division }}</option>
+                  {% endfor %}
+                </select>
+                <button class="button">Restore</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p style="opacity:.7">No players removed in this draft.</p>
+  {% endif %}
+</div>
+
+<div class="actions-bar" style="margin-bottom:1rem;">
+  <form method="post" action="{% url 'admin:ladder_season_add_div' season.id %}" data-div-anchor="top">
+    {% csrf_token %}
+    <button class="button">+ Add division</button>
+  </form>
+</div>
+
+<script>
+(function(){
+  // Remember where you were after any action
+  document.querySelectorAll('form[data-div-anchor]').forEach(function (form) {
+    form.addEventListener('submit', function () {
+      sessionStorage.setItem('draft_anchor', form.getAttribute('data-div-anchor'));
+    });
+  });
+  window.addEventListener('DOMContentLoaded', function () {
+    var id = (location.hash && location.hash.slice(1)) || sessionStorage.getItem('draft_anchor');
+    if (id) {
+      var el = document.getElementById(id);
+      if (el) el.scrollIntoView();
+      sessionStorage.removeItem('draft_anchor');
+    }
+  });
+
+  // Simple client-side filter for "Add player" select
+  function setupFilter(input){
+    var targetId = input.getAttribute('data-target');
+    var select = document.getElementById(targetId);
+    if (!select) return;
+
+    if (!select._allOptions) {
+      select._allOptions = Array.from(select.options)
+        .filter(function(o){ return o.value; })
+        .map(function(o){ return {value:o.value, text:o.textContent}; });
+    }
+
+    input.addEventListener('input', function(){
+      var q = input.value.toLowerCase().trim();
+      while (select.firstChild) select.removeChild(select.firstChild);
+      var ph = document.createElement('option');
+      ph.value = ''; ph.textContent = '— choose —';
+      select.appendChild(ph);
+
+      var matches = 0;
+      select._allOptions.forEach(function(o){
+        if (!q || o.text.toLowerCase().indexOf(q) !== -1) {
+          var opt = document.createElement('option');
+          opt.value = o.value; opt.textContent = o.text;
+          select.appendChild(opt); matches++;
+        }
+      });
+
+      if (matches === 0) {
+        var none = document.createElement('option');
+        none.disabled = true;
+        none.textContent = q ? "No matches for " + q : "No players available";
+        select.appendChild(none);
+      }
+    });
+  }
+  document.querySelectorAll('.player-filter').forEach(setupFilter);
+})();
+</script>
+{% endblock %}

@@ -1,11 +1,12 @@
 #!/bin/sh
+set -e
 
-# env variables for cron
-printenv | sed 's/^\(.*\)$/export \1/g' > /root/.env.sh
+# export env for cron with safe quoting
+printenv | sed -E "s/^(.*)=(.*)$/export \1='\2'/" > /root/.env.sh
 chmod +x /root/.env.sh
 
-# start crond
-cron
+# start cron
+crond
 
-# continue with mariadb
+# hand off to mysql entrypoint
 exec docker-entrypoint.sh "$@"

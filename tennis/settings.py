@@ -1,6 +1,10 @@
 # Django settings for tennis project.
 import os
 from distutils.util import strtobool
+from dotenv import load_dotenv
+
+# Load local environment variables from .env.local file
+load_dotenv('.env.local')
 
 SETTINGS_DIR = os.path.abspath(os.path.dirname(__file__))
 
@@ -19,9 +23,10 @@ DATABASES = {
         'USER':  os.environ.get("SQL_USER", "root"),
         'PASSWORD': os.environ.get("SQL_PASSWORD", ""),
         'HOST':  os.environ.get("SQL_HOST", ""),
-        'PORT': '',
+        'PORT': os.environ.get("SQL_PORT", "3306"),
         'OPTIONS': {
             'autocommit': True,
+            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
         },
     }
 }
@@ -47,6 +52,7 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'django.contrib.auth.context_processors.auth',
                 'ladder.context_processors.navigation',
+                'ladder.context_processors.umami_context',
             ],
         },
     },
@@ -208,6 +214,7 @@ SERVER_EMAIL = os.environ.get('EMAIL_SERVER_FROM')
 SUBSCRIPTION_EMAIL = os.environ.get('SUBSCRIPTION_EMAIL')
 EMAIL_USE_TLS = bool(strtobool(os.environ['EMAIL_USE_TLS']))
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+UMAMI_WEBSITE_ID = os.environ.get('UMAMI_WEBSITE_ID', '')
 
 INTERNAL_IPS = (
     '127.0.0.1',
@@ -218,4 +225,19 @@ INTERNAL_IPS = (
 )
 
 DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
-CSRF_TRUSTED_ORIGINS = ["http://127.0.0.1", "https://highgate-ladder.co.uk"]
+
+CSRF_TRUSTED_ORIGINS = [
+    "http://127.0.0.1",
+    "https://highgate-ladder.co.uk"
+]
+
+# Add additional domains from environment variable
+additional_domains = os.environ.get('CSRF_ADDITIONAL_DOMAINS', '')
+if additional_domains:
+    # Split by comma and strip whitespace, add https:// prefix if not present
+    for domain in additional_domains.split(','):
+        domain = domain.strip()
+        if domain:
+            if not domain.startswith(('http://', 'https://')):
+                domain = f"https://{domain}"
+            CSRF_TRUSTED_ORIGINS.append(domain)

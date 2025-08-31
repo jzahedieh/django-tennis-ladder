@@ -1,9 +1,15 @@
 from datetime import date
-import operator
+import uuid
 from django.db import models
-from django.db.models import Avg
+from django.db.models import Avg, Count
 from django.contrib.auth.models import User
+from django.db.models.functions import TruncDate
 from django.urls import reverse
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+import datetime
+
+from django.utils.timezone import now
 
 
 class Season(models.Model):
@@ -11,6 +17,10 @@ class Season(models.Model):
     start_date = models.DateField('Start date')
     end_date = models.DateField('End date')
     season_round = models.IntegerField()
+    is_draft = models.BooleanField(
+        default=False,
+        help_text="If enabled, this season is a draft and not yet published."
+    )
 
     class Meta:
         ordering = ['-start_date',]
@@ -22,15 +32,22 @@ class Season(models.Model):
         """
         Generates the season stats
         """
-        player_count = 0
-        results_count = 0
-        total_games_count = 0.0
-        for ladder in self.ladder_set.all():
-            player_count += ladder.league_set.count()
-            results_count += ladder.result_set.count() / 2
-            total_games_count += (ladder.league_set.count() * (ladder.league_set.count() - 1)) / 2
+        # Get aggregated counts directly from related tables
+        player_count = League.objects.filter(ladder__season=self).count()
+        results_count = Result.objects.filter(ladder__season=self).count() / 2
 
-        percentage_played = (results_count / total_games_count) * 100
+        # Calculate total possible games by iterating through ladders
+        # but get league counts efficiently
+        ladder_league_counts = self.ladder_set.annotate(
+            league_count=models.Count('league')
+        ).values_list('league_count', flat=True)
+
+        total_games_count = 0.0
+        for league_count in ladder_league_counts:
+            total_games_count += (league_count * (league_count - 1)) / 2
+
+        # Avoid division by zero
+        percentage_played = (results_count / total_games_count) * 100 if total_games_count > 0 else 0
 
         return {
             'divisions': self.ladder_set.count(),
@@ -46,7 +63,10 @@ class Season(models.Model):
         """
         current_leaders = {}
 
-        for ladder in self.ladder_set.all():
+        # Prefetch related data to avoid N+1 queries
+        ladders = self.ladder_set.prefetch_related('league_set__player')
+
+        for ladder in ladders:
             current_leaders[ladder.id] = ladder.get_leader(user=user)
 
         return {
@@ -56,47 +76,68 @@ class Season(models.Model):
     def get_progress(self):
         """
         Query how many games have been played so far.
+        Returns all the existing fields plus:
+          - season_start (YYYY-MM-DD)
+          - today_day (int, clamped to [0, season_length])
         """
-        results = Result.objects.raw("""
-            SELECT ladder_result.id, ladder_id, season_id, date_added, COUNT(*) AS added_count
-            FROM ladder_result LEFT JOIN ladder_ladder
-            ON ladder_result.ladder_id=ladder_ladder.id
-            WHERE season_id = %s GROUP BY DATE(date_added)
-            ORDER BY DATE(date_added) ASC;
-        """, [self.id])
+        # Daily result counts
+        daily_results = (
+            Result.objects
+            .filter(ladder__season=self)
+            .annotate(date_only=TruncDate('date_added'))
+            .values('date_only')
+            .annotate(added_count=Count('id'))
+            .order_by('date_only')
+        )
 
-        leagues = League.objects.raw("""
-            SELECT ladder_league.id, COUNT(*) AS player_count
-            FROM ladder_league LEFT JOIN ladder_ladder
-            ON ladder_league.ladder_id=ladder_ladder.id
-            WHERE season_id = %s GROUP BY ladder_id;
-        """, [self.id])
+        # Player counts per ladder
+        ladder_player_counts = (
+            self.ladder_set
+            .annotate(player_count=Count('league'))
+            .values_list('player_count', flat=True)
+        )
 
+        # Process results
         played = []
         played_days = []
         played_cumulative = []
         played_cumulative_count = 0
-        latest_result = False
+        latest_result = None
 
-        for result in results:
-            played.append(result.added_count)
-            played_days.append((result.date_added - self.start_date).days)
+        for r in daily_results:
+            date_added = r['date_only']
+            results_today = int(r['added_count'])
 
-            played_cumulative_count += result.added_count / 2
-            played_cumulative.append(played_cumulative_count)
-            latest_result = result.date_added
+            # Convert results -> matches
+            matches_today = results_today // 2
 
-        total_matches = 0
-        for league in leagues:
-            total_matches += (league.player_count-1) * league.player_count / 2
+            played.append(matches_today)
+            played_days.append((date_added - self.start_date).days)
+
+            played_cumulative_count += matches_today
+            played_cumulative.append(int(played_cumulative_count))
+            latest_result = date_added
+
+        # Total possible matches across ladders: nC2 per ladder
+        total_matches = sum(
+            (pc - 1) * pc // 2
+            for pc in ladder_player_counts
+        )
+
+        season_length = (self.end_date - self.start_date).days
+        # Compute "today" relative to start; clamp to chart domain
+        today_idx = (now().date() - self.start_date).days
+        today_idx = max(0, min(today_idx, season_length))
 
         return {
-            "season_days": [0, (self.end_date - self.start_date).days],
-            "season_total_matches": [0, total_matches],
+            "season_days": [0, season_length],
+            "season_total_matches": [0, int(total_matches)],
             "played_days": played_days,
             "played": played,
             "played_cumulative": played_cumulative,
-            "latest_result": latest_result.strftime("%B %d, %Y") if latest_result else "-"
+            "latest_result": latest_result.strftime("%B %d, %Y") if latest_result else "-",
+            "season_start": self.start_date.isoformat(),  # "YYYY-MM-DD"
+            "today_day": today_idx,
         }
 
 
@@ -143,7 +184,7 @@ class Player(models.Model):
         average = list(self.result_player.aggregate(Avg('result')).values())[0]
         average_with_additional = average + additional_points
 
-        leagues = self.league_set.filter(player=self)
+        leagues = self.league_set.filter(player=self, ladder__season__is_draft=False)
 
         match_count = 0
         for league in leagues:
@@ -179,29 +220,56 @@ class Ladder(models.Model):
         """
         Finds the leader of the ladder
         """
-        totals = {}
-        stats = self.get_stats()
-        for result in self.result_set.filter(ladder=self):
-            try:
-                if result.result == 9:
-                    totals[result.player] += int(result.result) + 3
-                else:
-                    totals[result.player] += int(result.result) + 1
-            except KeyError:
-                if result.result == 9:
-                    totals[result.player] = int(result.result) + 3
-                else:
-                    totals[result.player] = int(result.result) + 1
+        from collections import defaultdict
 
-        url = reverse('ladder', kwargs={'year': self.season.start_date.year, 'season_round': self.season.season_round, 'division_id': self.division})
+        # Use defaultdict to avoid KeyError handling
+        totals = defaultdict(int)
 
-        if totals:
-            player = max(iter(totals.items()), key=operator.itemgetter(1))[0]
+        # Get results with player data in one query
+        results = self.result_set.select_related('player').filter(ladder=self)
+
+        for result in results:
+            if result.result == 9:
+                totals[result.player] += int(result.result) + 3
+            else:
+                totals[result.player] += int(result.result) + 1
+
+        url = reverse('ladder', kwargs={
+            'year': self.season.start_date.year,
+            'season_round': self.season.season_round,
+            'division_id': self.division
+        })
+
+        if not totals:
+            return {
+                'player': 'No Results',
+                'player_id': '../#',
+                'total': '-',
+                'division': self.division,
+                'url': url,
+                'played': 0
+            }
+
+        # Find the leader
+        player = max(totals.items(), key=lambda x: x[1])[0]
+
+        # Calculate percentage played more efficiently
+        league_count = self.league_set.filter(ladder__season__is_draft=False).count()
+        if league_count > 1:
+            total_matches = league_count * (league_count - 1) / 2
+            matches_played = self.result_set.count() / 2
+            perc_matches_played = (matches_played / total_matches) * 100 if total_matches > 0 else 0
         else:
-            return {'player': 'No Results', 'player_id': '../#', 'total': '-', 'division': self.division, 'url': url, 'played': stats['perc_matches_played']}
+            perc_matches_played = 0
 
-        return {'player': player.full_name(authenticated=user.is_authenticated), 'player_id': player.id,
-                'total': totals[player], 'division': self.division, 'url': url, 'played': round(stats['perc_matches_played'], 2)}
+        return {
+            'player': player.full_name(authenticated=user.is_authenticated),
+            'player_id': player.id,
+            'total': totals[player],
+            'division': self.division,
+            'url': url,
+            'played': round(perc_matches_played, 2)
+        }
 
     def get_latest_results(self):
         """
@@ -231,6 +299,60 @@ class Ladder(models.Model):
 
         return list(ordered_results.items())
 
+    def get_email_latest(self, days: int = 1, limit: int = 5):
+        """
+        Return two buckets for the email:
+          - 'new': all new results in the last `days` (deduped by pair, newest first)
+          - 'recent': the next `limit` recent results (deduped) excluding those already in 'new'
+        Structure of each item matches get_latest_results():
+        {'player', 'player_result', 'opponent_result', 'opponent', 'date_added'}
+        """
+        since = now().date() - datetime.timedelta(days=days)
+
+        # Helper to build the pairwise, deduped list with optional date filter
+        def _collect(filter_since=None, exclude_keys=None, max_items=None):
+            exclude_keys = exclude_keys or set()
+            out = {}
+            qs = self.result_set.filter(ladder=self)
+            if filter_since is not None:
+                qs = qs.filter(date_added__gte=filter_since)
+            qs = qs.order_by('-date_added')
+
+            for result in qs:
+                try:
+                    opponent = self.result_set.filter(
+                        ladder=self, player=result.opponent, opponent=result.player
+                    )[0]
+                except IndexError:
+                    continue  # skip incomplete pairs
+
+                pair_key = ''.join(str(e) for e in sorted([result.player_id, opponent.player_id]))
+                if pair_key in exclude_keys or pair_key in out:
+                    continue
+
+                out[pair_key] = {
+                    'player': result.player,
+                    'player_result': result.result,
+                    'opponent_result': opponent.result,
+                    'opponent': opponent.player,
+                    'date_added': result.date_added,
+                }
+
+                if max_items is not None and len(out) >= max_items:
+                    break
+
+            # order newest first
+            ordered = sorted(out.values(), key=lambda x: x['date_added'], reverse=True)
+            return ordered, set(out.keys())
+
+        # (1) Everything new in the past `days`
+        new_list, new_keys = _collect(filter_since=since)
+
+        # (2) Next N recent excluding the above
+        recent_list, _ = _collect(filter_since=None, exclude_keys=new_keys, max_items=limit)
+
+        return {'new': new_list, 'recent': recent_list}
+
     def get_stats(self):
         """
         Generates the stats for current division
@@ -250,6 +372,7 @@ class LadderSubscription(models.Model):
     ladder = models.ForeignKey(Ladder, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     subscribed_at = models.DateField()
+    unsubscribe_token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
 
     def __str__(self):
         return self.user.email
@@ -267,27 +390,38 @@ class League(models.Model):
 
     def player_stats(self):
         """
-        Generates the player stats for player listings
+        Generates the player stats for player listings - Optimized to use prefetched data
         """
-        total_points = 0.00
-        games = 0.00
-        won_count = 0
-        for result in self.player.result_player.filter(player=self.player, ladder=self.ladder):
+        # Get all results for this player in this ladder
+        # This should use prefetched data from 'player__result_player'
+        results = [r for r in self.player.result_player.all() if r.ladder_id == self.ladder.id]
 
+        if not results:
+            return {
+                'total_points': 0,
+                'games': 0,
+                'pointsdivgames': 0,
+                'won_count': 0,
+                'percplayed': 0
+            }
+
+        total_points = 0.0
+        games = len(results)
+        won_count = 0
+
+        for result in results:
             if result.result == 9:
                 total_points += (result.result + 2 + 1)  # two for winning one for playing
                 won_count += 1
             else:
                 total_points += (result.result + 1)  # one for playing
 
-            games += 1
+        # Calculate stats
+        pointsdivgames = total_points / games if games > 0 else 0
 
-        # work out points per match
-        if games > 0:
-            pointsdivgames = total_points / games
-            percplayed = games / (self.ladder.league_set.count() - 1) * 100
-        else:
-            percplayed = pointsdivgames = 0
+        # Use prefetched league_set instead of .count() which always hits DB
+        league_count = len(self.ladder.league_set.all())  # Uses prefetched data
+        percplayed = games / (league_count - 1) * 100 if league_count > 1 else 0
 
         return {
             'total_points': total_points,
@@ -305,7 +439,60 @@ class Result(models.Model):
     result = models.IntegerField()
     date_added = models.DateField('Date added')
     inaccurate_flag = models.BooleanField(default=None)
+    entered_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name='entered_results')
 
     def __str__(self):
         return (self.player.first_name + ' ' + self.player.last_name) + ' vs ' + (
             self.opponent.first_name + ' ' + self.opponent.last_name) + (' score: ' + str(self.result))
+
+@receiver(post_save, sender=League)
+def auto_subscribe_on_league_create(sender, instance: League, created, **kwargs):
+    if not created:
+        return
+    player = instance.player
+    # only if the player has a linked user
+    if getattr(player, "user_id", None):
+        LadderSubscription.objects.get_or_create(
+            ladder=instance.ladder,
+            user=player.user,
+            defaults={'subscribed_at': datetime.date.today()}
+        )
+
+class Prospect(models.Model):
+    class Status(models.TextChoices):
+        NEW       = "new",       "New"
+        CONTACTED = "contacted", "Contacted"
+        READY     = "ready",     "Ready"
+        ADDED     = "added",     "Added to draft"
+        REJECTED  = "rejected",  "Rejected"
+
+    first_name   = models.CharField(max_length=80)
+    last_name    = models.CharField(max_length=80)
+    email        = models.EmailField(unique=True)
+    ability_note = models.CharField(max_length=200, blank=True)
+    status       = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.NEW,
+        db_index=True,
+    )
+    created_at   = models.DateTimeField(auto_now_add=True)
+    updated_at   = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.last_name}, {self.first_name} <{self.email}>"
+
+class DraftRemoval(models.Model):
+    season        = models.ForeignKey("Season", on_delete=models.CASCADE, related_name="draft_removals")
+    player        = models.ForeignKey("Player", on_delete=models.CASCADE)
+    from_division = models.PositiveIntegerField()
+    note          = models.CharField(max_length=200, blank=True)
+    removed_at    = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ("-removed_at",)
+        indexes = [models.Index(fields=["season", "from_division"])]
+
+    def __str__(self):
+        return f"{self.player} from {self.season.name} division {self.from_division}"
+

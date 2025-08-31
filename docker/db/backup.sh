@@ -1,15 +1,18 @@
 #!/usr/bin/env bash
+set -euo pipefail
 source /root/.env.sh
 
-cd /backup/ || exit
+DB_NAME="${MYSQL_DATABASE:-${SQL_DATABASE:-}}"
+if [ -z "$DB_NAME" ]; then
+  echo "ERROR: No DB name set"
+  exit 1
+fi
 
-filename="${SQL_DATABASE}"_"$(date +%F_%T)".sql
-
+cd /backup
+filename="${DB_NAME}_$(date +%F_%T).sql"
 echo "export started $filename"
-mysqldump --user=root --password="${MYSQL_ROOT_PASSWORD}" "${SQL_DATABASE}" > $filename
+mysqldump --user=root --password="${MYSQL_ROOT_PASSWORD}" "${DB_NAME}" > "$filename"
 echo "export finished: $filename"
 
-# clean up old exports, does not support filename spaces
-old=$(ls -t | awk 'NR>14')
-echo "$old" | xargs -d '\n' rm
-echo "export deleted: $old"
+# clean old
+ls -t | awk 'NR>30' | xargs -r -d '\n' rm

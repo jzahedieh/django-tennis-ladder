@@ -2,14 +2,12 @@
 {% load ladder_extras %}
 {% block container %}
 
-    <a href="javascript:history.go(-1)">Back</a>
-
     <h1>{% get_player_name player user %}</h1>
     <div class="row">
-        <div class="span2"><h4>Played: {{ player.player_stats.played }}</h4></div>
-        <div class="span4"><h4>Completion Rate: {{ player.player_stats.completion_rate }}</h4></div>
-        <div class="span3"><h4>Win Rate: {{ player.player_stats.win_rate }}</h4></div>
-        <div class="span3"><h4>Avg. Points: {{ player.player_stats.average }}</h4></div>
+        <div class="span2"><h4>Played: {{ player_stats.played }}</h4></div>
+        <div class="span4"><h4>Completion Rate: {{ player_stats.completion_rate }}</h4></div>
+        <div class="span3"><h4>Win Rate: {{ player_stats.win_rate }}</h4></div>
+        <div class="span3"><h4>Avg. Points: {{ player_stats.average }}</h4></div>
     </div>
 
     <h2>Head-to-Head</h2>

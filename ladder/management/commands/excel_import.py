@@ -3,7 +3,8 @@ from collections import defaultdict
 
 from django.core.management.base import BaseCommand, CommandError
 from openpyxl import load_workbook
-from ladder.models import Season, Player, Ladder, League
+from ladder.models import Season, Player, Ladder, League, LadderSubscription
+import datetime
 
 
 class Command(BaseCommand):
@@ -43,6 +44,7 @@ class Command(BaseCommand):
         sh1 = book['Sheet1']  # always first sheet
         player_list = defaultdict(dict)  # initialize defaultdict for our player list.
         current_div = {}  # set the division counter to 0
+        subscriptions_created = 0
 
         # save all players then set up ladder
         for rows in sh1.iter_rows(values_only=True):
@@ -68,12 +70,12 @@ class Command(BaseCommand):
                 try:
                     player_object = Player.objects.get(first_name=first_name, last_name=last_name)
                 except:
-                    print('No match for player: ' + first_name + last_name)
+                    print('No match for player: ' + first_name + ' ' + last_name)
                     try:
                         player_object = Player(first_name=first_name, last_name=last_name)
                         player_object.save()
                     except:
-                        print('Failed to create player: ' + first_name + last_name)
+                        print('Failed to create player: ' + first_name + ' ' + last_name)
 
                 try:
                     League.objects.get(ladder=ladder, player=player_object)
@@ -82,4 +84,14 @@ class Command(BaseCommand):
                 except:
                     League.objects.create(ladder=ladder, player=player_object, sort_order=position * 10)
 
+                # Auto-subscribe players who have linked user accounts
+                subscription, created = LadderSubscription.objects.get_or_create(
+                    ladder=ladder,
+                    user=player_object.user,
+                    defaults={'subscribed_at': datetime.date.today()}
+                )
+                if created:
+                    subscriptions_created += 1
+
         print('built good')
+        print(f'Created {subscriptions_created} new email subscriptions')

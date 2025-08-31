@@ -14,10 +14,9 @@
         <div id="chart"></div>
         <p>Results updated on <span id="progress_date"></span></p>
     </div>
-
     <script type="text/javascript">
         $(document).ready(function () {
-            $.get('/season/ajax/progress/', { id: {{ current_season.id }}}, function (data) {
+            $.get('/season/ajax/progress/', {id: {{ current_season.id }}}, function (data) {
 
                 var season_days = ['x1'];
                 var played_days = ['x2'];
@@ -26,46 +25,129 @@
 
                 $('#progress_date').text(data.latest_result);
 
-                $.each(data.season_days, function (i, item) {
-                    season_days.push(item);
+                $.each(data.season_days, function (_, v) {
+                    season_days.push(v);
+                });
+                $.each(data.played_days, function (_, v) {
+                    played_days.push(v);
+                });
+                $.each(data.played_cumulative, function (_, v) {
+                    played_cumulative.push(v);
+                });
+                $.each(data.season_total_matches, function (_, v) {
+                    season_total_matches.push(v);
                 });
 
-                $.each(data.played_days, function (i, item) {
-                    played_days.push(item);
-                });
+                var maxDay = season_days.length > 1 ? season_days[season_days.length - 1] : 0;
 
-                $.each(data.played_cumulative, function (i, item) {
-                    played_cumulative.push(item);
-                });
+                function parseDateOnly(d) {
+                    var parts = String(d).split(/[-T]/);
+                    if (parts.length >= 3) {
+                        return new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+                    }
+                    var dt = new Date(d);
+                    return new Date(dt.getFullYear(), dt.getMonth(), dt.getDate());
+                }
 
-                $.each(data.season_total_matches, function (i, item) {
-                    season_total_matches.push(item);
-                });
+                var todayLine = [];
+                if (data.season_start) {
+                    var start = parseDateOnly(data.season_start);
+                    var now = new Date();
+                    var todayIdx = Math.floor((new Date(now.getFullYear(), now.getMonth(), now.getDate()) - start) / 86400000);
+                    if (!isNaN(todayIdx)) {
+                        var clamped = Math.max(0, Math.min(todayIdx, maxDay));
+                        todayLine = [{value: clamped, text: 'Today'}];
+                    }
+                }
+
+                // Tooltip date formatters
+                var weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+                function formatWeekdayDDMM(date) {
+                    var d = date.getDate(), m = date.getMonth() + 1;
+                    var dayName = weekdays[date.getDay()];
+                    return dayName + ' ' +
+                        (d < 10 ? '0' + d : d) + '/' +
+                        (m < 10 ? '0' + m : m);
+                }
+
+                function getDateFromX(x) {
+                    if (!data.season_start) return null;
+                    var start = parseDateOnly(data.season_start);
+                    var dt = new Date(start);
+                    dt.setDate(start.getDate() + x);
+                    return dt;
+                }
 
                 var chart = c3.generate({
                     bindto: '#chart',
                     data: {
-                        xs: {
-                            'total': 'x1',
-                            'played': 'x2'
-                        },
-                        columns: [season_days, played_days, played_cumulative, season_total_matches]
+                        xs: {total: 'x1', played: 'x2'},
+                        columns: [season_days, played_days, played_cumulative, season_total_matches],
+                        types: {played: 'line', total: 'line'},
+                        colors: {played: '#1f77b4', total: '#bdbdbd'},
+                        names: {played: 'played', total: 'total'}
                     },
+                    point: {show: false},
                     axis: {
                         x: {
                             label: 'Days',
-                            tick: {
-                                culling: true
-                            }
+                            min: 0,
+                            max: maxDay,
+                            padding: {left: 0, right: 0},
+                            tick: {culling: true}
                         },
                         y: {
-                            label: 'Matches'
+                            label: 'Matches',
+                            min: 0,
+                            padding: {bottom: 0},
+                            tick: {format: d3.format('d')}
                         }
-                    }
+                    },
+                    grid: {
+                        y: {lines: [{value: 0}]},
+                        x: {lines: todayLine}
+                    },
+                    tooltip: {
+                        grouped: true,
+                        contents: function (points, titleFmt, valFmt, color) {
+                            var p = points[0];
+                            var date = getDateFromX(p.x);
+                            var heading = date ? formatWeekdayDDMM(date) : ('Day ' + p.x);
+
+                            // number of matches completed that day
+                            var idx = data.played_days.indexOf(p.x);
+                            var matchesToday = (idx !== -1 && data.played[idx] != null) ? data.played[idx] : 0;
+
+                            // Build rows: Matches today, then the "played" series only (hide total)
+                            var rows = '';
+
+                            points
+                                .filter(function (pt) {
+                                    return pt.name !== 'total';
+                                })
+                                .forEach(function (pt) {
+                                    rows += '<tr><td><span style="background:' + color(pt) + '"></span>' +
+                                        pt.name + '</td><td class="value">' + valFmt(pt.value) + '</td></tr>';
+                                });
+
+                            rows += '<tr><td>today</td><td class="value">' + valFmt(matchesToday) + '</td></tr>';
+
+                            return '<table class="c3-tooltip">' +
+                                '<tr><th colspan="2">' + heading + '</th></tr>' +
+                                rows +
+                                '</table>';
+                        }
+                    },
+                    transition: {duration: 200}
                 });
             });
         });
     </script>
+
+
+
+
 
     <!-- Example row of columns -->
     <div class="row">
@@ -131,7 +213,7 @@
     </div>
     <script type="text/javascript">
         $(document).ready(function () {
-            $.get('/season/ajax/stats/', { id: {{ current_season.id }}, leader: 1 }, function (data) {
+            $.get('/season/ajax/stats/', {id: {{ current_season.id }}, leader: 1}, function (data) {
                 $('#total_divs').text(data.divisions);
                 $('#total_players').text(data.player_count);
                 $('#total_matches').text(data.total_games_count);

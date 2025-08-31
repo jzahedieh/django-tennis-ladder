@@ -1,4 +1,4 @@
-from django.urls import re_path
+from django.urls import re_path, path
 
 from ladder import views
 
@@ -24,6 +24,9 @@ urlpatterns = [
     re_path(r'^player/results/$', views.player_result, name='player_result'),
     re_path(r'^season/ajax/stats/$', views.season_ajax_stats, name='season_ajax_stats'),
     re_path(r'^season/ajax/progress/$', views.season_ajax_progress, name='season_ajax_progress'),
-    re_path(r'^result/entry/$', views.result_entry, name='result_entry'),
-    re_path(r'^result/entry/add/$', views.result_entry_add, name='result_entry_add'),
+    path('result/entry/', views.result_entry, name='result_entry'),
+    path('result/entry/add/', views.result_entry_add, name='result_entry_add'),
+    path('result/entry/<str:pair_key>/edit/', views.result_entry_edit, name='result_entry_edit'),
+    path('result/entry/<str:pair_key>/delete/', views.result_entry_delete, name='result_entry_delete'),
+    re_path(r'^unsubscribe/(?P<token>[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/$', views.unsubscribe_token, name='unsubscribe_token'),
 ]
