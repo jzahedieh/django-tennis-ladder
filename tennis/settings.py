@@ -8,7 +8,7 @@ load_dotenv('.env.local')
 
 SETTINGS_DIR = os.path.abspath(os.path.dirname(__file__))
 
-DEBUG = os.environ.get("DEBUG_VALUE") == 'True'
+DEBUG = os.environ.get("DJANGO_DEBUG", "False") == "True"
 
 ADMINS = (
     ('Admin User', 'admin@highgate-ladder.co.uk'),
@@ -70,7 +70,10 @@ REST_FRAMEWORK = {
 
 # Hosts/domain names that are valid for this site; required if DEBUG is False
 # See https://docs.djangoproject.com/en/1.5/ref/settings/#allowed-hosts
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = os.environ.get(
+    "DJANGO_ALLOWED_HOSTS",
+    "highgate-ladder.co.uk,www.highgate-ladder.co.uk"
+).split(",")
 
 # Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
@@ -131,17 +134,14 @@ STATICFILES_FINDERS = (
 STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.ManifestStaticFilesStorage'
 
 # Make this unique, and don't share it with anybody.
-SECRET_KEY = os.environ.get("SECRET_KEY", "this_should_be_kept_a_secret")
+SECRET_KEY = os.environ["SECRET_KEY"]
 
 MIDDLEWARE = (
-    'debug_toolbar.middleware.DebugToolbarMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
-    # Uncomment the next line for simple clickjacking protection:
-    # 'django.middleware.clickjacking.XFrameOptionsMiddleware',
 )
 
 LOGIN_REDIRECT_URL = '/result/entry/'
@@ -153,7 +153,6 @@ ROOT_URLCONF = 'tennis.urls'
 WSGI_APPLICATION = 'tennis.wsgi.application'
 
 INSTALLED_APPS = (
-    'debug_toolbar',
     'rest_framework',
     'ladder',
     'django.contrib.auth',
@@ -162,11 +161,13 @@ INSTALLED_APPS = (
     'django.contrib.sites',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    # Uncomment the next line to enable the admin:
     'django.contrib.admin',
-    # Uncomment the next line to enable admin documentation:
-    # 'django.contrib.admindocs',
 )
+
+if DEBUG:
+    INSTALLED_APPS = ('debug_toolbar',) + INSTALLED_APPS
+    MIDDLEWARE = ('debug_toolbar.middleware.DebugToolbarMiddleware',) + MIDDLEWARE
+    INTERNAL_IPS = ('127.0.0.1',)
 
 CACHES = {
     'default': {
@@ -227,8 +228,8 @@ INTERNAL_IPS = (
 DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 
 CSRF_TRUSTED_ORIGINS = [
-    "http://127.0.0.1",
-    "https://highgate-ladder.co.uk"
+    "https://highgate-ladder.co.uk",
+    "https://www.highgate-ladder.co.uk",
 ]
 
 # Add additional domains from environment variable

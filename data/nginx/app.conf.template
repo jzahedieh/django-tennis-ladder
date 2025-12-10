@@ -17,8 +17,6 @@ server {
     listen 443 ssl;
     server_name ${NGINX_HOST};
 
-    include /etc/letsencrypt/options-ssl-nginx.conf;
-    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
     ssl_certificate /etc/letsencrypt/live/${NGINX_HOST}/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/${NGINX_HOST}/privkey.pem;
 
@@ -45,14 +43,6 @@ server {
         auth_basic_user_file /etc/nginx/conf.d/.adminer.htpasswd;
 
         client_max_body_size 50M;
-    }
-
-    location /analytics/ {
-        proxy_pass http://umami:3000/;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
     }
 
 }
