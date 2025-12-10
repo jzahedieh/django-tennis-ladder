@@ -1,6 +1,23 @@
 server {
+    listen 80 default_server;
+    server_name _;
+    return 444;  # silently drop
+}
+
+# Catch-all for HTTPS traffic with invalid Host headers
+server {
+    listen 443 ssl default_server;
+    server_name _;
+
+    ssl_certificate     /etc/letsencrypt/live/${NGINX_HOST}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/${NGINX_HOST}/privkey.pem;
+
+    return 444;
+}
+
+server {
     listen 80;
-    server_name ${NGINX_HOST};
+    server_name ${NGINX_HOST} www.${NGINX_HOST};
     location / {
         return 301 https://$host$request_uri;
     }
@@ -15,7 +32,7 @@ upstream web_gunicorn {
 
 server {
     listen 443 ssl;
-    server_name ${NGINX_HOST};
+    server_name ${NGINX_HOST} www.${NGINX_HOST};
 
     ssl_certificate /etc/letsencrypt/live/${NGINX_HOST}/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/${NGINX_HOST}/privkey.pem;
