@@ -21,7 +21,6 @@ services:
     depends_on:
       - web
       - adminer
-      - umami
   certbot:
     image: certbot/certbot
     restart: unless-stopped
@@ -75,12 +74,3 @@ services:
       TZ: Europe/London
     volumes:
       - ./data/db-backup:/backups:ro
-  umami:
-    image: ghcr.io/umami-software/umami:mysql-latest
-    restart: unless-stopped
-    env_file:
-      - ./.env.prod
-    ports:
-      - "3000:3000"
-    depends_on:
-      - db
