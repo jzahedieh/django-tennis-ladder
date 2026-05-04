@@ -22,6 +22,12 @@ $(document).ready(function () {
         ordering:  true,
         autoWidth: false,
         order:     [],
+        layout: {
+            topStart: null,
+            topEnd: null,
+            bottomStart: null,
+            bottomEnd: null
+        },
         columnDefs: [
             { orderable: false, targets: [1].concat(scoreCols) },
             { orderSequence: ['desc', 'asc'], targets: [0, -1] }

@@ -32,8 +32,34 @@ a {
 .dataTables_wrapper .dataTables_length,
 .dataTables_wrapper .dataTables_filter,
 .dataTables_wrapper .dataTables_info,
-.dataTables_wrapper .dataTables_paginate {
+.dataTables_wrapper .dataTables_paginate,
+.dt-container .dt-length,
+.dt-container .dt-search,
+.dt-container .dt-info,
+.dt-container .dt-paging {
     display: none !important;
+}
+
+/* DataTables 2.x injects a layout grid — kill any margins/paddings it brings */
+.dt-container,
+.dataTables_wrapper {
+    margin-top: 0 !important;
+    margin-bottom: 1rem !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+}
+
+.dt-layout-row {
+    margin: 0 !important;
+}
+
+.dt-layout-cell {
+    padding: 0 !important;
+}
+
+.ladder-table {
+    margin-top: 0 !important;
+    margin-bottom: 0.75rem !important;
 }
 
 .ladder-table thead th {
