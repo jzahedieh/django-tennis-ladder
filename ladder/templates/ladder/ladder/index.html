@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', function () {
         info:      false,
         searching: false,
         ordering:  true,
+        autoWidth: false,
         order:     [],
         layout: {
             topStart: null,
@@ -28,7 +29,7 @@ document.addEventListener('DOMContentLoaded', function () {
             /* Disable ordering on Name and all score cells only */
             { orderable: false, targets: [1].concat(scoreCols) },
             /* Sortable columns default to highest first */
-            { orderSequence: ['desc', 'asc'], targets: [0, -1, -2] }
+            { orderSequence: ['desc', 'asc'], targets: [0, 11, 12] }
         ]
     });
 });
@@ -54,7 +55,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     {% for i in ladder.league_set.all %}
                         <th class="score_field"><strong> {{ forloop.counter }} </strong></th>
                     {% endfor %}
-                    <th class="score_field score_total score_average d-none d-md-table-cell">Average</th>
+                    <th class="score_field score_total score_average">Avg</th>
                     <th class="score_field score_total">Total</th>
                 </tr>
             </thead>
@@ -94,7 +95,7 @@ document.addEventListener('DOMContentLoaded', function () {
                                 {% endwith %}
                             {% endfor %}
 
-                        <td class="score_field score_total score_average d-none d-md-table-cell"> {{ results_dict|getaverage:league.player.id }} </td>
+                        <td class="score_field score_total score_average"> {{ results_dict|getaverage:league.player.id }} </td>
                         <td class="score_field score_total"> {{ results_dict|gettotal:league.player.id }} </td>
                     </tr>
                 {% endwith %}
