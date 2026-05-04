@@ -3,19 +3,29 @@
 {% load static %}
 
 {% block container %}
-<link rel="stylesheet" type="text/css" href="{% static "css/theme.ice.css" %}"/>
+<link rel="stylesheet" type="text/css" href="{% static "css/dataTables.dataTables.min.css" %}"/>
 <link rel="stylesheet" type="text/css" href="{% static "css/ladder.css" %}"/>
-<script type="text/javascript" src="{% static "js/jquery.tablesorter.min.js" %}"></script>
-<script type="text/javascript" src="{% static "js/jquery.metadata.js" %}"></script>
+<script type="text/javascript" src="{% static "js/dataTables.min.js" %}"></script>
 
 <script type="text/javascript">
-$(document).ready(function()
-    {
-        $("#ladderTable").tablesorter({
-            theme: 'ice'
-        });
-    }
-);
+document.addEventListener('DOMContentLoaded', function () {
+    var numCols = document.querySelectorAll('#ladderTable thead th').length;
+    /* Score cells run from column index 2 up to (but not including) Average and Total */
+    var scoreCols = Array.from({ length: numCols - 4 }, function (_, i) { return i + 2; });
+    new DataTable('#ladderTable', {
+        paging:    false,
+        info:      false,
+        searching: false,
+        ordering:  true,
+        order:     [],
+        columnDefs: [
+            /* Disable ordering on Name and all score cells only */
+            { orderable: false, targets: [1].concat(scoreCols) },
+            /* Sortable columns default to highest first */
+            { orderSequence: ['desc', 'asc'], targets: [0, -1, -2] }
+        ]
+    });
+});
 </script>
 
 <h1> {{ ladder }} </h1>
@@ -30,13 +40,13 @@ $(document).ready(function()
     </a>
 
     <div class="table-responsive">
-        <table id="ladderTable" class="tablesorter">
+        <table id="ladderTable" class="table table-bordered table-sm ladder-table">
             <thead>
                 <tr>
                     <th></th>
-                    <th class="{sorter: false} text-nowrap">Name</th>
+                    <th class="text-nowrap">Name</th>
                     {% for i in ladder.league_set.all %}
-                        <th class="score_field {sorter: false}"><strong> {{ forloop.counter }} </strong></th>
+                        <th class="score_field"><strong> {{ forloop.counter }} </strong></th>
                     {% endfor %}
                     <th class="score_field score_total score_average d-none d-md-table-cell">Average</th>
                     <th class="score_field score_total">Total</th>
@@ -48,7 +58,7 @@ $(document).ready(function()
                 {% with player_counter=forloop.counter %}
                     <tr>
                         <td class="player_position"><strong> {{ player_counter }} </strong></td>
-                        <td class="player_name text-nowrap"> <a href="{% url 'player_history' league.player.id %}">{% get_player_name league.player user %}</a> </td>
+                        <td class="player_name"> <a href="{% url 'player_history' league.player.id %}">{% get_player_name league.player user %}</a> </td>
                             {% for opponent in ladder.league_set.all %}
                                 {% with column_counter=forloop.counter %}
                                     {% if column_counter == player_counter %}
