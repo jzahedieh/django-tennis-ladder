@@ -127,3 +127,14 @@
   content: "";
   display: inline-block;
 }
+
+/* Restore Bootstrap 2 link styles */
+a {
+  color: #0088cc;
+  text-decoration: none;
+}
+
+a:hover, a:focus {
+  color: #005580;
+  text-decoration: underline;
+}

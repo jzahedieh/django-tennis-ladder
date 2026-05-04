@@ -3,8 +3,8 @@
 <div>
     <h1> {{ players|length }} Results for "{{ query }}"</h1>
 
-    <div class="span12">
-        <table class="table table-condensed">
+    <div class="col-12 mt-4">
+        <table class="table table-sm">
             {% for player in players %}
                 <tr>
                     <td><a href="{% url 'player_history' player.id %}"> {{ player }} </a></td>

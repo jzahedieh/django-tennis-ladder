@@ -85,8 +85,8 @@ $(document).ready(function()
         </tbody>
     </table>
 
-    <div class="row">
-        <div class="span6">
+    <div class="row mt-4">
+        <div class="col-md-6">
             <h2>{{ current_season }} Stats</h2>
             <table class="table">
                     <tr><td>Total Matches in Division</td><td>{{ ladder.get_stats.total_matches }}</td></tr>
@@ -94,9 +94,9 @@ $(document).ready(function()
                     <tr><td>Percentage Matches Played</td><td>{{ ladder.get_stats.perc_matches_played|floatformat:"2" }}%</td></tr>
             </table>
         </div>
-        <div class="span6">
+        <div class="col-md-6">
             <h2>Latest Results</h2>
-            <table class="table table-condensed">
+            <table class="table table-sm">
                 <th>Player</th>
                 <th>Result</th>
                 <th></th>

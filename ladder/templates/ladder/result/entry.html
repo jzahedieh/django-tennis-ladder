@@ -1,29 +1,6 @@
 {% extends 'base.html' %}
 {% block container %}
     <style>
-        /* --- Result entry form (scoped to this form only) --- */
-
-        /* Labels stack above inputs (don’t use the 160px BS2 column here) */
-        #add_result_form .control-label {
-            float: none;
-            width: auto;
-            text-align: left;
-            padding-top: 0;
-        }
-
-        #add_result_form .controls {
-            margin-left: 0;
-        }
-
-        /* Checkbox alignment (keep big tick; remove BS2 padding) */
-        #add_result_form .controls > .checkbox:first-child {
-            padding-top: 0;
-        }
-
-        #add_result_form label.checkbox {
-            margin-top: 0;
-        }
-
         /* Slider + ticks: edge‑to‑edge; 0 and 8 exactly at the ends */
         #add_result_form .range-wrap {
             max-width: 420px;
@@ -34,7 +11,6 @@
             margin: 0;
         }
 
-        /* no side gutter */
         #add_result_form .tickline {
             display: table;
             table-layout: fixed;
@@ -67,16 +43,6 @@
         #add_result_form #scorePreview {
             margin: 0;
         }
-
-        /* no extra margins */
-
-        /* Button bar — no grey background */
-        #add_result_form .form-actions {
-            background: transparent;
-            border: 0;
-            padding: 0;
-            margin-top: 12px;
-        }
     </style>
 
 
@@ -95,48 +61,41 @@
 
             {# ---- Unplayed Matches ---- #}
             {% if unplayed and unplayed|length > 0 %}
-                <form id="add_result_form" class="form-horizontal" method="post" action="{% url 'result_entry_add' %}">
+                <form id="add_result_form" method="post" action="{% url 'result_entry_add' %}">
                     {% csrf_token %}
                     {{ form.player }}
 
-                    <div class="control-group">
-                        <label class="control-label" for="{{ form.opponent.id_for_label }}">Opponent:</label>
-                        <div class="controls">{{ form.opponent }}</div>
+                    <div class="mb-3">
+                        <label class="form-label" for="{{ form.opponent.id_for_label }}">Opponent:</label>
+                        {{ form.opponent }}
                     </div>
 
-                    <div class="control-group">
-                        <label class="control-label" for="{{ form.winner.id_for_label }}">Did you win?</label>
-                        <div class="controls">
-                            <label class="checkbox">
-                                {{ form.winner }} <span class="hide-text">Yes</span>
-                            </label>
-                        </div>
+                    <div class="mb-3 form-check">
+                        {{ form.winner }}
+                        <label class="form-check-label" for="{{ form.winner.id_for_label }}">Did you win?</label>
                     </div>
 
-                    <div class="control-group">
-                        <label class="control-label">Losing Result:</label>
-                        <div class="controls">
-                            <div class="range-wrap">
-                                <input type="range" id="lossRange" min="0" max="8" value="4">
-                                <div class="tickline">
-                                    <span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span>
-                                </div>
-                                <div class="score-line"
-                                     style="display:flex;align-items:center;gap:10px;margin-top:8px;">
-                                    <span style="display:inline-block;width:85px;margin-bottom:8px;">{{ form.result }}</span>
-                                    <span id="scorePreview" class="muted"></span>
-                                </div>
+                    <div class="mb-3">
+                        <label class="form-label">Losing Result:</label>
+                        <div class="range-wrap">
+                            <input type="range" class="form-range" id="lossRange" min="0" max="8" value="4">
+                            <div class="tickline">
+                                <span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span>
+                            </div>
+                            <div class="score-line">
+                                <span style="display:inline-block;width:85px;">{{ form.result }}</span>
+                                <span id="scorePreview" class="text-muted"></span>
                             </div>
                         </div>
                     </div>
 
-                    <div class="form-actions">
+                    <div class="mt-4">
                         <button class="btn btn-primary">Add Result</button>
                     </div>
                 </form>
 
             {% else %}
-                <div class="muted">Nice! You’ve played all your matches.</div>
+                <div class="text-muted">Nice! You’ve played all your matches.</div>
             {% endif %}
 
         </section>
