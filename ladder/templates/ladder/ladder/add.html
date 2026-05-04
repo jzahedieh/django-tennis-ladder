@@ -3,58 +3,70 @@
 {% load static %}
 
 {% block container %}
-<link rel="stylesheet" type="text/css" href="{% static "css/theme.ice.css" %}"/>
+<link rel="stylesheet" type="text/css" href="{% static "css/dataTables.dataTables.min.css" %}"/>
 <link rel="stylesheet" type="text/css" href="{% static "css/ladder.css" %}"/>
-<script type="text/javascript" src="{% static "js/jquery.tablesorter.min.js" %}"></script>
-<script type="text/javascript" src="{% static "js/jquery.metadata.js" %}"></script>
+<script type="text/javascript" src="{% static "js/dataTables.min.js" %}"></script>
 
 <script type="text/javascript">
 var can_submit = false;
-$(document).ready(function()
-    {
-        $("#ladderTable").tablesorter({
-            theme: 'ice'
-        });
 
-        $(".selectable").click(function (e) {
-            var player = $(this).attr('data-player');
-            var opponent = $(this).attr('data-opp');
+$(document).ready(function () {
 
+    /* ── DataTables ─────────────────────────────────────────────── */
+    var numCols = document.querySelectorAll('#ladderTable thead th').length;
+    var scoreCols = Array.from({ length: numCols - 3 }, function (_, i) { return i + 2; });
+    new DataTable('#ladderTable', {
+        paging:    false,
+        info:      false,
+        searching: false,
+        ordering:  true,
+        autoWidth: false,
+        order:     [],
+        columnDefs: [
+            { orderable: false, targets: [1].concat(scoreCols) },
+            { orderSequence: ['desc', 'asc'], targets: [0, -1] }
+        ]
+    });
 
-            if ($('.score_field').find('.loser_input').length && !$(this).find('.loser_input').length) {
-                $('.loser_input').remove();
-            }
+    /* ── Bootstrap 5 classes on form widgets ────────────────────── */
+    $('#add_result_form select').addClass('form-select');
+    $('#add_result_form input[type=checkbox]').addClass('form-check-input');
 
-            if (!$(this).find('.loser_input').length) {
-                $(this).append("<input type='number' class='loser_input' onKeyUp='updateForm();' min='0' max='8' />");
-            }
+    /* ── Score cell click — select match & inject score input ───── */
+    $(".selectable").click(function (e) {
+        var player   = $(this).attr('data-player');
+        var opponent = $(this).attr('data-opp');
 
-            $('[name=player]').val(player);
-            $('[name=opponent]').val(opponent);
-            e.preventDefault();
+        if ($('.score_field').find('.loser_input').length && !$(this).find('.loser_input').length) {
+            $('.loser_input').remove();
+        }
 
-            $('.loser_input').focus()
+        if (!$(this).find('.loser_input').length) {
+            $(this).append("<input type='number' class='loser_input form-control form-control-sm' onKeyUp='updateForm();' min='0' max='8' style='width:52px;display:inline-block;'/>");
+        }
 
-            return false;
+        $('[name=player]').val(player);
+        $('[name=opponent]').val(opponent);
+        e.preventDefault();
+        $('.loser_input').focus();
+        return false;
+    });
 
-        });
+    /* ── Enter to submit ────────────────────────────────────────── */
+    $(document).keypress(function (e) {
+        if (e.which === 13 && can_submit) {
+            $('#add_result_form').submit();
+        }
+    });
 
-        $(document).keypress(function (e) {
-            if (e.which == 13) {
-                if(can_submit){
-                    $('#add_result_form').submit();
-                }
-            }
-        });
+    /* ── Cross-highlight hover ──────────────────────────────────── */
+    $(".selectable").hover(function () {
+        opponentSelector(this).css("background-color", "#eee");
+    }, function () {
+        opponentSelector(this).css("background-color", "");
+    });
 
-        $(".selectable").hover(function () {
-            opponentSelector(this).css("background-color", "#eee")
-        }, function () {
-            opponentSelector(this).css("background-color", "");
-        });
-
-    }
-);
+});
 
 function opponentSelector(element) {
     return $('td[data-player=' + $(element).data('opp') + '][data-opp=' + $(element).data('player') + ']');
@@ -64,73 +76,110 @@ function updateForm() {
     var l_score = $('.score_field input').val();
     $('#id_result').val(l_score);
     can_submit = true;
-
 }
-
 </script>
+
 <h1> {{ ladder }} </h1>
 <h3>{{ ladder.season.start_date }} to {{ ladder.season.end_date }}</h3>
 
-<div class="add_navigation">
+<div class="d-flex gap-2 mb-3">
     {% if previous_ladder %}
-        <a href="{% url 'add' ladder.season.start_date|date:"Y" ladder.season.season_round previous_ladder.division %}">Previous</a>
+        <a class="btn btn-outline-secondary btn-sm"
+           href="{% url 'add' ladder.season.start_date|date:"Y" ladder.season.season_round previous_ladder.division %}">
+            &larr; Previous
+        </a>
     {% endif %}
     {% if next_ladder %}
-        <a href="{% url 'add' ladder.season.start_date|date:"Y" ladder.season.season_round next_ladder.division %}">Next </a>
+        <a class="btn btn-outline-secondary btn-sm"
+           href="{% url 'add' ladder.season.start_date|date:"Y" ladder.season.season_round next_ladder.division %}">
+            Next &rarr;
+        </a>
     {% endif %}
 </div>
 
-	<table id="ladderTable" class="tablesorter">
+<div class="table-responsive mb-4">
+    <table id="ladderTable" class="table table-bordered table-sm ladder-table">
         <thead>
-       	    <tr>
+            <tr>
                 <th></th>
-                <th class="{sorter: false}">Name</th>
+                <th>Name</th>
                 {% for i in ladder.league_set.all %}
-                    <th class="score_field {sorter: false}"><strong> {{ forloop.counter }} </strong></th>
+                    <th class="score_field"><strong> {{ forloop.counter }} </strong></th>
                 {% endfor %}
-                <th class="score_field">Total</th>
+                <th class="score_field score_total">Total</th>
             </tr>
         </thead>
-
-       <tbody>
+        <tbody>
         {% for league in ladder.league_set.all %}
             {% with player_counter=forloop.counter %}
                 <tr>
                     <td class="player_position"><strong> {{ player_counter }} </strong></td>
                     <td class="player_name"> {% get_player_name league.player user %}</td>
-                        {% for opponent in ladder.league_set.all %}
-                            {% with column_counter=forloop.counter %}
-                                {% if column_counter == player_counter %}
-                                    <td class="box_grey score_field"></td>
-                                {% else %}
-                                    <td class="score_field selectable"  data-player="{{ league.player.id }}" data-opp="{{ opponent.player.id }}">
+                    {% for opponent in ladder.league_set.all %}
+                        {% with column_counter=forloop.counter %}
+                            {% if column_counter == player_counter %}
+                                <td class="box_grey score_field"></td>
+                            {% else %}
+                                <td class="score_field selectable"
+                                    data-player="{{ league.player.id }}"
+                                    data-opp="{{ opponent.player.id }}">
                                     {% for result in results_dict|getkey:league.player.id %}
                                         {% if league.player == result.player and opponent.player == result.opponent %}
-                                           {% if result.inaccurate_flag %}
+                                            {% if result.inaccurate_flag %}
                                                 <span style="color:red; font-weight: bold"> {{ result.result }} *</span>
-                                                <script type="text/javascript">
-                                                    $('.score_error').show();
-                                                </script>
+                                                <script type="text/javascript">$('.score_error').show();</script>
                                             {% else %}
                                                 {{ result.result }}
                                             {% endif %}
                                         {% endif %}
                                     {% endfor %}
-                                    </td>
-                                {% endif %}
-                            {% endwith %}
-                        {% endfor %}
-
-                    <td class="score_field"> {{ results_dict|gettotal:league.player.id }} </td>
+                                </td>
+                            {% endif %}
+                        {% endwith %}
+                    {% endfor %}
+                    <td class="score_field score_total"> {{ results_dict|gettotal:league.player.id }} </td>
                 </tr>
             {% endwith %}
         {% endfor %}
         </tbody>
     </table>
+</div>
 
-    <form id="add_result_form" action="{% url 'add' ladder.season.start_date.year ladder.season.season_round ladder.division %}" method="post">{% csrf_token %}
-        {{ form.as_p }}
-        <input type="submit" value="Add Result"/>
-    </form>
+<div class="card shadow-sm" style="max-width: 480px;">
+    <div class="card-header bg-light">
+        <h5 class="mb-0">Add Result</h5>
+    </div>
+    <div class="card-body">
+        <p class="text-muted small mb-3">
+            Click a match cell in the grid above to select the players, then type the losing score in the cell.
+        </p>
+        <form id="add_result_form"
+              action="{% url 'add' ladder.season.start_date.year ladder.season.season_round ladder.division %}"
+              method="post">
+            {% csrf_token %}
+
+            {# player, opponent and result are set by JS when a grid cell is clicked #}
+            <div class="d-none">
+                {{ form.player }}
+                {{ form.opponent }}
+                {{ form.result }}
+            </div>
+
+            <div class="mb-3 form-check">
+                {{ form.inaccurate_flag }}
+                <label class="form-check-label" for="{{ form.inaccurate_flag.id_for_label }}">
+                    Inaccurate result
+                </label>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label" for="{{ form.entered_by.id_for_label }}">Entered by:</label>
+                {{ form.entered_by }}
+            </div>
+
+            <button type="submit" class="btn btn-primary">Add Result</button>
+        </form>
+    </div>
+</div>
 
 {% endblock %}

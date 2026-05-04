@@ -3,10 +3,9 @@
 {% load static %}
 
 {% block container %}
-    <link rel="stylesheet" type="text/css" href="{% static "css/theme.ice.css" %}"/>
+    <link rel="stylesheet" type="text/css" href="{% static "css/dataTables.dataTables.min.css" %}"/>
     <link rel="stylesheet" type="text/css" href="{% static "css/ladder.css" %}"/>
-    <script type="text/javascript" src="{% static "js/jquery.tablesorter.min.js" %}"></script>
-    <script type="text/javascript" src="{% static "js/jquery.metadata.js" %}"></script>
+    <script type="text/javascript" src="{% static "js/dataTables.min.js" %}"></script>
 
     {% spaceless %}
     <h1>{{ season }}</h1>
@@ -16,12 +15,12 @@
 
         <a href="{% url 'ladder' ladder.season.start_date|date:"Y" ladder.season.season_round ladder.division %}"> Division:  {{ ladder.division }} </a>
         <div class="table-responsive">
-            <table cellspacing="1" id="ladderTable{{ ladder.id }}" class="tablesorter ladder-table">
+            <table cellspacing="1" id="ladderTable{{ ladder.id }}" class="table table-bordered table-sm ladder-table">
             <thead>
             <tr>
-            <th></th><th class="{sorter: false} text-nowrap">Name</th>
+            <th></th><th class="text-nowrap">Name</th>
             {% for i in ladder.league_set.all %}
-                <th class="score_field {sorter: false}"><strong> {{ forloop.counter }} </strong></th>
+                <th class="score_field"><strong> {{ forloop.counter }} </strong></th>
             {% endfor %}
             <th class="score_field score_total">Total</th>
             </tr>
@@ -32,13 +31,13 @@
                 {% with player_counter=forloop.counter %}
                     <tr>
                     <td class="player_position"><strong> {{ player_counter }} </strong></td>
-                    <td class="player_name text-nowrap"><span>{% get_player_name league.player user %}</span></td>
+                    <td class="player_name"><span>{% get_player_name league.player user %}</span></td>
                     {% for opponent in ladder.league_set.all %}
                         {% with column_counter=forloop.counter %}
                             {% if column_counter == player_counter %}
                             <td class="box_grey score_field"></td>
                             {% else %}
-    <td class="score_field">
+    <td class="score_field selectable" data-player="{{ league.player.id }}" data-opp="{{ opponent.player.id }}">
     {% for result in results_dict|getkey:league.player.id %}
     {% if league.player.id == result.player.id and opponent.player.id == result.opponent.id %}
     {% if result.inaccurate_flag %}
@@ -64,13 +63,40 @@
         </div>
     {% endfor %}
     {% endspaceless %}
+
     <script type="text/javascript">
-        $(document).ready(function()
-            {
-                $(".ladder-table").tablesorter({
-                    theme: 'ice'
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('.ladder-table').forEach(function (el) {
+                var numCols = el.querySelectorAll('thead th').length;
+                /* Score cells: index 2 up to (but not including) Total */
+                var scoreCols = Array.from({ length: numCols - 3 }, function (_, i) { return i + 2; });
+                new DataTable(el, {
+                    paging:    false,
+                    info:      false,
+                    searching: false,
+                    ordering:  true,
+                    autoWidth: false,
+                    order:     [],
+                    columnDefs: [
+                        /* Disable ordering on Name and score cells; pos # and Total remain sortable */
+                        { orderable: false, targets: [1].concat(scoreCols) },
+                        /* Sortable columns default to highest first */
+                        { orderSequence: ['desc', 'asc'], targets: [0, -1] }
+                    ]
                 });
-            }
-        );
+            });
+        });
+
+        /* Cross-highlight: hover a score cell to highlight the reciprocal cell */
+        $(document).ready(function () {
+            $(document).on('mouseenter', '.ladder-table .selectable', function () {
+                opponentCellSeason(this).css('background-color', '#eee');
+            }).on('mouseleave', '.ladder-table .selectable', function () {
+                opponentCellSeason(this).css('background-color', '');
+            });
+        });
+        function opponentCellSeason(el) {
+            return $('td[data-player=' + $(el).data('opp') + '][data-opp=' + $(el).data('player') + ']');
+        }
     </script>
 {% endblock %}

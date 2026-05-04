@@ -1,21 +1,67 @@
-@import url(http://fonts.googleapis.com/css?family=Open+Sans);
+@import url(https://fonts.googleapis.com/css?family=Open+Sans);
 
 a {
     font-family: 'Open Sans', sans-serif;
 }
 
 /*
- * general
+ * ladder table — general
  * ____________________________________
  */
 
-table.tablesorter td.box_grey {
-    background-color: grey;
+.ladder-table td.box_grey {
+    background-color: #808080 !important;
 }
 
-table.tablesorter td.score_field {
+.ladder-table td.score_field {
     min-width: 30px;
-    text-align: center;
+    text-align: center !important;
+}
+
+/* Centre the score column headers too */
+.ladder-table th.score_field {
+    text-align: center !important;
+}
+
+/*
+ * DataTables overrides
+ * Hide default chrome we don't want on compact grids
+ * ____________________________________
+ */
+
+.dataTables_wrapper .dataTables_length,
+.dataTables_wrapper .dataTables_filter,
+.dataTables_wrapper .dataTables_info,
+.dataTables_wrapper .dataTables_paginate {
+    display: none !important;
+}
+
+.ladder-table thead th {
+    white-space: nowrap;
+}
+
+.ladder-table thead th.dt-orderable-asc,
+.ladder-table thead th.dt-orderable-desc {
+    cursor: pointer;
+}
+
+/*
+ * Name column — controlled width with ellipsis truncation
+ * ____________________________________
+ */
+
+.ladder-table td.player_name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ladder-table td.player_name a,
+.ladder-table td.player_name span {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 /*
@@ -23,25 +69,19 @@ table.tablesorter td.score_field {
  * ____________________________________
  */
 @media (min-width: 979px) {
-    table.tablesorter {
+    .ladder-table {
         width: 100%;
         margin-bottom: 20px;
         font-family: 'Open Sans', sans-serif;
     }
 
-    table.tablesorter td, table.tablesorter th {
-        margin: 0;
-        border-width: 1px;
-        border-style: solid;
-    }
-
-    table.tablesorter td.player_position {
+    .ladder-table td.player_position {
         width: 28px;
     }
 
-    table.tablesorter td.player_name {
-        min-width: 200px;
-        width: 200px;
+    .ladder-table td.player_name {
+        min-width: 160px;
+        max-width: 200px;
     }
 
     td.selectable:hover {
@@ -51,7 +91,7 @@ table.tablesorter td.score_field {
 }
 
 /*
- * mobile / tablet
+ * tablet / mobile
  * ____________________________________
  */
 @media (max-width: 979px) {
@@ -61,40 +101,39 @@ table.tablesorter td.score_field {
         padding-left: 2px;
     }
 
-    .navbar .brand {
-        padding-left: 28px;
-    }
-
-    a.btn-navbar {
-        margin-right: 23px !important;
-    }
-
-    .player_name {
-        display: flex;
-    }
-
-    .player_name span, .player_name a {
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-
-        min-width: 0;
-    }
-
-    table.tablesorter td.score_field {
+    .ladder-table td.score_field {
         min-width: 10px;
     }
 
-    table.tablesorter td.player_position, table.tablesorter td.score_total {
+    .ladder-table td.player_position,
+    .ladder-table td.score_total {
         width: 10px;
     }
 
-    .tablesorter-ice tbody td,
-    .tablesorter-ice tfoot th,
-    .tablesorter-ice tfoot td {
-        padding: 0px;
+    /* Compact cell padding */
+    .ladder-table td,
+    .ladder-table th {
+        padding: 2px 3px !important;
+    }
+}
+
+/*
+ * small mobile — name column compact
+ * ____________________________________
+ */
+@media (max-width: 767px) {
+    .ladder-table {
+        font-size: 0.72rem;
     }
 
+    .ladder-table td.player_name {
+        max-width: 90px;
+        min-width: 60px;
+    }
+
+    .ladder-table td.score_field {
+        min-width: 18px;
+    }
 }
 
 /*
@@ -112,6 +151,11 @@ table.tablesorter td.score_field {
 
     th.score_total {
         text-indent: -9999px;
+    }
+
+    .ladder-table td.player_name {
+        max-width: 65px;
+        min-width: 50px;
     }
 }
 
