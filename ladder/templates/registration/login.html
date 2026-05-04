@@ -1,41 +1,64 @@
 {% extends "base.html" %}
 
 {% block container %}
-{% if form.errors %}
-<p>Your username and password didn't match. Please try again.</p>
-{% endif %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-8 col-lg-6">
+        <div class="card shadow-sm">
+            <div class="card-body p-4 p-md-5">
+                <h3 class="card-title text-center mb-4">Log In</h3>
+                
+                {% if form.errors %}
+                <div class="alert alert-danger">Your email and password didn't match. Please try again.</div>
+                {% endif %}
 
-{% if next %}
-    {% if user.is_authenticated %}
-    <p>Your account doesn't have access to this page. To proceed,
-    please login with an account that has access.</p>
-    {% else %}
-    <p>Please log in to enter your results</p>
-    {% endif %}
-{% endif %}
+                {% if next %}
+                    {% if user.is_authenticated %}
+                    <div class="alert alert-warning">Your account doesn't have access to this page. To proceed, please login with an account that has access.</div>
+                    {% else %}
+                    <div class="alert alert-info">Please log in to enter your results.</div>
+                    {% endif %}
+                {% endif %}
 
-<form method="post" action="{% url 'login' %}">
-{% csrf_token %}
-<table>
-<tr>
-    <td>Email:</td>
-    <td>{{ form.username }}</td>
-</tr>
-<tr>
-    <td>{{ form.password.label_tag }}</td>
-    <td>{{ form.password }}</td>
-</tr>
-</table>
+                <form method="post" action="{% url 'login' %}">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.username.id_for_label }}" class="form-label fw-bold">Email</label>
+                        {{ form.username }}
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="{{ form.password.id_for_label }}" class="form-label fw-bold">Password</label>
+                        {{ form.password }}
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg">Log In</button>
+                    </div>
+                    <input type="hidden" name="next" value="{{ next }}">
+                </form>
 
-<input type="submit" class="btn btn-primary btn-lg" value="login">
-<input type="hidden" name="next" value="{{ next }}">
-</form>
+                <div class="mt-4 text-center">
+                    <a href="{% url 'password_reset' %}" class="text-decoration-none">Forgot your password?</a>
+                </div>
+            </div>
+        </div>
 
-<p><a href="{% url 'password_reset' %}">Reset password?</a></p>
+        <div class="mt-4 text-muted small text-center">
+            <p>You will need to reset your password with the above link the first time you use the system.</p>
+            <p>All players in the current ladder have a user setup with their email in the membership list. If you are having any issues, please use the feedback email below.</p>
+        </div>
+    </div>
+</div>
 
-<p>You will need to reset your password with the above link the first time you use the system.</p>
-
-<p>All players in the current ladder have a user setup with their email in the membership list,
-    if you are having any issues please use the feedback email below and assistance will be provided.</p>
+<script>
+    // Add Bootstrap classes to Django form inputs
+    document.addEventListener("DOMContentLoaded", function() {
+        var inputs = document.querySelectorAll("input[type='text'], input[type='password']");
+        inputs.forEach(function(input) {
+            input.classList.add("form-control");
+        });
+    });
+</script>
 
 {% endblock %}
