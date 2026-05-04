@@ -17,7 +17,6 @@ document.addEventListener('DOMContentLoaded', function () {
         info:      false,
         searching: false,
         ordering:  true,
-        autoWidth: false,
         order:     [],
         layout: {
             topStart: null,
@@ -28,8 +27,8 @@ document.addEventListener('DOMContentLoaded', function () {
         columnDefs: [
             /* Disable ordering on Name and all score cells only */
             { orderable: false, targets: [1].concat(scoreCols) },
-            /* Sortable columns default to highest first */
-            { orderSequence: ['desc', 'asc'], targets: [0, 11, 12] }
+            /* Sortable columns (Pos, Avg, Total) default to highest first on click */
+            { orderSequence: ['desc', 'asc'], targets: [0, -1, -2] }
         ]
     });
 });
