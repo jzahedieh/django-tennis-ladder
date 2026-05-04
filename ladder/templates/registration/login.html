@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 
 {% block container %}
-<div class="row justify-content-center mt-5">
+<div class="row mt-5">
     <div class="col-md-8 col-lg-6">
         <div class="card shadow-sm">
             <div class="card-body p-4 p-md-5">
-                <h3 class="card-title text-center mb-4">Log In</h3>
+                <h3 class="card-title mb-4">Log In</h3>
                 
                 {% if form.errors %}
                 <div class="alert alert-danger">Your email and password didn't match. Please try again.</div>
@@ -38,13 +38,13 @@
                     <input type="hidden" name="next" value="{{ next }}">
                 </form>
 
-                <div class="mt-4 text-center">
+                <div class="mt-4">
                     <a href="{% url 'password_reset' %}" class="text-decoration-none">Forgot your password?</a>
                 </div>
             </div>
         </div>
 
-        <div class="mt-4 text-muted small text-center">
+        <div class="mt-4 text-muted small">
             <p>You will need to reset your password with the above link the first time you use the system.</p>
             <p>All players in the current ladder have a user setup with their email in the membership list. If you are having any issues, please use the feedback email below.</p>
         </div>

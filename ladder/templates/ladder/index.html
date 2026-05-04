@@ -153,7 +153,7 @@
     <div class="row">
         <div class="col-md-6 mb-5">
             <h2 class="mb-4">{{ current_season }} Stats</h2>
-            <ul class="list-group list-group-flush mb-4">
+            <ul class="list-group list-group-flush mb-4" style="max-width: 550px;">
                 <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
                     <span>Total Divisions</span>
                     <span id="total_divs" class="fw-bold fs-5"></span>
@@ -177,7 +177,7 @@
             </ul>
 
             <h2 class="mt-5 mb-4">System Stats</h2>
-            <ul class="list-group list-group-flush">
+            <ul class="list-group list-group-flush" style="max-width: 550px;">
                 <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
                     <span>Total Years</span>
                     <span>{{ at_years }} <i class="text-muted small">{{ at_years_str }}</i></span>
@@ -202,7 +202,7 @@
         </div>
         <div class="col-md-6 mb-5">
             <h2 class="mb-4">Division Stats</h2>
-            <div id="leader_list" class="list-group list-group-flush">
+            <div id="leader_list" class="list-group list-group-flush" style="max-width: 550px;">
                 <!-- Populated via AJAX -->
             </div>
         </div>
