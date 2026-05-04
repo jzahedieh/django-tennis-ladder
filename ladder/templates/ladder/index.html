@@ -8,11 +8,11 @@
     <script type="text/javascript" src="{% static "js/vendor/c3.min.js" %}"></script>
 
     <!-- Main hero unit for a primary marketing message or call to action -->
-    <div class="well">
+    <div class="card bg-light p-4 mb-4">
         <h2>Progress Graph</h2>
 
         <div id="chart"></div>
-        <p>Results updated on <span id="progress_date"></span></p>
+        <p class="mb-0 mt-3">Results updated on <span id="progress_date" class="fw-bold"></span></p>
     </div>
     <script type="text/javascript">
         $(document).ready(function () {
@@ -151,66 +151,63 @@
 
     <!-- Example row of columns -->
     <div class="row">
-        <div class="span6">
-            <h2>{{ current_season }} Stats</h2>
-            <table class="table">
-                <tr>
-                    <td>Total Divisions</td>
-                    <td id="total_divs"></td>
-                </tr>
-                <tr>
-                    <td>Total Players</td>
-                    <td id="total_players"></td>
-                </tr>
-                <tr>
-                    <td>Total Matches in Ladder</td>
-                    <td id="total_matches"></td>
-                </tr>
-                <tr>
-                    <td>Total Matches Played</td>
-                    <td id="total_played"></td>
-                </tr>
-                <tr>
-                    <td>Percentage Matches Played</td>
-                    <td id="perc_played"></td>
-                </tr>
+        <div class="col-md-6 mb-5">
+            <h2 class="mb-4">{{ current_season }} Stats</h2>
+            <ul class="list-group list-group-flush mb-4">
+                <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                    <span>Total Divisions</span>
+                    <span id="total_divs" class="fw-bold fs-5"></span>
+                </li>
+                <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                    <span>Total Players</span>
+                    <span id="total_players" class="fw-bold fs-5"></span>
+                </li>
+                <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                    <span>Total Matches in Ladder</span>
+                    <span id="total_matches" class="fw-bold fs-5"></span>
+                </li>
+                <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                    <span>Total Matches Played</span>
+                    <span id="total_played" class="fw-bold fs-5"></span>
+                </li>
+                <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                    <span>Percentage Matches Played</span>
+                    <span id="perc_played" class="fw-bold fs-5"></span>
+                </li>
+            </ul>
 
-                <tr>
-                    <td><h2>System Stats</h2></td>
-                </tr>
-
-                <tr>
-                    <td>Total Years</td>
-                    <td>{{ at_years }} <i>{{ at_years_str }}</i></td>
-                </tr>
-                <tr>
-                    <td>Total Ladders</td>
-                    <td>{{ at_ladders }}</td>
-                </tr>
-                <tr>
-                    <td>Total Divisions</td>
-                    <td>{{ at_divisions }}</td>
-                </tr>
-                <tr>
-                    <td>Complete Matches</td>
-                    <td>{{ at_results }}</td>
-                </tr>
-                <tr>
-                    <td>Unique Players</td>
-                    <td>{{ at_players }}</td>
-                </tr>
-            </table>
+            <h2 class="mt-5 mb-4">System Stats</h2>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                    <span>Total Years</span>
+                    <span>{{ at_years }} <i class="text-muted small">{{ at_years_str }}</i></span>
+                </li>
+                <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                    <span>Total Ladders</span>
+                    <span class="fw-bold">{{ at_ladders }}</span>
+                </li>
+                <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                    <span>Total Divisions</span>
+                    <span class="fw-bold">{{ at_divisions }}</span>
+                </li>
+                <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                    <span>Complete Matches</span>
+                    <span class="fw-bold">{{ at_results }}</span>
+                </li>
+                <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                    <span>Unique Players</span>
+                    <span class="fw-bold fs-5 text-dark">{{ at_players }}</span>
+                </li>
+            </ul>
         </div>
-        <div class="span6">
-            <h2>Division Stats</h2>
-            <table id="leader_table" class="table table-condensed">
-                <th>Div</th>
-                <th>Played</th>
-                <th>Leader</th>
-                <th>Leader Total</th>
-            </table>
+        <div class="col-md-6 mb-5">
+            <h2 class="mb-4">Division Stats</h2>
+            <div id="leader_list" class="list-group list-group-flush">
+                <!-- Populated via AJAX -->
+            </div>
         </div>
     </div>
+
     <script type="text/javascript">
         $(document).ready(function () {
             $.get('/season/ajax/stats/', {id: {{ current_season.id }}, leader: 1}, function (data) {
@@ -218,12 +215,17 @@
                 $('#total_players').text(data.player_count);
                 $('#total_matches').text(data.total_games_count);
                 $('#total_played').text(data.results_count);
-                $('#perc_played').text(data.percentage_played + ' %');
+                $('#perc_played').text(data.percentage_played + '%');
 
                 $.each(data.current_leaders, function (i, item) {
-                    $("#leader_table").append(
-                        "<tr><td><a href='" + item.url + "'>" + item.division + "</a></td><td>" + item.played + " %</td>" +
-                        "<td><a href='/player/" + item.player_id + "'>" + item.player + "</a></td><td>" + item.total + "</td>"
+                    $("#leader_list").append(
+                        "<div class='list-group-item px-0 d-flex justify-content-between align-items-center'>" +
+                            "<div>" +
+                                "<div class='fw-bold text-nowrap'><a href='" + item.url + "'>Division " + item.division + "</a></div>" +
+                                "<div class='small text-muted'>Leader: <a href='/player/" + item.player_id + "'>" + item.player + "</a> (" + item.total + " pts)</div>" +
+                            "</div>" +
+                            "<div class='badge bg-light text-secondary border rounded-pill fs-6 ms-3'>" + item.played + "%</div>" +
+                        "</div>"
                     );
                 })
             });

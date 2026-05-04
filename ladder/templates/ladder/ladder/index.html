@@ -29,91 +29,105 @@ $(document).ready(function()
         {% if subscribed %}Unsubscribe{% else %}Subscribe{% endif %}
     </a>
 
-    <table id="ladderTable" class="tablesorter">
-        <thead>
-       	    <tr>
-                <th></th>
-                <th class="{sorter: false}">Name</th>
-                {% for i in ladder.league_set.all %}
-                    <th class="score_field {sorter: false}"><strong> {{ forloop.counter }} </strong></th>
-                {% endfor %}
-                <th class="score_field score_total score_average">Average</th>
-                <th class="score_field score_total">Total</th>
-            </tr>
-        </thead>
-
-       <tbody>
-        {% for league in ladder.league_set.all %}
-            {% with player_counter=forloop.counter %}
+    <div class="table-responsive">
+        <table id="ladderTable" class="tablesorter">
+            <thead>
                 <tr>
-                    <td class="player_position"><strong> {{ player_counter }} </strong></td>
-                    <td class="player_name"> <a href="{% url 'player_history' league.player.id %}">{% get_player_name league.player user %}</a> </td>
-                        {% for opponent in ladder.league_set.all %}
-                            {% with column_counter=forloop.counter %}
-                                {% if column_counter == player_counter %}
-                                    <td class="box_grey score_field"></td>
-                                {% else %}
-                                    <td class="score_field selectable" data-player="{{ league.player.id }}"
-                                        data-opp="{{ opponent.player.id }}"
-                                        onclick="location.href='{% url 'head_to_head' league.player.id opponent.player.id %}'">
-                                        <a href="{% url 'head_to_head' league.player.id opponent.player.id %}">
-                                            <div style="height:100%;width:100%">
-                                                {% for result in results_dict|getkey:league.player.id %}
-                                                    {% if league.player == result.player and opponent.player == result.opponent %}
-                                           {% if result.inaccurate_flag %}
-                                                <span style="color:red; font-weight: bold"> {{ result.result }} <span class="astrix">*</span></span>
-                                                <script type="text/javascript">
-                                                    $('.score_error').show();
-                                                </script>
-                                            {% else %}
-                                                {{ result.result }}
-                                            {% endif %}
-                                        {% endif %}
-                                    {% endfor %}
-                                            </div>
-                                        </a>
-                                    </td>
-                                {% endif %}
-                            {% endwith %}
-                        {% endfor %}
-
-                    <td class="score_field score_total score_average"> {{ results_dict|getaverage:league.player.id }} </td>
-                    <td class="score_field score_total"> {{ results_dict|gettotal:league.player.id }} </td>
+                    <th></th>
+                    <th class="{sorter: false} text-nowrap">Name</th>
+                    {% for i in ladder.league_set.all %}
+                        <th class="score_field {sorter: false}"><strong> {{ forloop.counter }} </strong></th>
+                    {% endfor %}
+                    <th class="score_field score_total score_average d-none d-md-table-cell">Average</th>
+                    <th class="score_field score_total">Total</th>
                 </tr>
-            {% endwith %}
-        {% endfor %}
-        </tbody>
-    </table>
+            </thead>
 
-    <div class="row">
-        <div class="span6">
-            <h2>{{ current_season }} Stats</h2>
-            <table class="table">
-                    <tr><td>Total Matches in Division</td><td>{{ ladder.get_stats.total_matches }}</td></tr>
-                    <tr><td>Total Matches Played</td><td>{{ ladder.get_stats.total_matches_played|floatformat:"0" }}</td></tr>
-                    <tr><td>Percentage Matches Played</td><td>{{ ladder.get_stats.perc_matches_played|floatformat:"2" }}%</td></tr>
-            </table>
-        </div>
-        <div class="span6">
-            <h2>Latest Results</h2>
-            <table class="table table-condensed">
-                <th>Player</th>
-                <th>Result</th>
-                <th></th>
-                <th>Result</th>
-                <th>Player</th>
-                <th>Date Added</th>
-                {% for key, value in ladder.get_latest_results %}
+            <tbody>
+            {% for league in ladder.league_set.all %}
+                {% with player_counter=forloop.counter %}
                     <tr>
-                        <td>{% get_player_name value.player user %}</td>
-                        <td style="text-align: center;">{{ value.player_result }}</td>
-                        <td>vs</td>
-                        <td style="text-align: center;">{{ value.opponent_result }}</td>
-                        <td>{% get_player_name value.opponent user %}</td>
-                        <td>{{ value.date_added }}</td>
+                        <td class="player_position"><strong> {{ player_counter }} </strong></td>
+                        <td class="player_name text-nowrap"> <a href="{% url 'player_history' league.player.id %}">{% get_player_name league.player user %}</a> </td>
+                            {% for opponent in ladder.league_set.all %}
+                                {% with column_counter=forloop.counter %}
+                                    {% if column_counter == player_counter %}
+                                        <td class="box_grey score_field"></td>
+                                    {% else %}
+                                        <td class="score_field selectable" data-player="{{ league.player.id }}"
+                                            data-opp="{{ opponent.player.id }}"
+                                            onclick="location.href='{% url 'head_to_head' league.player.id opponent.player.id %}'">
+                                            <a href="{% url 'head_to_head' league.player.id opponent.player.id %}">
+                                                <div style="height:100%;width:100%">
+                                                    {% for result in results_dict|getkey:league.player.id %}
+                                                        {% if league.player == result.player and opponent.player == result.opponent %}
+                                                            {% if result.inaccurate_flag %}
+                                                                <span style="color:red; font-weight: bold"> {{ result.result }} <span class="astrix">*</span></span>
+                                                                <script type="text/javascript">
+                                                                    $('.score_error').show();
+                                                                </script>
+                                                            {% else %}
+                                                                {{ result.result }}
+                                                            {% endif %}
+                                                        {% endif %}
+                                                    {% endfor %}
+                                                </div>
+                                            </a>
+                                        </td>
+                                    {% endif %}
+                                {% endwith %}
+                            {% endfor %}
+
+                        <td class="score_field score_total score_average d-none d-md-table-cell"> {{ results_dict|getaverage:league.player.id }} </td>
+                        <td class="score_field score_total"> {{ results_dict|gettotal:league.player.id }} </td>
                     </tr>
+                {% endwith %}
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-md-6 mb-4">
+            <h2 class="mb-4 text-nowrap">{{ current_season }} Stats</h2>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                    <span>Total Matches in Division</span>
+                    <span class="fw-bold fs-5">{{ ladder.get_stats.total_matches }}</span>
+                </li>
+                <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                    <span>Total Matches Played</span>
+                    <span class="fw-bold fs-5">{{ ladder.get_stats.total_matches_played|floatformat:"0" }}</span>
+                </li>
+                <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                    <span>Percentage Matches Played</span>
+                    <span class="badge bg-light text-secondary border rounded-pill fs-6">
+                        {{ ladder.get_stats.perc_matches_played|floatformat:"2" }}%
+                    </span>
+                </li>
+            </ul>
+        </div>
+        <div class="col-md-6">
+            <h2>Latest Results</h2>
+            <ul class="list-group list-group-flush">
+                {% for key, value in ladder.get_latest_results %}
+                <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="fw-bold text-wrap">
+                            {% get_player_name value.player user %} 
+                            <span class="text-muted fw-normal small mx-1">vs</span> 
+                            {% get_player_name value.opponent user %}
+                        </div>
+                        <div class="small text-muted">{{ value.date_added }}</div>
+                    </div>
+                    <div class="badge bg-light text-secondary border rounded-pill fs-6 ms-3">
+                        {{ value.player_result }} – {{ value.opponent_result }}
+                    </div>
+                </li>
+                {% empty %}
+                <li class="list-group-item px-0 text-muted">No results yet.</li>
                 {% endfor %}
-            </table>
+            </ul>
         </div>
     </div>
 

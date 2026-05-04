@@ -3,16 +3,16 @@
 {% block container %}
 
     <h1>{% get_player_name player user %}</h1>
-    <div class="row">
-        <div class="span2"><h4>Played: {{ player_stats.played }}</h4></div>
-        <div class="span4"><h4>Completion Rate: {{ player_stats.completion_rate }}</h4></div>
-        <div class="span3"><h4>Win Rate: {{ player_stats.win_rate }}</h4></div>
-        <div class="span3"><h4>Avg. Points: {{ player_stats.average }}</h4></div>
+    <div class="row mb-4">
+        <div class="col-md-3"><h5>Played: {{ player_stats.played }}</h5></div>
+        <div class="col-md-4"><h5>Completion Rate: {{ player_stats.completion_rate }}</h5></div>
+        <div class="col-md-3"><h5>Win Rate: {{ player_stats.win_rate }}</h5></div>
+        <div class="col-md-2"><h5>Avg. Points: {{ player_stats.average }}</h5></div>
     </div>
 
     <h2>Head-to-Head</h2>
 
-    <div class="span12">
+    <div class="col-12 mb-5">
         <table id="head-table" class="table">
             <thead>
             <tr>
@@ -36,48 +36,54 @@
             </tbody>
         </table>
 
-                    <form class="pull-left input-append" id="h2h_form">
-                        <input id="h2h-search" type="text" name="player_name" placeholder="Not in list? Search Rival"
-                               data-provide="typeahead"
-                               autocomplete="off">
-                        <button id="h2h_button" type="submit" disabled="disabled" class="btn">More Details</button>
-                    </form>
+        <form class="d-flex" style="max-width: 400px;" id="h2h_form">
+            <div class="input-group">
+                <input id="h2h-search" type="text" class="form-control" name="player_name" placeholder="Not in list? Search Rival" autocomplete="off" list="h2h-datalist">
+                <datalist id="h2h-datalist"></datalist>
+                <button id="h2h_button" type="submit" disabled="disabled" class="btn btn-primary">More Details</button>
+            </div>
+        </form>
 
         <script type="text/javascript">
             (function () {
                 var timeout;
+                var input = document.getElementById('h2h-search');
+                var datalist = document.getElementById('h2h-datalist');
+                var form = document.getElementById('h2h_form');
+                var btn = document.getElementById('h2h_button');
+                var mapped = {};
 
-                $('#h2h-search').typeahead({
-                    source: function (query, process) {
-                        labels = [];
-                        mapped = {};
-                        if (timeout) {
-                            clearTimeout(timeout);
-                        }
-                        timeout = setTimeout(function () {
-                            return $.get('/player/h2h/{{ player.id }}/', { query: query }, function (data) {
-                                $.each(data.options, function (id, player) {
-                                    mapped[player] = id;
-                                    labels.push(player);
-                                });
-                                process(labels);
+                input.addEventListener('input', function(e) {
+                    var query = this.value;
+                    var id = mapped[query];
+                    if (id) {
+                        form.setAttribute('action', '/head_to_head/{{ player.id }}/vs/' + id + '/');
+                        btn.removeAttribute("disabled");
+                        return;
+                    }
+                    btn.setAttribute("disabled", "disabled");
+                    if (query.length < 2) return;
+                    
+                    if (timeout) clearTimeout(timeout);
+                    timeout = setTimeout(function () {
+                        $.get('/player/h2h/{{ player.id }}/', { query: query }, function (data) {
+                            mapped = {};
+                            datalist.innerHTML = '';
+                            $.each(data.options, function (playerId, playerName) {
+                                mapped[playerName] = playerId;
+                                var option = document.createElement('option');
+                                option.value = playerName;
+                                datalist.appendChild(option);
                             });
-                        }, 300);
-                    },
-                    updater: function (query_label) {
-                        var id = mapped[query_label];
-                        $('#h2h_form').attr('action', '/head_to_head/{{ player.id }}/vs/' + id + '/');
-                        $('#h2h_button').removeAttr("disabled");
-
-                        return query_label;
-                    },
+                        });
+                    }, 300);
                 });
             })();
         </script>
     </div>
 
     <h2>History</h2>
-    <div class="span12">
+    <div class="col-12">
         <table id="seasons-table" class="table">
             <thead>
             <tr>

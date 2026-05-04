@@ -1,12 +1,10 @@
-
-
 /* ==========================================================================
    Author's custom styles
    ========================================================================== */
 
-.navbar-inverse .nav li.dropdown.open > .dropdown-toggle,
-.navbar-inverse .nav li.dropdown.active > .dropdown-toggle,
-.navbar-inverse .nav li.dropdown.open.active > .dropdown-toggle {
+.navbar-inverse .nav li.dropdown.open>.dropdown-toggle,
+.navbar-inverse .nav li.dropdown.active>.dropdown-toggle,
+.navbar-inverse .nav li.dropdown.open.active>.dropdown-toggle {
   color: #ffffff;
 
   background-color: #a2b5d7;
@@ -16,10 +14,6 @@
   background-image: -o-linear-gradient(top, #a2b5d7, #b4c3df);
   background-image: linear-gradient(to bottom, #a2b5d7, #b4c3df);
   background-repeat: repeat-x;
-}
-
-#perc_played {
-    border-bottom: 1px solid #DDD;
 }
 
 
@@ -37,15 +31,15 @@
 }
 
 .navbar-inverse .brand,
-.navbar-inverse .nav > li > a {
+.navbar-inverse .nav>li>a {
   color: #111111;
   text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.25);
 }
 
 .navbar-inverse .brand:hover,
-.navbar-inverse .nav > li > a:hover,
+.navbar-inverse .nav>li>a:hover,
 .navbar-inverse .brand:focus,
-.navbar-inverse .nav > li > a:focus {
+.navbar-inverse .nav>li>a:focus {
   color: #111111;
 }
 
@@ -58,22 +52,22 @@
 }
 
 
-.navbar-inverse .nav > li > a:focus,
-.navbar-inverse .nav > li > a:hover {
+.navbar-inverse .nav>li>a:focus,
+.navbar-inverse .nav>li>a:hover {
   color: #fff;
   background-color: transparent;
 }
 
-.navbar-inverse .nav .active > a,
-.navbar-inverse .nav .active > a:hover,
-.navbar-inverse .nav .active > a:focus {
+.navbar-inverse .nav .active>a,
+.navbar-inverse .nav .active>a:hover,
+.navbar-inverse .nav .active>a:focus {
   color: #000000;
   background-color: #a2b5d7;
 }
 
-.navbar-inverse .nav li.dropdown.open > .dropdown-toggle,
-.navbar-inverse .nav li.dropdown.active > .dropdown-toggle,
-.navbar-inverse .nav li.dropdown.open.active > .dropdown-toggle {
+.navbar-inverse .nav li.dropdown.open>.dropdown-toggle,
+.navbar-inverse .nav li.dropdown.active>.dropdown-toggle,
+.navbar-inverse .nav li.dropdown.open.active>.dropdown-toggle {
   color: #ffffff;
   background-color: #a2b5d7;
 }
@@ -81,49 +75,34 @@
 
 
 .loser_input {
-    width:50px;
+  width: 50px;
 }
 
 @media (max-width: 979px) {
-    .navbar-inverse .nav-collapse .nav > li > a:hover,
-    .navbar-inverse .nav-collapse .nav > li > a:focus,
-    .navbar-inverse .nav-collapse .dropdown-menu a:hover,
-    .navbar-inverse .nav-collapse .dropdown-menu a:focus {
+
+  .navbar-inverse .nav-collapse .nav>li>a:hover,
+  .navbar-inverse .nav-collapse .nav>li>a:focus,
+  .navbar-inverse .nav-collapse .dropdown-menu a:hover,
+  .navbar-inverse .nav-collapse .dropdown-menu a:focus {
     background-color: #ffffff;
-    }
+  }
 
 
-    .navbar-inverse .nav-collapse .nav > li > a,
-    .navbar-inverse .nav-collapse .dropdown-menu a {
+  .navbar-inverse .nav-collapse .nav>li>a,
+  .navbar-inverse .nav-collapse .dropdown-menu a {
     color: #1a1a1a;
-    }
+  }
 }
 
-#add_result_form input[type=checkbox] {
-  width: 14mm;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  height: 14mm;
-  border: 0.1mm solid #ccc;
-  border-radius: 5px;
-  margin-bottom: 7px;
+
+/* Restore Bootstrap 2 link styles */
+a {
+  color: #0088cc;
+  text-decoration: none;
 }
 
-#add_result_form input[type=checkbox]:checked {
-  background-color: white;
-}
-
-#add_result_form input[type=checkbox]:checked:after {
-  margin-left: 4.3mm;
-  margin-top: -0.4mm;
-  width: 3mm;
-  height: 10mm;
-  border: solid black;
-  border-width: 0 2mm 2mm 0;
-  -webkit-transform: rotate(45deg);
-  -moz-transform: rotate(45deg);
-  -ms-transform: rotate(45deg);
-  transform: rotate(45deg);
-  content: "";
-  display: inline-block;
+a:hover,
+a:focus {
+  color: #005580;
+  text-decoration: underline;
 }

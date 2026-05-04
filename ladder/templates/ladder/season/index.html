@@ -15,51 +15,53 @@
     {% for ladder in ladders %}
 
         <a href="{% url 'ladder' ladder.season.start_date|date:"Y" ladder.season.season_round ladder.division %}"> Division:  {{ ladder.division }} </a>
-        <table cellspacing="1" id="ladderTable{{ ladder.id }}" class="tablesorter ladder-table">
-        <thead>
-        <tr>
-        <th></th><th class="{sorter: false}">Name</th>
-        {% for i in ladder.league_set.all %}
-            <th class="score_field {sorter: false}"><strong> {{ forloop.counter }} </strong></th>
-        {% endfor %}
-        <th class="score_field score_total">Total</th>
-        </tr>
-        </thead>
+        <div class="table-responsive">
+            <table cellspacing="1" id="ladderTable{{ ladder.id }}" class="tablesorter ladder-table">
+            <thead>
+            <tr>
+            <th></th><th class="{sorter: false} text-nowrap">Name</th>
+            {% for i in ladder.league_set.all %}
+                <th class="score_field {sorter: false}"><strong> {{ forloop.counter }} </strong></th>
+            {% endfor %}
+            <th class="score_field score_total">Total</th>
+            </tr>
+            </thead>
 
-        <tbody>
-        {% for league in ladder.league_set.all %}
-            {% with player_counter=forloop.counter %}
-                <tr>
-                <td class="player_position"><strong> {{ player_counter }} </strong></td>
-                <td class="player_name"><span>{% get_player_name league.player user %}</span></td>
-                {% for opponent in ladder.league_set.all %}
-                    {% with column_counter=forloop.counter %}
-                        {% if column_counter == player_counter %}
-                        <td class="box_grey score_field"></td>
-                        {% else %}
-<td class="score_field">
-{% for result in results_dict|getkey:league.player.id %}
-{% if league.player.id == result.player.id and opponent.player.id == result.opponent.id %}
-{% if result.inaccurate_flag %}
-<span style="color:red; font-weight: bold"> {{ result.result }} <span class="astrix">*</span></span>
-<script type="text/javascript">
-$('.score_error').show();
-</script>
-{% else %}
-{{ result.result }}
-{% endif %}
-{% endif %}
-{% endfor %}
-</td>
-                        {% endif %}
-                    {% endwith %}
-                {% endfor %}
-            {% endwith %}
-        <td class="score_field score_total"> {{ results_dict|gettotal:league.player.id }} </td>
-        </tr>
-        {% endfor %}
-        </tbody>
-        </table>
+            <tbody>
+            {% for league in ladder.league_set.all %}
+                {% with player_counter=forloop.counter %}
+                    <tr>
+                    <td class="player_position"><strong> {{ player_counter }} </strong></td>
+                    <td class="player_name text-nowrap"><span>{% get_player_name league.player user %}</span></td>
+                    {% for opponent in ladder.league_set.all %}
+                        {% with column_counter=forloop.counter %}
+                            {% if column_counter == player_counter %}
+                            <td class="box_grey score_field"></td>
+                            {% else %}
+    <td class="score_field">
+    {% for result in results_dict|getkey:league.player.id %}
+    {% if league.player.id == result.player.id and opponent.player.id == result.opponent.id %}
+    {% if result.inaccurate_flag %}
+    <span style="color:red; font-weight: bold"> {{ result.result }} <span class="astrix">*</span></span>
+    <script type="text/javascript">
+    $('.score_error').show();
+    </script>
+    {% else %}
+    {{ result.result }}
+    {% endif %}
+    {% endif %}
+    {% endfor %}
+    </td>
+                            {% endif %}
+                        {% endwith %}
+                    {% endfor %}
+                {% endwith %}
+            <td class="score_field score_total"> {{ results_dict|gettotal:league.player.id }} </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+            </table>
+        </div>
     {% endfor %}
     {% endspaceless %}
     <script type="text/javascript">

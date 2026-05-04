@@ -1,223 +1,227 @@
 {% extends 'base.html' %}
 {% block container %}
-    <style>
-        /* --- Result entry form (scoped to this form only) --- */
+<style>
+    /* Slider + ticks: edge‑to‑edge; 0 and 8 exactly at the ends */
+    #add_result_form .range-wrap {
+        max-width: 420px;
+    }
 
-        /* Labels stack above inputs (don’t use the 160px BS2 column here) */
-        #add_result_form .control-label {
-            float: none;
-            width: auto;
-            text-align: left;
-            padding-top: 0;
-        }
+    #add_result_form .range-wrap input[type=range] {
+        width: 100%;
+        margin: 0;
+    }
 
-        #add_result_form .controls {
-            margin-left: 0;
-        }
+    #add_result_form .tickline {
+        display: table;
+        table-layout: fixed;
+        width: 100%;
+        /* match slider track width */
+        margin: 4px 0 0;
+        /* a bit more breathing room */
+        font-size: 12px;
+        color: #6c757d;
+        user-select: none;
+    }
 
-        /* Checkbox alignment (keep big tick; remove BS2 padding) */
-        #add_result_form .controls > .checkbox:first-child {
-            padding-top: 0;
-        }
+    #add_result_form .tickline span {
+        display: table-cell;
+        text-align: center;
+        white-space: nowrap;
+    }
 
-        #add_result_form label.checkbox {
-            margin-top: 0;
-        }
+    /* Number + preview: sit on one line with a little gap */
+    #add_result_form #id_result {
+        width: 70px;
+        margin-top: 6px;
+    }
 
-        /* Slider + ticks: edge‑to‑edge; 0 and 8 exactly at the ends */
-        #add_result_form .range-wrap {
-            max-width: 420px;
-        }
+    #add_result_form .score-line {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 8px;
+        /* space above the row */
+    }
 
-        #add_result_form .range-wrap input[type=range] {
-            width: 100%;
-            margin: 0;
-        }
-
-        /* no side gutter */
-        #add_result_form .tickline {
-            display: table;
-            table-layout: fixed;
-            width: 100%; /* match slider track width */
-            margin: 4px 0 0; /* a bit more breathing room */
-            font-size: 12px;
-            color: #6c757d;
-            user-select: none;
-        }
-
-        #add_result_form .tickline span {
-            display: table-cell;
-            text-align: center;
-            white-space: nowrap;
-        }
-
-        /* Number + preview: sit on one line with a little gap */
-        #add_result_form #id_result {
-            width: 70px;
-            margin-top: 6px;
-        }
-
-        #add_result_form .score-line {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-top: 8px; /* space above the row */
-        }
-
-        #add_result_form #scorePreview {
-            margin: 0;
-        }
-
-        /* no extra margins */
-
-        /* Button bar — no grey background */
-        #add_result_form .form-actions {
-            background: transparent;
-            border: 0;
-            padding: 0;
-            margin-top: 12px;
-        }
-    </style>
+    #add_result_form #scorePreview {
+        margin: 0;
+    }
+</style>
 
 
-    <h1>Enter Result</h1>
-    <h3>{{ ladder }}</h3>
-    <h4>{{ user.first_name }} {{ user.last_name }}</h4>
+<h1>Enter Result</h1>
+<h3 class="mb-4">{{ ladder }}</h3>
 
-    {% if is_closed %}
-        <h2>This ladder is now closed.</h2>
-        <p>If you have a result to fix, email <a href="mailto:results@highgate-ladder.co.uk">results@highgate-ladder.co.uk</a>
-        </p>
-    {% else %}
+{% if is_closed %}
+<h2>This ladder is now closed.</h2>
+<p>If you have a result to fix, email <a href="mailto:results@highgate-ladder.co.uk">results@highgate-ladder.co.uk</a>
+</p>
+{% else %}
 
-        <section class="mb-4">
-            <h5>Unplayed Matches</h5>
+<section class="mb-5">
+    <div class="card shadow-sm">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">Unplayed Matches</h5>
+        </div>
+        <div class="card-body p-4">
 
             {# ---- Unplayed Matches ---- #}
             {% if unplayed and unplayed|length > 0 %}
-                <form id="add_result_form" class="form-horizontal" method="post" action="{% url 'result_entry_add' %}">
-                    {% csrf_token %}
-                    {{ form.player }}
+            <form id="add_result_form" method="post" action="{% url 'result_entry_add' %}">
+                {% csrf_token %}
+                {{ form.player }}
 
-                    <div class="control-group">
-                        <label class="control-label" for="{{ form.opponent.id_for_label }}">Opponent:</label>
-                        <div class="controls">{{ form.opponent }}</div>
+                <div class="mb-3">
+                    <label class="form-label" for="{{ form.opponent.id_for_label }}">Opponent:</label>
+                    {{ form.opponent }}
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label fw-bold">Match Result:</label>
+                    <div class="d-none">{{ form.winner }}</div>
+                    <div class="btn-group w-100" role="group">
+                        <input type="radio" class="btn-check" name="btnradio_result" id="btnradio_won"
+                            autocomplete="off">
+                        <label class="btn btn-outline-success" for="btnradio_won">I Won</label>
+
+                        <input type="radio" class="btn-check" name="btnradio_result" id="btnradio_lost"
+                            autocomplete="off">
+                        <label class="btn btn-outline-danger" for="btnradio_lost">I Lost</label>
                     </div>
+                </div>
 
-                    <div class="control-group">
-                        <label class="control-label" for="{{ form.winner.id_for_label }}">Did you win?</label>
-                        <div class="controls">
-                            <label class="checkbox">
-                                {{ form.winner }} <span class="hide-text">Yes</span>
-                            </label>
+                <div class="mb-3">
+                    <label class="form-label">Losing Result:</label>
+                    <div class="range-wrap">
+                        <input type="range" class="form-range" id="lossRange" min="0" max="8" value="4">
+                        <div class="tickline">
+                            <span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span>
+                        </div>
+                        <div class="score-line">
+                            <span style="display:inline-block;width:85px;">{{ form.result }}</span>
+                            <span id="scorePreview" class="text-muted"></span>
                         </div>
                     </div>
+                </div>
 
-                    <div class="control-group">
-                        <label class="control-label">Losing Result:</label>
-                        <div class="controls">
-                            <div class="range-wrap">
-                                <input type="range" id="lossRange" min="0" max="8" value="4">
-                                <div class="tickline">
-                                    <span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span>
-                                </div>
-                                <div class="score-line"
-                                     style="display:flex;align-items:center;gap:10px;margin-top:8px;">
-                                    <span style="display:inline-block;width:85px;margin-bottom:8px;">{{ form.result }}</span>
-                                    <span id="scorePreview" class="muted"></span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="form-actions">
-                        <button class="btn btn-primary">Add Result</button>
-                    </div>
-                </form>
+                <div class="mt-4">
+                    <button class="btn btn-primary">Add Result</button>
+                </div>
+            </form>
 
             {% else %}
-                <div class="muted">Nice! You’ve played all your matches.</div>
+            <div class="text-muted">Nice! You’ve played all your matches.</div>
             {% endif %}
+        </div>
+    </div>
+</section>
 
-        </section>
-
-        <hr>
-
-        <section class="mt-4">
-            <h5>Played Matches</h5>
+<section class="mt-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">Played Matches</h5>
+        </div>
+        <div class="card-body">
             {% if entered %}
-                <div class="table-responsive">
-                    <table class="table align-middle">
-                        <thead>
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead>
                         <tr>
                             <th>Match</th>
                             <th>Result</th>
-                            <th>Date Entered</th>
-                            <th>Entered By</th>
+                            <th>Date</th>
+                            <th class="d-none d-sm-table-cell">Entered By</th>
                             <th></th>
                         </tr>
-                        </thead>
-                        <tbody>
+                    </thead>
+                    <tbody>
                         {% for r in entered %}
-                            <tr>
-                                <td>{{ r.winner.first_name }} {{ r.winner.last_name }}
-                                    vs {{ r.loser.first_name }} {{ r.loser.last_name }}</td>
-                                <td>9–{{ r.losing_score }}</td>
-                                <td>{{ r.date_added|date:"M j" }}</td>
-                                <td>{% if r.entered_by %}{{ r.entered_by.first_name }}
-                                {% else %}<em>—</em>{% endif %}</td>
-                                <td class="text-end">
-                                    <a class="btn btn-outline-secondary btn-sm"
-                                       href="{% url 'result_entry_edit' r.pair_key %}">Edit</a>
-                                </td>
-                            </tr>
+                        <tr>
+                            <td>
+                                <div class="fw-bold">{{ r.winner.first_name }} {{ r.winner.last_name }}</div>
+                                <div class="text-muted small">vs {{ r.loser.first_name }} {{ r.loser.last_name }}</div>
+                            </td>
+                            <td class="align-middle">9–{{ r.losing_score }}</td>
+                            <td class="align-middle text-nowrap">{{ r.date_added|date:"M j" }}</td>
+                            <td class="align-middle d-none d-sm-table-cell">
+                                {% if r.entered_by %}{{ r.entered_by.first_name }}{% else %}<em>—</em>{% endif %}
+                            </td>
+                            <td class="align-middle text-end">
+                                <a class="btn btn-outline-secondary btn-sm"
+                                    href="{% url 'result_entry_edit' r.pair_key %}">Edit</a>
+                            </td>
+                        </tr>
                         {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+                    </tbody>
+                </table>
+            </div>
             {% else %}
-                <p class="text-muted">No results yet.</p>
+            <p class="text-muted mb-0">No results yet.</p>
             {% endif %}
-        </section>
+        </div>
+    </div>
+</section>
 
-        <script>
-            (function () {
-                const range = document.getElementById('lossRange');
-                const number = document.getElementById('id_result');
-                const winner = document.getElementById('id_winner');
-                const preview = document.getElementById('scorePreview');
-                if (!range || !number || !preview) return;
+<script>
+    (function () {
+        const range = document.getElementById('lossRange');
+        const number = document.getElementById('id_result');
+        const winner = document.getElementById('id_winner');
+        const preview = document.getElementById('scorePreview');
+        const btnRadioWon = document.getElementById('btnradio_won');
+        const btnRadioLost = document.getElementById('btnradio_lost');
+        const opponent = document.getElementById('id_opponent');
 
-                function syncFromRange() {
-                    number.value = range.value;
-                    update();
-                }
+        if (!range || !number || !preview) return;
 
-                function syncFromNumber() {
-                    let v = parseInt(number.value || 0, 10);
-                    if (isNaN(v) || v < 0) v = 0;
-                    if (v > 8) v = 8;
-                    number.value = v;
-                    range.value = v;
-                    update();
-                }
+        if (opponent) {
+            opponent.classList.add('form-select');
+        }
 
-                function update() {
-                    const lose = parseInt(range.value, 10);
-                    const youWin = winner && winner.checked;
-                    preview.textContent = youWin
-                        ? `Your score: 9 | Opponent: ${lose}`
-                        : `Your score: ${lose} | Opponent: 9`;
-                }
+        if (winner && btnRadioWon && btnRadioLost) {
+            if (winner.checked) btnRadioWon.checked = true;
+            else btnRadioLost.checked = true;
 
-                range.addEventListener('input', syncFromRange);
-                number.addEventListener('input', syncFromNumber);
-                if (winner) winner.addEventListener('change', update);
-                range.value = number.value || 0;
+            btnRadioWon.addEventListener('change', function () {
+                winner.checked = true;
                 update();
-            })();
-        </script>
+            });
+            btnRadioLost.addEventListener('change', function () {
+                winner.checked = false;
+                update();
+            });
+        }
+
+        function syncFromRange() {
+            number.value = range.value;
+            update();
+        }
+
+        function syncFromNumber() {
+            let v = parseInt(number.value || 0, 10);
+            if (isNaN(v) || v < 0) v = 0;
+            if (v > 8) v = 8;
+            number.value = v;
+            range.value = v;
+            update();
+        }
+
+        function update() {
+            const lose = parseInt(range.value, 10);
+            const youWin = winner && winner.checked;
+            preview.textContent = youWin
+                ? `Your score: 9 | Opponent: ${lose}`
+                : `Your score: ${lose} | Opponent: 9`;
+        }
+
+        range.addEventListener('input', syncFromRange);
+        number.addEventListener('input', syncFromNumber);
+        if (winner) winner.addEventListener('change', update);
+        range.value = number.value || 0;
+        update();
+    })();
+</script>
 
 
-    {% endif %}
+{% endif %}
 {% endblock %}
