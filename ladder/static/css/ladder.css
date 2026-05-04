@@ -153,43 +153,27 @@ a {
     }
 
     .ladder-table td.player_name {
-        max-width: 90px;
-        min-width: 60px;
+        min-width: 90px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
+    .ladder-table th.score_field,
     .ladder-table td.score_field {
-        min-width: 18px;
+        min-width: 26px !important;
+        width: 26px !important;
     }
 }
 
-/*
- * narrow mobile
- * ____________________________________
- */
-@media (max-width: 350px) {
-    .player_position {
-        display: none;
-    }
-
-    tr > th:first-child {
-        display: none;
-    }
-
-    th.score_total {
-        text-indent: -9999px;
-    }
-
+/* narrow mobile adjustments */
+@media (max-width: 380px) {
     .ladder-table td.player_name {
-        max-width: 65px;
-        min-width: 50px;
+        min-width: 80px;
     }
 }
 
 @media (max-width: 420px) {
-    .score_average {
-        display: none;
-    }
-
     .score_field .astrix {
         display: none;
     }
