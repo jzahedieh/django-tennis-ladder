@@ -13,8 +13,8 @@
 
     {% for ladder in ladders %}
 
-        <a href="{% url 'ladder' ladder.season.start_date|date:"Y" ladder.season.season_round ladder.division %}"> Division:  {{ ladder.division }} </a>
-        <div class="table-responsive">
+        <a class="d-block mb-0 fw-semibold" href="{% url 'ladder' ladder.season.start_date|date:"Y" ladder.season.season_round ladder.division %}">Division: {{ ladder.division }}</a>
+        <div class="table-responsive mt-0">
             <table cellspacing="1" id="ladderTable{{ ladder.id }}" class="table table-bordered table-sm ladder-table">
             <thead>
             <tr>
@@ -77,6 +77,12 @@
                     ordering:  true,
                     autoWidth: false,
                     order:     [],
+                    layout: {
+                        topStart: null,
+                        topEnd: null,
+                        bottomStart: null,
+                        bottomEnd: null
+                    },
                     columnDefs: [
                         /* Disable ordering on Name and score cells; pos # and Total remain sortable */
                         { orderable: false, targets: [1].concat(scoreCols) },

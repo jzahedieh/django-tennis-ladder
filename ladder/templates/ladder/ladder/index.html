@@ -18,6 +18,12 @@ document.addEventListener('DOMContentLoaded', function () {
         searching: false,
         ordering:  true,
         order:     [],
+        layout: {
+            topStart: null,
+            topEnd: null,
+            bottomStart: null,
+            bottomEnd: null
+        },
         columnDefs: [
             /* Disable ordering on Name and all score cells only */
             { orderable: false, targets: [1].concat(scoreCols) },
