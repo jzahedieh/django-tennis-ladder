@@ -47,6 +47,8 @@ server {
     location /static/ {
         autoindex on;
         alias /var/www/static/;
+        expires max;
+        add_header Cache-Control "public";
     }
 
     location /adminer/ {

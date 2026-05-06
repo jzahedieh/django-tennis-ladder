@@ -3,232 +3,232 @@
 
 {% block container %}
 
-    <link rel="stylesheet" type="text/css" href="{% static "css/c3.css" %}"/>
-    <script type="text/javascript" src="{% static "js/vendor/d3.min.js" %}"></script>
-    <script type="text/javascript" src="{% static "js/vendor/c3.min.js" %}"></script>
+<link rel="stylesheet" type="text/css" href="{% static "css/c3.css" %}" />
+<script type="text/javascript" src="{% static "js/vendor/d3.min.js" %}"></script>
+<script type="text/javascript" src="{% static "js/vendor/c3.min.js" %}"></script>
 
-    <!-- Main hero unit for a primary marketing message or call to action -->
-    <div class="card bg-light p-4 mb-4">
-        <h2>Progress Graph</h2>
+<!-- Main hero unit for a primary marketing message or call to action -->
+<div class="card bg-light p-4 mb-4">
+    <h2>Progress Graph</h2>
 
-        <div id="chart"></div>
-        <p class="mb-0 mt-3">Results updated on <span id="progress_date" class="fw-bold"></span></p>
-    </div>
-    <script type="text/javascript">
-        $(document).ready(function () {
-            $.get('/season/ajax/progress/', {id: {{ current_season.id }}}, function (data) {
+    <div id="chart"></div>
+    <p class="mb-0 mt-3">Results updated on <span id="progress_date" class="fw-bold"></span></p>
+</div>
+<script type="text/javascript">
+    $(document).ready(function () {
+        $.get('/season/ajax/progress/', { id: {{ current_season.id }}}, function (data) {
 
-                var season_days = ['x1'];
-                var played_days = ['x2'];
-                var played_cumulative = ['played'];
-                var season_total_matches = ['total'];
+            var season_days = ['x1'];
+            var played_days = ['x2'];
+            var played_cumulative = ['played'];
+            var season_total_matches = ['total'];
 
-                $('#progress_date').text(data.latest_result);
+            $('#progress_date').text(data.latest_result);
 
-                $.each(data.season_days, function (_, v) {
-                    season_days.push(v);
-                });
-                $.each(data.played_days, function (_, v) {
-                    played_days.push(v);
-                });
-                $.each(data.played_cumulative, function (_, v) {
-                    played_cumulative.push(v);
-                });
-                $.each(data.season_total_matches, function (_, v) {
-                    season_total_matches.push(v);
-                });
+            $.each(data.season_days, function (_, v) {
+                season_days.push(v);
+            });
+            $.each(data.played_days, function (_, v) {
+                played_days.push(v);
+            });
+            $.each(data.played_cumulative, function (_, v) {
+                played_cumulative.push(v);
+            });
+            $.each(data.season_total_matches, function (_, v) {
+                season_total_matches.push(v);
+            });
 
-                var maxDay = season_days.length > 1 ? season_days[season_days.length - 1] : 0;
+            var maxDay = season_days.length > 1 ? season_days[season_days.length - 1] : 0;
 
-                function parseDateOnly(d) {
-                    var parts = String(d).split(/[-T]/);
-                    if (parts.length >= 3) {
-                        return new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+            function parseDateOnly(d) {
+                var parts = String(d).split(/[-T]/);
+                if (parts.length >= 3) {
+                    return new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+                }
+                var dt = new Date(d);
+                return new Date(dt.getFullYear(), dt.getMonth(), dt.getDate());
+            }
+
+            var todayLine = [];
+            if (data.season_start) {
+                var start = parseDateOnly(data.season_start);
+                var now = new Date();
+                var todayIdx = Math.floor((new Date(now.getFullYear(), now.getMonth(), now.getDate()) - start) / 86400000);
+                if (!isNaN(todayIdx)) {
+                    var clamped = Math.max(0, Math.min(todayIdx, maxDay));
+                    todayLine = [{ value: clamped, text: 'Today' }];
+                }
+            }
+
+            // Tooltip date formatters
+            var weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+            function formatWeekdayDDMM(date) {
+                var d = date.getDate(), m = date.getMonth() + 1;
+                var dayName = weekdays[date.getDay()];
+                return dayName + ' ' +
+                    (d < 10 ? '0' + d : d) + '/' +
+                    (m < 10 ? '0' + m : m);
+            }
+
+            function getDateFromX(x) {
+                if (!data.season_start) return null;
+                var start = parseDateOnly(data.season_start);
+                var dt = new Date(start);
+                dt.setDate(start.getDate() + x);
+                return dt;
+            }
+
+            var chart = c3.generate({
+                bindto: '#chart',
+                data: {
+                    xs: { total: 'x1', played: 'x2' },
+                    columns: [season_days, played_days, played_cumulative, season_total_matches],
+                    types: { played: 'line', total: 'line' },
+                    colors: { played: '#1f77b4', total: '#bdbdbd' },
+                    names: { played: 'played', total: 'total' }
+                },
+                point: { show: false },
+                axis: {
+                    x: {
+                        label: 'Days',
+                        min: 0,
+                        max: maxDay,
+                        padding: { left: 0, right: 0 },
+                        tick: { culling: true }
+                    },
+                    y: {
+                        label: 'Matches',
+                        min: 0,
+                        padding: { bottom: 0 },
+                        tick: { format: d3.format('d') }
                     }
-                    var dt = new Date(d);
-                    return new Date(dt.getFullYear(), dt.getMonth(), dt.getDate());
-                }
+                },
+                grid: {
+                    y: { lines: [{ value: 0 }] },
+                    x: { lines: todayLine }
+                },
+                tooltip: {
+                    grouped: true,
+                    contents: function (points, titleFmt, valFmt, color) {
+                        var p = points[0];
+                        var date = getDateFromX(p.x);
+                        var heading = date ? formatWeekdayDDMM(date) : ('Day ' + p.x);
 
-                var todayLine = [];
-                if (data.season_start) {
-                    var start = parseDateOnly(data.season_start);
-                    var now = new Date();
-                    var todayIdx = Math.floor((new Date(now.getFullYear(), now.getMonth(), now.getDate()) - start) / 86400000);
-                    if (!isNaN(todayIdx)) {
-                        var clamped = Math.max(0, Math.min(todayIdx, maxDay));
-                        todayLine = [{value: clamped, text: 'Today'}];
+                        // number of matches completed that day
+                        var idx = data.played_days.indexOf(p.x);
+                        var matchesToday = (idx !== -1 && data.played[idx] != null) ? data.played[idx] : 0;
+
+                        // Build rows: Matches today, then the "played" series only (hide total)
+                        var rows = '';
+
+                        points
+                            .filter(function (pt) {
+                                return pt.name !== 'total';
+                            })
+                            .forEach(function (pt) {
+                                rows += '<tr><td><span style="background:' + color(pt) + '"></span>' +
+                                    pt.name + '</td><td class="value">' + valFmt(pt.value) + '</td></tr>';
+                            });
+
+                        rows += '<tr><td>today</td><td class="value">' + valFmt(matchesToday) + '</td></tr>';
+
+                        return '<table class="c3-tooltip">' +
+                            '<tr><th colspan="2">' + heading + '</th></tr>' +
+                            rows +
+                            '</table>';
                     }
-                }
-
-                // Tooltip date formatters
-                var weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
-                function formatWeekdayDDMM(date) {
-                    var d = date.getDate(), m = date.getMonth() + 1;
-                    var dayName = weekdays[date.getDay()];
-                    return dayName + ' ' +
-                        (d < 10 ? '0' + d : d) + '/' +
-                        (m < 10 ? '0' + m : m);
-                }
-
-                function getDateFromX(x) {
-                    if (!data.season_start) return null;
-                    var start = parseDateOnly(data.season_start);
-                    var dt = new Date(start);
-                    dt.setDate(start.getDate() + x);
-                    return dt;
-                }
-
-                var chart = c3.generate({
-                    bindto: '#chart',
-                    data: {
-                        xs: {total: 'x1', played: 'x2'},
-                        columns: [season_days, played_days, played_cumulative, season_total_matches],
-                        types: {played: 'line', total: 'line'},
-                        colors: {played: '#1f77b4', total: '#bdbdbd'},
-                        names: {played: 'played', total: 'total'}
-                    },
-                    point: {show: false},
-                    axis: {
-                        x: {
-                            label: 'Days',
-                            min: 0,
-                            max: maxDay,
-                            padding: {left: 0, right: 0},
-                            tick: {culling: true}
-                        },
-                        y: {
-                            label: 'Matches',
-                            min: 0,
-                            padding: {bottom: 0},
-                            tick: {format: d3.format('d')}
-                        }
-                    },
-                    grid: {
-                        y: {lines: [{value: 0}]},
-                        x: {lines: todayLine}
-                    },
-                    tooltip: {
-                        grouped: true,
-                        contents: function (points, titleFmt, valFmt, color) {
-                            var p = points[0];
-                            var date = getDateFromX(p.x);
-                            var heading = date ? formatWeekdayDDMM(date) : ('Day ' + p.x);
-
-                            // number of matches completed that day
-                            var idx = data.played_days.indexOf(p.x);
-                            var matchesToday = (idx !== -1 && data.played[idx] != null) ? data.played[idx] : 0;
-
-                            // Build rows: Matches today, then the "played" series only (hide total)
-                            var rows = '';
-
-                            points
-                                .filter(function (pt) {
-                                    return pt.name !== 'total';
-                                })
-                                .forEach(function (pt) {
-                                    rows += '<tr><td><span style="background:' + color(pt) + '"></span>' +
-                                        pt.name + '</td><td class="value">' + valFmt(pt.value) + '</td></tr>';
-                                });
-
-                            rows += '<tr><td>today</td><td class="value">' + valFmt(matchesToday) + '</td></tr>';
-
-                            return '<table class="c3-tooltip">' +
-                                '<tr><th colspan="2">' + heading + '</th></tr>' +
-                                rows +
-                                '</table>';
-                        }
-                    },
-                    transition: {duration: 200}
-                });
+                },
+                transition: { duration: 200 }
             });
         });
-    </script>
+        });
+</script>
 
 
 
 
 
-    <!-- Example row of columns -->
-    <div class="row">
-        <div class="col-md-6 mb-5">
-            <h2 class="mb-4">{{ current_season }} Stats</h2>
-            <ul class="list-group list-group-flush mb-4" style="max-width: 550px;">
-                <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
-                    <span>Total Divisions</span>
-                    <span id="total_divs" class="fw-bold fs-5"></span>
-                </li>
-                <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
-                    <span>Total Players</span>
-                    <span id="total_players" class="fw-bold fs-5"></span>
-                </li>
-                <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
-                    <span>Total Matches in Ladder</span>
-                    <span id="total_matches" class="fw-bold fs-5"></span>
-                </li>
-                <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
-                    <span>Total Matches Played</span>
-                    <span id="total_played" class="fw-bold fs-5"></span>
-                </li>
-                <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
-                    <span>Percentage Matches Played</span>
-                    <span id="perc_played" class="fw-bold fs-5"></span>
-                </li>
-            </ul>
+<!-- Example row of columns -->
+<div class="row">
+    <div class="col-md-6 mb-5">
+        <h2 class="mb-4">{{ current_season }} Stats</h2>
+        <ul class="list-group list-group-flush mb-4" style="max-width: 550px;">
+            <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                <span>Total Divisions</span>
+                <span id="total_divs" class="fw-bold fs-5"></span>
+            </li>
+            <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                <span>Total Players</span>
+                <span id="total_players" class="fw-bold fs-5"></span>
+            </li>
+            <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                <span>Total Matches in Ladder</span>
+                <span id="total_matches" class="fw-bold fs-5"></span>
+            </li>
+            <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                <span>Total Matches Played</span>
+                <span id="total_played" class="fw-bold fs-5"></span>
+            </li>
+            <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                <span>Percentage Matches Played</span>
+                <span id="perc_played" class="fw-bold fs-5"></span>
+            </li>
+        </ul>
 
-            <h2 class="mt-5 mb-4">System Stats</h2>
-            <ul class="list-group list-group-flush" style="max-width: 550px;">
-                <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
-                    <span>Total Years</span>
-                    <span>{{ at_years }} <i class="text-muted small">{{ at_years_str }}</i></span>
-                </li>
-                <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
-                    <span>Total Ladders</span>
-                    <span class="fw-bold">{{ at_ladders }}</span>
-                </li>
-                <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
-                    <span>Total Divisions</span>
-                    <span class="fw-bold">{{ at_divisions }}</span>
-                </li>
-                <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
-                    <span>Complete Matches</span>
-                    <span class="fw-bold">{{ at_results }}</span>
-                </li>
-                <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
-                    <span>Unique Players</span>
-                    <span class="fw-bold fs-5 text-dark">{{ at_players }}</span>
-                </li>
-            </ul>
-        </div>
-        <div class="col-md-6 mb-5">
-            <h2 class="mb-4">Division Stats</h2>
-            <div id="leader_list" class="list-group list-group-flush" style="max-width: 550px;">
-                <!-- Populated via AJAX -->
-            </div>
+        <h2 class="mt-5 mb-4">System Stats</h2>
+        <ul class="list-group list-group-flush" style="max-width: 550px;">
+            <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                <span>Total Years</span>
+                <span>{{ at_years }} <i class="text-muted small">{{ at_years_str }}</i></span>
+            </li>
+            <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                <span>Total Ladders</span>
+                <span class="fw-bold">{{ at_ladders }}</span>
+            </li>
+            <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                <span>Total Divisions</span>
+                <span class="fw-bold">{{ at_divisions }}</span>
+            </li>
+            <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                <span>Complete Matches</span>
+                <span class="fw-bold">{{ at_results }}</span>
+            </li>
+            <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                <span>Unique Players</span>
+                <span class="fw-bold fs-5 text-dark">{{ at_players }}</span>
+            </li>
+        </ul>
+    </div>
+    <div class="col-md-6 mb-5">
+        <h2 class="mb-4">Division Stats</h2>
+        <div id="leader_list" class="list-group list-group-flush" style="max-width: 550px;">
+            <!-- Populated via AJAX -->
         </div>
     </div>
+</div>
 
-    <script type="text/javascript">
-        $(document).ready(function () {
-            $.get('/season/ajax/stats/', {id: {{ current_season.id }}, leader: 1}, function (data) {
-                $('#total_divs').text(data.divisions);
-                $('#total_players').text(data.player_count);
-                $('#total_matches').text(data.total_games_count);
-                $('#total_played').text(data.results_count);
-                $('#perc_played').text(data.percentage_played + '%');
+<script type="text/javascript">
+    $(document).ready(function () {
+        $.get('/season/ajax/stats/', { id: {{ current_season.id }}, leader: 1}, function (data) {
+            $('#total_divs').text(data.divisions);
+            $('#total_players').text(data.player_count);
+            $('#total_matches').text(data.total_games_count);
+            $('#total_played').text(data.results_count);
+            $('#perc_played').text(data.percentage_played + '%');
 
-                $.each(data.current_leaders, function (i, item) {
-                    $("#leader_list").append(
-                        "<div class='list-group-item px-0 d-flex justify-content-between align-items-center'>" +
-                            "<div>" +
-                                "<div class='fw-bold text-nowrap'><a href='" + item.url + "'>Division " + item.division + "</a></div>" +
-                                "<div class='small text-muted'>Leader: <a href='/player/" + item.player_id + "'>" + item.player + "</a> (" + item.total + " pts)</div>" +
-                            "</div>" +
-                            "<div class='badge bg-light text-secondary border rounded-pill fs-6 ms-3'>" + item.played + "%</div>" +
-                        "</div>"
-                    );
-                })
-            });
+            $.each(data.current_leaders, function (i, item) {
+                $("#leader_list").append(
+                    "<div class='list-group-item px-0 d-flex justify-content-between align-items-center'>" +
+                    "<div>" +
+                    "<div class='fw-bold text-nowrap'><a href='" + item.url + "'>Division " + item.division + "</a></div>" +
+                    "<div class='small text-muted'>Leader: <a href='/player/" + item.player_id + "'>" + item.player + "</a> (" + item.total + " pts)</div>" +
+                    "</div>" +
+                    "<div class='badge bg-light text-secondary border rounded-pill fs-6 ms-3'>" + item.played + "%</div>" +
+                    "</div>"
+                );
+            })
         });
-    </script>
+        });
+</script>
 {% endblock %}

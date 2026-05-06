@@ -131,12 +131,20 @@ STATICFILES_FINDERS = (
 
 # ManifestStaticFilesStorage hashes assets for versioning
 # which ensures all users see the same content
-STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.ManifestStaticFilesStorage'
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
 
 # Make this unique, and don't share it with anybody.
 SECRET_KEY = os.environ["SECRET_KEY"]
 
 MIDDLEWARE = (
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -216,6 +224,7 @@ SUBSCRIPTION_EMAIL = os.environ.get('SUBSCRIPTION_EMAIL')
 EMAIL_USE_TLS = bool(strtobool(os.environ['EMAIL_USE_TLS']))
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 UMAMI_WEBSITE_ID = os.environ.get('UMAMI_WEBSITE_ID', '')
+WHITENOISE_MANIFEST_STRICT = False
 
 INTERNAL_IPS = (
     '127.0.0.1',

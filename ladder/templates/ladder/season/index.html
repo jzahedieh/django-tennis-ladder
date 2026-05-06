@@ -3,105 +3,108 @@
 {% load static %}
 
 {% block container %}
-    <link rel="stylesheet" type="text/css" href="{% static "css/dataTables.dataTables.min.css" %}"/>
-    <link rel="stylesheet" type="text/css" href="{% static "css/ladder.css" %}"/>
-    <script type="text/javascript" src="{% static "js/dataTables.min.js" %}"></script>
+<link rel="stylesheet" type="text/css" href="{% static "css/dataTables.dataTables.min.css" %}" />
+<link rel="stylesheet" type="text/css" href="{% static "css/ladder.css" %}" />
+<script type="text/javascript" src="{% static "js/dataTables.min.js" %}"></script>
 
-    {% spaceless %}
-    <h1>{{ season }}</h1>
-    <h3>{{ season.start_date }} to {{ season.end_date }}</h3>
+{% spaceless %}
+<h1>{{ season }}</h1>
+<h3>{{ season.start_date }} to {{ season.end_date }}</h3>
 
-    {% for ladder in ladders %}
+{% for ladder in ladders %}
 
-        <a class="d-block mb-0 fw-semibold" href="{% url 'ladder' ladder.season.start_date|date:"Y" ladder.season.season_round ladder.division %}">Division: {{ ladder.division }}</a>
-        <div class="table-responsive mt-0">
-            <table cellspacing="1" id="ladderTable{{ ladder.id }}" class="table table-bordered table-sm ladder-table">
-            <thead>
+<a class="d-block mb-0 fw-semibold" href="{% url 'ladder' ladder.season.start_date|date:"Y" ladder.season.season_round
+    ladder.division %}">Division: {{ ladder.division }}</a>
+<div class="table-responsive mt-0">
+    <table cellspacing="1" id="ladderTable{{ ladder.id }}" class="table table-bordered table-sm ladder-table">
+        <thead>
             <tr>
-            <th></th><th class="text-nowrap">Name</th>
-            {% for i in ladder.league_set.all %}
+                <th></th>
+                <th class="text-nowrap">Name</th>
+                {% for i in ladder.league_set.all %}
                 <th class="score_field"><strong> {{ forloop.counter }} </strong></th>
-            {% endfor %}
-            <th class="score_field score_total">Total</th>
+                {% endfor %}
+                <th class="score_field score_total">Total</th>
             </tr>
-            </thead>
+        </thead>
 
-            <tbody>
+        <tbody>
             {% for league in ladder.league_set.all %}
-                {% with player_counter=forloop.counter %}
-                    <tr>
-                    <td class="player_position"><strong> {{ player_counter }} </strong></td>
-                    <td class="player_name"><span>{% get_player_name league.player user %}</span></td>
-                    {% for opponent in ladder.league_set.all %}
-                        {% with column_counter=forloop.counter %}
-                            {% if column_counter == player_counter %}
-                            <td class="box_grey score_field"></td>
-                            {% else %}
-    <td class="score_field selectable" data-player="{{ league.player.id }}" data-opp="{{ opponent.player.id }}">
-    {% for result in results_dict|getkey:league.player.id %}
-    {% if league.player.id == result.player.id and opponent.player.id == result.opponent.id %}
-    {% if result.inaccurate_flag %}
-    <span style="color:red; font-weight: bold"> {{ result.result }} <span class="astrix">*</span></span>
-    <script type="text/javascript">
-    $('.score_error').show();
-    </script>
-    {% else %}
-    {{ result.result }}
-    {% endif %}
-    {% endif %}
-    {% endfor %}
-    </td>
-                            {% endif %}
-                        {% endwith %}
+            {% with player_counter=forloop.counter %}
+            <tr>
+                <td class="player_position"><strong> {{ player_counter }} </strong></td>
+                <td class="player_name"><span>{% get_player_name league.player user %}</span></td>
+                {% for opponent in ladder.league_set.all %}
+                {% with column_counter=forloop.counter %}
+                {% if column_counter == player_counter %}
+                <td class="box_grey score_field"></td>
+                {% else %}
+                <td class="score_field selectable" data-player="{{ league.player.id }}"
+                    data-opp="{{ opponent.player.id }}">
+                    {% for result in results_dict|getkey:league.player.id %}
+                    {% if league.player.id == result.player.id and opponent.player.id == result.opponent.id %}
+                    {% if result.inaccurate_flag %}
+                    <span style="color:red; font-weight: bold"> {{ result.result }} <span class="astrix">*</span></span>
+                    <script type="text/javascript">
+                        $('.score_error').show();
+                    </script>
+                    {% else %}
+                    {{ result.result }}
+                    {% endif %}
+                    {% endif %}
                     {% endfor %}
+                </td>
+                {% endif %}
                 {% endwith %}
-            <td class="score_field score_total"> {{ results_dict|gettotal:league.player.id }} </td>
+                {% endfor %}
+                {% endwith %}
+                <td class="score_field score_total"> {{ results_dict|gettotal:league.player.id }} </td>
             </tr>
             {% endfor %}
-            </tbody>
-            </table>
-        </div>
-    {% endfor %}
-    {% endspaceless %}
+        </tbody>
+    </table>
+</div>
+{% endfor %}
+{% endspaceless %}
 
-    <script type="text/javascript">
-        document.addEventListener('DOMContentLoaded', function () {
-            document.querySelectorAll('.ladder-table').forEach(function (el) {
-                var numCols = el.querySelectorAll('thead th').length;
-                /* Score cells: index 2 up to (but not including) Total */
-                var scoreCols = Array.from({ length: numCols - 3 }, function (_, i) { return i + 2; });
-                new DataTable(el, {
-                    paging:    false,
-                    info:      false,
-                    searching: false,
-                    ordering:  true,
-                    order:     [],
-                    layout: {
-                        topStart: null,
-                        topEnd: null,
-                        bottomStart: null,
-                        bottomEnd: null
-                    },
-                    columnDefs: [
-                        /* Disable ordering on Name and score cells; pos # and Total remain sortable */
-                        { orderable: false, targets: [1].concat(scoreCols) },
-                        /* Sortable columns default to highest first */
-                        { orderSequence: ['desc', 'asc'], targets: [0, -1] }
-                    ]
-                });
+<script type="text/javascript">
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.ladder-table').forEach(function (el) {
+            var numCols = el.querySelectorAll('thead th').length;
+            /* Score cells: index 2 up to (but not including) Total */
+            var scoreCols = Array.from({ length: numCols - 3 }, function (_, i) { return i + 2; });
+            new DataTable(el, {
+                paging: false,
+                info: false,
+                searching: false,
+                ordering: true,
+                order: [],
+                layout: {
+                    topStart: null,
+                    topEnd: null,
+                    bottomStart: null,
+                    bottomEnd: null
+                },
+                columnDefs: [
+                    /* Disable ordering on Name and score cells; pos # and Total remain sortable */
+                    { orderable: false, targets: [1].concat(scoreCols) },
+                    /* Sortable columns default to highest first */
+                    { orderSequence: ['desc', 'asc'], targets: [0, -1] }
+                ]
             });
         });
+    });
 
-        /* Cross-highlight: hover a score cell to highlight the reciprocal cell */
-        $(document).ready(function () {
-            $(document).on('mouseenter', '.ladder-table .selectable', function () {
-                opponentCellSeason(this).css('background-color', '#eee');
-            }).on('mouseleave', '.ladder-table .selectable', function () {
-                opponentCellSeason(this).css('background-color', '');
-            });
+    /* Cross-highlight: hover a score cell to highlight the reciprocal cell */
+    $(document).ready(function () {
+        $(document).on('mouseenter', '.ladder-table .selectable', function () {
+            opponentCellSeason(this).css('background-color', '#eee');
+        }).on('mouseleave', '.ladder-table .selectable', function () {
+            opponentCellSeason(this).css('background-color', '');
         });
-        function opponentCellSeason(el) {
-            return $('td[data-player=' + $(el).data('opp') + '][data-opp=' + $(el).data('player') + ']');
-        }
-    </script>
+    });
+    function opponentCellSeason(el) {
+        return $('td[data-player=' + $(el).data('opp') + '][data-opp=' + $(el).data('player') + ']');
+    }
+</script>
 {% endblock %}
