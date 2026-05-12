@@ -1,5 +1,7 @@
-.navbar {
-  --bs-navbar-padding-y: 0;
+@media (min-width: 992px) {
+  .navbar {
+    --bs-navbar-padding-y: 0;
+  }
 }
 
 /* ==========================================================================
