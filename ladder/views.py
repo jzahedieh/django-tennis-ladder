@@ -575,7 +575,12 @@ def result_entry_add(request):
     user_result.save()
     opponent_result.save()
 
-    return HttpResponseRedirect(reverse('result_entry'))
+    messages.success(request, 'Result added successfully')
+    return HttpResponseRedirect(reverse('ladder', kwargs={
+        'year': ladder.season.start_date.year,
+        'season_round': ladder.season.season_round,
+        'division_id': ladder.division,
+    }))
 
 def _can_edit(user, ladder, player_a_id, player_b_id):
     if user.is_superuser:
@@ -623,8 +628,12 @@ def result_entry_edit(request, pair_key):
             new_winner_id = int(request.POST['winner_id'])
             new_losing_score = int(request.POST['losing_score'])
             if new_winner_id == winner.id and new_losing_score == losing_score:
-                messages.info(request, 'No changes made.')
-                return HttpResponseRedirect(reverse('result_entry'))
+                messages.info(request, 'No changes made - result already matches')
+                return HttpResponseRedirect(reverse('ladder', kwargs={
+                    'year': ladder.season.start_date.year,
+                    'season_round': ladder.season.season_round,
+                    'division_id': ladder.division,
+                }))
 
             # rewrite both rows
             win_id, lose_id = (a_id, b_id) if new_winner_id == a_id else (b_id, a_id)
@@ -635,9 +644,14 @@ def result_entry_edit(request, pair_key):
                              result=9, date_added=datetime.datetime.now(), entered_by=request.user)
             lose_row = Result(ladder=ladder, player_id=lose_id, opponent_id=win_id, inaccurate_flag=0,
                               result=new_losing_score, date_added=win_row.date_added, entered_by=request.user)
-            win_row.save(); lose_row.save()
-            messages.success(request, 'Result updated.')
-            return HttpResponseRedirect(reverse('result_entry'))
+            win_row.save()
+            lose_row.save()
+            messages.success(request, 'Result updated')
+            return HttpResponseRedirect(reverse('ladder', kwargs={
+                'year': ladder.season.start_date.year,
+                'season_round': ladder.season.season_round,
+                'division_id': ladder.division,
+            }))
 
     return render(request, 'ladder/result/edit.html', {
         'ladder': ladder,
@@ -656,8 +670,12 @@ def result_entry_delete(request, pair_key):
     if request.method == 'POST':
         Result.objects.filter(ladder=ladder, player_id=a_id, opponent_id=b_id).delete()
         Result.objects.filter(ladder=ladder, player_id=b_id, opponent_id=a_id).delete()
-        messages.success(request, 'Result removed.')
-        return HttpResponseRedirect(reverse('result_entry'))
+        messages.success(request, 'Result removed')
+        return HttpResponseRedirect(reverse('ladder', kwargs={
+            'year': ladder.season.start_date.year,
+            'season_round': ladder.season.season_round,
+            'division_id': ladder.division,
+        }))
     return render(request, 'ladder/result/delete_confirm.html', {'pair_key': pair_key, 'ladder': ladder})
 
 @csrf_exempt
