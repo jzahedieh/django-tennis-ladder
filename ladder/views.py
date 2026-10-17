@@ -256,8 +256,22 @@ def player_history(request, player_id):
     # Force evaluation of league_set to ensure prefetching works
     league_list = list(league_set.filter(ladder__season__is_draft=False))
 
-    # Pre-calculate player stats
+    # Pre-calculate player stats and centile history
     player_stats = player.player_stats()
+    centile_history = player.get_centile_history()
+    player_stats['best_centile'] = centile_history['best_centile']
+
+    by_league_id = centile_history['by_league_id']
+    for lg in league_list:
+        info = by_league_id.get(lg.id)
+        if info and info['centile'] is not None:
+            lg.centile = info['centile']
+            lg.centile_rank = info['rank']
+            lg.centile_total = info['total_players']
+        else:
+            lg.centile = None
+            lg.centile_rank = None
+            lg.centile_total = None
 
     # Return top 10 played against
     try:
@@ -272,7 +286,9 @@ def player_history(request, player_id):
         'league_set': league_list,  # Use the evaluated list
         'ladder_set': league_list,
         'head': head,
-        'player_stats': player_stats
+        'player_stats': player_stats,
+        'centile_chart_data': centile_history['chart_data'],
+        'centile_chart_json': json.dumps(centile_history['chart_data']),
     })
 
 
