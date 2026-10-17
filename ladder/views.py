@@ -14,6 +14,7 @@ from django.views.decorators.csrf import csrf_exempt
 
 from ladder.forms import AddResultForm, AddEntryForm
 from ladder.models import Ladder, Player, Result, Season, League, LadderSubscription
+from ladder.services.centile import CentileService
 
 def _unplayed_opponents_for(user_player, ladder):
     # players in this ladder, in ladder order
@@ -258,7 +259,7 @@ def player_history(request, player_id):
 
     # Pre-calculate player stats and centile history
     player_stats = player.player_stats()
-    centile_history = player.get_centile_history()
+    centile_history = CentileService.get_player_centile_history(player)
     player_stats['best_centile'] = centile_history['best_centile']
 
     by_league_id = centile_history['by_league_id']
