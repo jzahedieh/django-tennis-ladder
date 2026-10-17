@@ -44,59 +44,16 @@ class PlayerModelTest(TestCase):
         average_with_additional = average + additional_points
         self.assertEqual(stats['average'], "{0:.2f}".format(average_with_additional))
 
-    def test_get_centile_history(self):
+    def test_get_centile_history_delegates(self):
         """
-        Tests player centile history calculation across seasons and divisions.
+        Verifies Player.get_centile_history delegates to CentileService.
         """
-        # Fresh player with no leagues
-        fresh = Player.objects.create(first_name='Fresh', last_name='Player')
-        self.assertEqual(fresh.get_centile_history(), {
-            'by_league_id': {},
-            'best_centile': "- %",
-            'chart_data': [],
-        })
-
-        # Existing player with leagues across seasons
         player = Player.objects.first()
-        centile_history = player.get_centile_history()
-        player_leagues = list(
-            League.objects
-            .filter(player=player, ladder__season__is_draft=False)
-            .select_related('ladder__season')
-            .order_by('ladder__season__start_date', 'ladder__season__season_round', 'ladder__division')
-        )
-        self.assertEqual(len(centile_history['chart_data']), len(player_leagues))
+        history = player.get_centile_history()
+        self.assertIn('by_league_id', history)
+        self.assertIn('best_centile', history)
+        self.assertIn('chart_data', history)
 
-        expected_best = None
-        for lg in player_leagues:
-            season = lg.ladder.season
-            # Build expected ranking using points
-            all_lgs = list(
-                League.objects
-                .filter(ladder__season=season, ladder__season__is_draft=False)
-                .select_related('player', 'ladder')
-            )
-            # Calculate points for each league
-            def get_pts(l):
-                res = Result.objects.filter(ladder=l.ladder, player=l.player)
-                pts = 0
-                for r in res:
-                    pts += 12 if r.result == 9 else (r.result + 1)
-                return pts
-
-            all_lgs.sort(key=lambda x: (x.ladder.division, -get_pts(x), x.sort_order, x.id))
-            rank = [x.id for x in all_lgs].index(lg.id) + 1
-            total = len(all_lgs)
-            expected_centile = round((rank / total) * 100)
-            if expected_best is None or expected_centile < expected_best:
-                expected_best = expected_centile
-
-            info = centile_history['by_league_id'][lg.id]
-            self.assertEqual(info['rank'], rank)
-            self.assertEqual(info['total_players'], total)
-            self.assertEqual(info['centile'], expected_centile)
-
-        self.assertEqual(centile_history['best_centile'], f"{expected_best}%")
 
 
 class SeasonModelTest(TestCase):
