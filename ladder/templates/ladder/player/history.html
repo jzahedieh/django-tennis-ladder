@@ -1,13 +1,15 @@
 {% extends 'base.html' %}
 {% load ladder_extras %}
+{% load static %}
 {% block container %}
 
     <h1>{% get_player_name player user %}</h1>
     <div class="row mb-4">
-        <div class="col-md-3"><h5>Played: {{ player_stats.played }}</h5></div>
-        <div class="col-md-4"><h5>Completion Rate: {{ player_stats.completion_rate }}</h5></div>
-        <div class="col-md-3"><h5>Win Rate: {{ player_stats.win_rate }}</h5></div>
+        <div class="col-md-2"><h5>Played: {{ player_stats.played }}</h5></div>
+        <div class="col-md-3"><h5>Completion Rate: {{ player_stats.completion_rate }}</h5></div>
+        <div class="col-md-2"><h5>Win Rate: {{ player_stats.win_rate }}</h5></div>
         <div class="col-md-2"><h5>Avg. Points: {{ player_stats.average }}</h5></div>
+        <div class="col-md-3"><h5>Best Centile: {{ player_stats.best_centile }}</h5></div>
     </div>
 
     <h2>Head-to-Head</h2>
@@ -83,11 +85,12 @@
     </div>
 
     <h2>History</h2>
-    <div class="col-12">
+    <div class="col-12 mb-5">
         <table id="seasons-table" class="table">
             <thead>
             <tr>
                 <th>Ladder</th>
+                <th>Centile</th>
                 <th>Perc. Played</th>
                 <th>Total Points</th>
                 <th>Matches</th>
@@ -100,6 +103,9 @@
             {% for league in league_set %}
                 <tr>
                     <td><a href="{% url 'ladder' league.ladder.season.start_date|date:"Y" league.ladder.season.season_round league.ladder.division %}"> Division:  {{ league.ladder }} </a></td>
+                    <td {% if league.centile is not None %}title="Rank {{ league.centile_rank }} of {{ league.centile_total }}"{% endif %}>
+                        {% if league.centile is not None %}{{ league.centile }}%{% else %}-{% endif %}
+                    </td>
                     <td>{{  league.player_stats.percplayed|floatformat:"2"}} %</td>
                     <td>{{ league.player_stats.total_points|floatformat:"0" }}</td>
                     <td>{{ league.player_stats.games|floatformat:"0" }}</td>
@@ -110,4 +116,108 @@
             </tbody>
         </table>
     </div>
+
+    {% if centile_chart_data|length >= 2 %}
+        <link rel="stylesheet" type="text/css" href="{% static 'css/c3.css' %}"/>
+        <script type="text/javascript" src="{% static 'js/vendor/d3.min.js' %}"></script>
+        <script type="text/javascript" src="{% static 'js/vendor/c3.min.js' %}"></script>
+
+        <h2>Centile Position</h2>
+        <p class="text-muted small mb-3">
+            Position across the whole ladder as a percentage of total players (lower % = higher up the ladder).
+        </p>
+        <div class="card bg-light p-4 mb-4">
+            <div id="centile-chart"></div>
+        </div>
+
+        <script type="text/javascript">
+            $(document).ready(function () {
+                var rawData = {{ centile_chart_json|safe }};
+                if (!rawData || rawData.length < 2) return;
+
+                var categories = [];
+                var centileCol = ['centile'];
+                var totalPlayersCol = ['total_players'];
+
+                rawData.forEach(function (item) {
+                    categories.push(item.season_label);
+                    centileCol.push(item.centile);
+                    totalPlayersCol.push(item.total_players);
+                });
+
+                c3.generate({
+                    bindto: '#centile-chart',
+                    data: {
+                        columns: [centileCol, totalPlayersCol],
+                        types: {
+                            centile: 'line',
+                            total_players: 'line'
+                        },
+                        axes: {
+                            centile: 'y',
+                            total_players: 'y2'
+                        },
+                        names: {
+                            centile: 'Centile (%)',
+                            total_players: 'Total Players'
+                        },
+                        colors: {
+                            centile: '#1f77b4',
+                            total_players: '#ff7f0e'
+                        }
+                    },
+                    axis: {
+                        x: {
+                            type: 'category',
+                            categories: categories,
+                            tick: {
+                                rotate: categories.length > 10 ? -45 : 0,
+                                multiline: false,
+                                culling: { max: 16 }
+                            }
+                        },
+                        y: {
+                            label: 'Centile (%)',
+                            inverted: true,
+                            min: 1,
+                            max: 100,
+                            padding: { top: 10, bottom: 10 },
+                            tick: {
+                                format: function (d) { return Math.round(d) + '%'; }
+                            }
+                        },
+                        y2: {
+                            show: true,
+                            label: 'Total Players',
+                            min: 0,
+                            padding: { bottom: 0 },
+                            tick: {
+                                format: d3.format('d')
+                            }
+                        }
+                    },
+                    grid: {
+                        y: { show: true }
+                    },
+                    tooltip: {
+                        grouped: true,
+                        contents: function (d, defaultTitleFormat, defaultValueFormat, color) {
+                            var idx = d[0].index;
+                            var item = rawData[idx];
+                            if (!item) return '';
+
+                            var centileColor = color({ id: 'centile' });
+                            var totalColor = color({ id: 'total_players' });
+
+                            return '<table class="c3-tooltip">' +
+                                '<tr><th colspan="2">' + item.season_name + ' (Division ' + item.division + ')</th></tr>' +
+                                '<tr><td><span style="background-color:' + centileColor + '"></span>Centile</td><td class="value">' + item.centile + '%</td></tr>' +
+                                '<tr><td><span style="background-color:' + totalColor + '"></span>Rank</td><td class="value">' + item.rank + ' of ' + item.total_players + '</td></tr>' +
+                                '</table>';
+                        }
+                    }
+                });
+            });
+        </script>
+    {% endif %}
 {% endblock container %}
