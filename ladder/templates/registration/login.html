@@ -1,64 +1,78 @@
 {% extends "base.html" %}
 
 {% block container %}
-<div class="row mt-5">
-    <div class="col-md-8 col-lg-6">
-        <div class="card shadow-sm">
-            <div class="card-body p-4 p-md-5">
-                <h3 class="card-title mb-4">Log In</h3>
-                
+<div class="row justify-content-center my-4 my-md-5">
+    <div class="col-12 col-sm-10 col-md-7 col-lg-5" style="max-width: 440px;">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-light py-3 px-4 border-bottom">
+                <h4 class="mb-0 fw-bold">Log In</h4>
+                <p class="text-muted small mb-0 mt-1">Sign in with your club membership email</p>
+            </div>
+
+            <div class="card-body p-4">
                 {% if form.errors %}
-                <div class="alert alert-danger">Your email and password didn't match. Please try again.</div>
+                <div class="alert alert-danger py-2 small">
+                    Your email and password didn't match. Please try again.
+                </div>
                 {% endif %}
 
                 {% if next %}
                     {% if user.is_authenticated %}
-                    <div class="alert alert-warning">Your account doesn't have access to this page. To proceed, please login with an account that has access.</div>
+                    <div class="alert alert-warning py-2 small">
+                        Your account doesn't have access to this page. To proceed, please log in with an account that has access.
+                    </div>
+                    {% elif '/result/entry/' in next %}
+                    <div class="alert alert-info py-2 small">
+                        Please log in to enter your results.
+                    </div>
                     {% else %}
-                    <div class="alert alert-info">Please log in to enter your results.</div>
+                    <div class="alert alert-info py-2 small">
+                        Please log in to continue.
+                    </div>
                     {% endif %}
                 {% endif %}
 
                 <form method="post" action="{% url 'login' %}">
                     {% csrf_token %}
-                    
+
                     <div class="mb-3">
-                        <label for="{{ form.username.id_for_label }}" class="form-label fw-bold">Email</label>
-                        {{ form.username }}
+                        <label for="{{ form.username.id_for_label }}" class="form-label fw-semibold small text-uppercase text-muted mb-1">Email Address</label>
+                        <input type="text"
+                               name="{{ form.username.html_name }}"
+                               id="{{ form.username.id_for_label }}"
+                               value="{{ form.username.value|default:'' }}"
+                               class="form-control{% if form.errors %} is-invalid{% endif %}"
+                               placeholder="you@example.com"
+                               autocomplete="username"
+                               autofocus
+                               required>
                     </div>
-                    
+
                     <div class="mb-4">
-                        <label for="{{ form.password.id_for_label }}" class="form-label fw-bold">Password</label>
-                        {{ form.password }}
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <label for="{{ form.password.id_for_label }}" class="form-label fw-semibold small text-uppercase text-muted mb-0">Password</label>
+                            <a href="{% url 'password_reset' %}" class="small text-decoration-none">Forgot password?</a>
+                        </div>
+                        <input type="password"
+                               name="{{ form.password.html_name }}"
+                               id="{{ form.password.id_for_label }}"
+                               class="form-control{% if form.errors %} is-invalid{% endif %}"
+                               autocomplete="current-password"
+                               required>
                     </div>
-                    
+
                     <div class="d-grid">
-                        <button type="submit" class="btn btn-primary btn-lg">Log In</button>
+                        <button type="submit" class="btn btn-primary">Log In</button>
                     </div>
                     <input type="hidden" name="next" value="{{ next }}">
                 </form>
-
-                <div class="mt-4">
-                    <a href="{% url 'password_reset' %}" class="text-decoration-none">Forgot your password?</a>
-                </div>
             </div>
-        </div>
 
-        <div class="mt-4 text-muted small">
-            <p>You will need to reset your password with the above link the first time you use the system.</p>
-            <p>All players in the current ladder have a user setup with their email in the membership list. If you are having any issues, please use the feedback email below.</p>
+            <div class="card-footer bg-light px-4 py-3 text-muted small border-top">
+                <div class="fw-semibold text-dark mb-1">First time using the ladder?</div>
+                All current ladder players have an account linked to their membership email. Use <a href="{% url 'password_reset' %}" class="text-decoration-none">Forgot password?</a> above to set your initial password.
+            </div>
         </div>
     </div>
 </div>
-
-<script>
-    // Add Bootstrap classes to Django form inputs
-    document.addEventListener("DOMContentLoaded", function() {
-        var inputs = document.querySelectorAll("input[type='text'], input[type='password']");
-        inputs.forEach(function(input) {
-            input.classList.add("form-control");
-        });
-    });
-</script>
-
 {% endblock %}

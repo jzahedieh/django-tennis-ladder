@@ -1,0 +1,157 @@
+{% extends 'base.html' %}
+
+{% block container %}
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-4">
+    <div>
+        <h1 class="mb-1">My Account</h1>
+        <p class="text-muted mb-0">Manage your account security and view your ladder details.</p>
+    </div>
+    {% if player %}
+    <div>
+        <a href="{% url 'player_history' player.id %}" class="btn btn-outline-primary">
+            View My Player Profile &rarr;
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+{% if messages %}
+    {% for message in messages %}
+        <div class="alert {% if message.tags %}alert-{{ message.tags }}{% else %}alert-info{% endif %} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    {% endfor %}
+{% endif %}
+
+<div class="row g-4">
+    <!-- Left Card: Read-Only Account & Player Details -->
+    <div class="col-12 col-lg-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-light py-3">
+                <h5 class="mb-0">Account Details</h5>
+            </div>
+            <div class="card-body p-4 d-flex flex-column justify-content-between">
+                <div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted small text-uppercase fw-semibold mb-1">Full Name</label>
+                        <div class="form-control bg-light text-dark">
+                            {% if player %}
+                                {{ player.first_name }} {{ player.last_name }}
+                            {% elif user.get_full_name %}
+                                {{ user.get_full_name }}
+                            {% else %}
+                                <span class="text-muted">Not linked to a player profile</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted small text-uppercase fw-semibold mb-1">Email / Login</label>
+                        <div class="form-control bg-light text-dark">
+                            {{ user.email|default:user.username }}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted small text-uppercase fw-semibold mb-1">Current Ladder Status</label>
+                        {% if current_league %}
+                            <div class="p-3 border rounded bg-light d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2">
+                                <div>
+                                    <div class="fw-bold">{{ current_league.ladder.season }}</div>
+                                    <div class="text-muted small">Division {{ current_league.ladder.division }}</div>
+                                </div>
+                                <div class="d-flex flex-wrap gap-2">
+                                    <a href="{% url 'ladder' current_league.ladder.season.start_date|date:'Y' current_league.ladder.season.season_round current_league.ladder.division %}" class="btn btn-sm btn-outline-secondary">
+                                        View Division
+                                    </a>
+                                    {% if not current_league.ladder.is_closed %}
+                                    <a href="{% url 'result_entry' %}" class="btn btn-sm btn-primary">
+                                        Enter Result
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% else %}
+                            <div class="p-3 border rounded bg-light">
+                                <div class="text-muted">You are not currently registered in an active division for this round.</div>
+                                {% if latest_league %}
+                                    <div class="small mt-1">
+                                        Last played:
+                                        <a href="{% url 'ladder' latest_league.ladder.season.start_date|date:'Y' latest_league.ladder.season.season_round latest_league.ladder.division %}" class="text-decoration-none fw-semibold">
+                                            {{ latest_league.ladder.season }} &ndash; Division {{ latest_league.ladder.division }}
+                                        </a>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="mt-3 pt-3 border-top text-muted small">
+                    Your name and email address are managed by the ladder administrators so they stay in sync with the club membership list. Need to update your details? Email <a href="mailto:feedback@highgate-ladder.co.uk">feedback@highgate-ladder.co.uk</a>.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Card: Change Password -->
+    <div class="col-12 col-lg-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-light py-3">
+                <h5 class="mb-0">Change Password</h5>
+            </div>
+            <div class="card-body p-4">
+                <form method="post" action="{% url 'account' %}" novalidate>
+                    {% csrf_token %}
+
+                    {% if password_form.non_field_errors %}
+                        <div class="alert alert-danger py-2 small">
+                            {% for error in password_form.non_field_errors %}
+                                <div>{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    <div class="mb-3">
+                        <label for="{{ password_form.old_password.id_for_label }}" class="form-label fw-bold">Current Password</label>
+                        {{ password_form.old_password }}
+                        {% if password_form.old_password.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in password_form.old_password.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ password_form.new_password1.id_for_label }}" class="form-label fw-bold">New Password</label>
+                        {{ password_form.new_password1 }}
+                        {% if password_form.new_password1.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in password_form.new_password1.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                        {% if password_form.new_password1.help_text %}
+                            <div class="form-text small text-muted mt-2">
+                                {{ password_form.new_password1.help_text|safe }}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="{{ password_form.new_password2.id_for_label }}" class="form-label fw-bold">Confirm New Password</label>
+                        {{ password_form.new_password2 }}
+                        {% if password_form.new_password2.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in password_form.new_password2.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Update Password</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
