@@ -13,30 +13,35 @@ class CentileService:
       - Ties in points are broken by initial league sort_order.
       - A player's overall club rank for the season is:
           (total players in higher divisions) + (player's rank within their division).
-      - Centile is measured from the bottom up, so higher % = greater success:
-          round(((total_season_players - rank) / total_season_players) * 100).
+        Centile is measured from the bottom up across [0%, 100%], so Rank 1 is always 100%
+        and Rank N is always 0%:
+          round(((total_season_players - rank) / (total_season_players - 1)) * 100).
     """
 
+    @staticmethod
+    def calculate_centile(rank: int, total_players: int):
+        """
+        Computes integer centile in [0, 100] where rank=1 -> 100% and rank=total_players -> 0%.
+        """
+        if total_players <= 0 or rank <= 0:
+            return None
+        if total_players == 1:
+            return 100
+        return round(((total_players - rank) / (total_players - 1)) * 100)
+
     @classmethod
-    def get_player_centile_history(cls, player) -> dict:
+    def compute_season_rankings(cls, season_ids, include_division_winners: bool = False):
         """
-        Returns centile metrics and chart data for the given player.
+        Given a collection of published season_ids, computes club-wide rankings
+        and total player counts per season in two bulk queries.
+        Returns:
+          (season_totals, rank_by_league_id)
+          or (season_totals, rank_by_league_id, division_winner_league_ids) if include_division_winners=True.
         """
-        player_leagues = list(
-            player.league_set
-            .filter(ladder__season__is_draft=False)
-            .select_related('ladder__season')
-            .order_by('ladder__season__start_date', 'ladder__season__season_round', 'ladder__division')
-        )
-
-        if not player_leagues:
-            return {
-                'by_league_id': {},
-                'best_centile': "- %",
-                'chart_data': [],
-            }
-
-        season_ids = {lg.ladder.season_id for lg in player_leagues}
+        if not season_ids:
+            if include_division_winners:
+                return {}, {}, set(), {}
+            return {}, {}
 
         # 1. Fetch total points for all players across relevant seasons in a single query
         points_expr = Case(
@@ -73,11 +78,14 @@ class CentileService:
         #      Sort players by points (descending), then sort_order, then id
         season_totals = {}
         rank_by_league_id = {}
+        division_winner_league_ids = set()
+        division_sizes = {}
 
         for season_id, divisions in season_div_leagues.items():
             current_rank = 0
             for div_num in sorted(divisions.keys()):
                 div_leagues = divisions[div_num]
+                division_sizes[(season_id, div_num)] = len(div_leagues)
                 div_leagues.sort(
                     key=lambda x: (
                         -points_map.get((season_id, div_num, x['player_id']), 0.0),
@@ -85,10 +93,41 @@ class CentileService:
                         x['id']
                     )
                 )
+                if div_leagues:
+                    leader = div_leagues[0]
+                    if points_map.get((season_id, div_num, leader['player_id']), 0.0) > 0:
+                        division_winner_league_ids.add(leader['id'])
+
                 for item in div_leagues:
                     current_rank += 1
                     rank_by_league_id[item['id']] = current_rank
             season_totals[season_id] = current_rank
+
+        if include_division_winners:
+            return season_totals, rank_by_league_id, division_winner_league_ids, division_sizes
+        return season_totals, rank_by_league_id
+
+    @classmethod
+    def get_player_centile_history(cls, player) -> dict:
+        """
+        Returns centile metrics and chart data for the given player.
+        """
+        player_leagues = list(
+            player.league_set
+            .filter(ladder__season__is_draft=False)
+            .select_related('ladder__season')
+            .order_by('ladder__season__start_date', 'ladder__season__season_round', 'ladder__division')
+        )
+
+        if not player_leagues:
+            return {
+                'by_league_id': {},
+                'best_centile': "- %",
+                'chart_data': [],
+            }
+
+        season_ids = {lg.ladder.season_id for lg in player_leagues}
+        season_totals, rank_by_league_id = cls.compute_season_rankings(season_ids)
 
         by_league_id = {}
         chart_data = []
@@ -98,13 +137,10 @@ class CentileService:
             season_id = lg.ladder.season_id
             total_players = season_totals.get(season_id, 0)
             rank = rank_by_league_id.get(lg.id, 0)
-            if total_players > 0 and rank > 0:
-                # Higher % = greater success (e.g. Rank 25 of 130 -> (130-25)/130 = 81%)
-                centile = round(((total_players - rank) / total_players) * 100)
+            centile = cls.calculate_centile(rank, total_players)
+            if centile is not None:
                 if best_centile_val is None or centile > best_centile_val:
                     best_centile_val = centile
-            else:
-                centile = None
 
             season_obj = lg.ladder.season
             entry = {
@@ -127,3 +163,4 @@ class CentileService:
             'best_centile': best_centile_str,
             'chart_data': chart_data,
         }
+

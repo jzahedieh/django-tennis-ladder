@@ -44,7 +44,7 @@ class CentileServiceTest(TestCase):
             all_lgs.sort(key=lambda x: (x.ladder.division, -get_pts(x), x.sort_order, x.id))
             rank = [x.id for x in all_lgs].index(lg.id) + 1
             total = len(all_lgs)
-            expected_centile = round(((total - rank) / total) * 100)
+            expected_centile = CentileService.calculate_centile(rank, total)
             if expected_best is None or expected_centile > expected_best:
                 expected_best = expected_centile
 
@@ -54,3 +54,24 @@ class CentileServiceTest(TestCase):
             self.assertEqual(info['centile'], expected_centile)
 
         self.assertEqual(centile_history['best_centile'], f"{expected_best}%")
+
+    def test_calculate_centile_edge_cases(self):
+        # Rank 1 is always 100% regardless of ladder size
+        self.assertEqual(CentileService.calculate_centile(1, 1), 100)
+        self.assertEqual(CentileService.calculate_centile(1, 10), 100)
+        self.assertEqual(CentileService.calculate_centile(1, 119), 100)
+        self.assertEqual(CentileService.calculate_centile(1, 227), 100)
+
+        # Last rank is always 0%
+        self.assertEqual(CentileService.calculate_centile(10, 10), 0)
+        self.assertEqual(CentileService.calculate_centile(119, 119), 0)
+        self.assertEqual(CentileService.calculate_centile(227, 227), 0)
+
+        # Middle rank
+        self.assertEqual(CentileService.calculate_centile(50, 99), 50)
+
+        # Invalid cases
+        self.assertIsNone(CentileService.calculate_centile(0, 10))
+        self.assertIsNone(CentileService.calculate_centile(1, 0))
+        self.assertIsNone(CentileService.calculate_centile(-1, 10))
+

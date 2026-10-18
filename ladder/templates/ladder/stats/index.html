@@ -1,0 +1,575 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block container %}
+<style>
+    @media (max-width: 575.98px) {
+        .leaderboard-card .table > :not(caption) > * > * {
+            padding: 0.4rem 0.35rem;
+            font-size: 0.875rem;
+        }
+        .leaderboard-card .card-header h5 {
+            font-size: 1.05rem;
+        }
+    }
+</style>
+
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+    <div>
+        <h1 class="mb-1">Club Stats &amp; Leaderboards</h1>
+        <p class="text-muted mb-0">
+            Showing records for: <span class="badge bg-primary fs-6 align-middle ms-1">{{ filter.filter_label }}</span>
+        </p>
+    </div>
+
+    <!-- Era / Time Filtering Controls -->
+    <div class="d-flex flex-wrap align-items-center gap-2">
+        <div class="btn-group" role="group" aria-label="Era filter">
+            <a href="{% url 'stats' %}?period=all"
+               class="btn btn-sm {% if filter.filter_type == 'period' and filter.period == 'all' %}btn-dark{% else %}btn-outline-secondary{% endif %}">
+                All-Time
+            </a>
+            <a href="{% url 'stats' %}?period=5y"
+               class="btn btn-sm {% if filter.filter_type == 'period' and filter.period == '5y' %}btn-dark{% else %}btn-outline-secondary{% endif %}">
+                Past 5 Years
+            </a>
+            <a href="{% url 'stats' %}?period=12m"
+               class="btn btn-sm {% if filter.filter_type == 'period' and filter.period == '12m' %}btn-dark{% else %}btn-outline-secondary{% endif %}">
+                Past 12 Months
+            </a>
+        </div>
+
+        <!-- Year Selector -->
+        <form method="get" action="{% url 'stats' %}" class="d-inline-block">
+            <select name="year" class="form-select form-select-sm" style="width: auto;" onchange="if(this.value) this.form.submit();" aria-label="Filter by Year">
+                <option value="">By Year...</option>
+                {% for yr in available_years %}
+                    <option value="{{ yr }}" {% if filter.selected_year == yr %}selected{% endif %}>{{ yr }}</option>
+                {% endfor %}
+            </select>
+        </form>
+
+        <!-- Specific Season / Round Selector -->
+        <form method="get" action="{% url 'stats' %}" class="d-inline-block">
+            <select name="season" class="form-select form-select-sm" style="width: auto;" onchange="if(this.value) this.form.submit();" aria-label="Filter by Round">
+                <option value="">By Round...</option>
+                {% for s in available_seasons %}
+                    <option value="{{ s.id }}" {% if filter.selected_season_id == s.id %}selected{% endif %}>
+                        {{ s.start_date|date:"Y" }} Round {{ s.season_round }}
+                    </option>
+                {% endfor %}
+            </select>
+        </form>
+    </div>
+</div>
+
+<!-- Period Summary KPI Strip -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="card bg-light border-0 h-100">
+            <div class="card-body py-3 text-center">
+                <div class="text-muted small text-uppercase fw-semibold">Ladders / Rounds</div>
+                <div class="fs-3 fw-bold text-dark">{{ summary.seasons_count }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card bg-light border-0 h-100">
+            <div class="card-body py-3 text-center">
+                <div class="text-muted small text-uppercase fw-semibold">Total Divisions</div>
+                <div class="fs-3 fw-bold text-dark">{{ summary.divisions_count }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card bg-light border-0 h-100">
+            <div class="card-body py-3 text-center">
+                <div class="text-muted small text-uppercase fw-semibold">Matches Played</div>
+                <div class="fs-3 fw-bold text-dark">{{ summary.matches_played }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card bg-light border-0 h-100">
+            <div class="card-body py-3 text-center">
+                <div class="text-muted small text-uppercase fw-semibold">Active Players</div>
+                <div class="fs-3 fw-bold text-dark">{{ summary.active_players }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Leaderboards Grid -->
+<div class="row g-4">
+
+    <!-- 1. Most Matches Won -->
+    <div class="col-12 col-lg-6">
+        <div class="card h-100 shadow-sm leaderboard-card" data-page-size="{{ page_size }}">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center gap-2">
+                <h5 class="mb-0 fw-bold">Most Matches Won</h5>
+                <span class="badge bg-light text-secondary border flex-shrink-0">{{ filter.filter_label }}</span>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover table-sm align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-2 ps-sm-3" style="width: 36px;">#</th>
+                                <th>Player</th>
+                                <th class="text-center">Played</th>
+                                <th class="text-center">Win %</th>
+                                <th class="text-end pe-2 pe-sm-3">Won</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in leaderboards.most_won %}
+                                <tr class="leaderboard-row {% if forloop.counter0 >= page_size %}d-none{% endif %}" data-index="{{ forloop.counter0 }}">
+                                    <td class="ps-2 ps-sm-3 text-muted fw-semibold">{{ forloop.counter }}</td>
+                                    <td>
+                                        <a href="{% url 'player_history' row.player_id %}" class="text-decoration-none fw-semibold">
+                                            {{ row.player_name }}
+                                        </a>
+                                    </td>
+                                    <td class="text-center text-muted">{{ row.played }}</td>
+                                    <td class="text-center text-muted">{{ row.win_rate_display }}</td>
+                                    <td class="text-end pe-2 pe-sm-3 fw-bold fs-6">{{ row.won }}</td>
+                                </tr>
+                            {% empty %}
+                                <tr><td colspan="5" class="text-center text-muted py-4">No matches recorded for this period.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% if leaderboards.most_won|length > page_size %}
+            <div class="card-footer bg-white py-2 d-flex justify-content-between align-items-center">
+                <small class="text-muted page-status"></small>
+                <div class="btn-group btn-group-sm">
+                    <button type="button" class="btn btn-outline-secondary btn-prev" disabled>&laquo; Prev {{ page_size }}</button>
+                    <button type="button" class="btn btn-outline-secondary btn-next">Next {{ page_size }} &raquo;</button>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- 2. Most Matches Played / Most Active -->
+    <div class="col-12 col-lg-6">
+        <div class="card h-100 shadow-sm leaderboard-card" data-page-size="{{ page_size }}">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center gap-2">
+                <h5 class="mb-0 fw-bold">Most Matches Played</h5>
+                <span class="badge bg-light text-secondary border flex-shrink-0">Most Active</span>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover table-sm align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-2 ps-sm-3" style="width: 36px;">#</th>
+                                <th>Player</th>
+                                <th class="text-center">Won</th>
+                                <th class="text-center">Win %</th>
+                                <th class="text-end pe-2 pe-sm-3">Played</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in leaderboards.most_played %}
+                                <tr class="leaderboard-row {% if forloop.counter0 >= page_size %}d-none{% endif %}" data-index="{{ forloop.counter0 }}">
+                                    <td class="ps-2 ps-sm-3 text-muted fw-semibold">{{ forloop.counter }}</td>
+                                    <td>
+                                        <a href="{% url 'player_history' row.player_id %}" class="text-decoration-none fw-semibold">
+                                            {{ row.player_name }}
+                                        </a>
+                                    </td>
+                                    <td class="text-center text-muted">{{ row.won }}</td>
+                                    <td class="text-center text-muted">{{ row.win_rate_display }}</td>
+                                    <td class="text-end pe-2 pe-sm-3 fw-bold fs-6">{{ row.played }}</td>
+                                </tr>
+                            {% empty %}
+                                <tr><td colspan="5" class="text-center text-muted py-4">No matches recorded for this period.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% if leaderboards.most_played|length > page_size %}
+            <div class="card-footer bg-white py-2 d-flex justify-content-between align-items-center">
+                <small class="text-muted page-status"></small>
+                <div class="btn-group btn-group-sm">
+                    <button type="button" class="btn btn-outline-secondary btn-prev" disabled>&laquo; Prev {{ page_size }}</button>
+                    <button type="button" class="btn btn-outline-secondary btn-next">Next {{ page_size }} &raquo;</button>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- 3. Most Total Points -->
+    <div class="col-12 col-lg-6">
+        <div class="card h-100 shadow-sm leaderboard-card" data-page-size="{{ page_size }}">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center gap-2">
+                <h5 class="mb-0 fw-bold">Most Total Points</h5>
+                <span class="badge bg-light text-secondary border flex-shrink-0">12 / win &middot; games+1 / loss</span>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover table-sm align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-2 ps-sm-3" style="width: 36px;">#</th>
+                                <th>Player</th>
+                                <th class="text-center">Played</th>
+                                <th class="text-center">Avg Pts</th>
+                                <th class="text-end pe-2 pe-sm-3">Points</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in leaderboards.most_points %}
+                                <tr class="leaderboard-row {% if forloop.counter0 >= page_size %}d-none{% endif %}" data-index="{{ forloop.counter0 }}">
+                                    <td class="ps-2 ps-sm-3 text-muted fw-semibold">{{ forloop.counter }}</td>
+                                    <td>
+                                        <a href="{% url 'player_history' row.player_id %}" class="text-decoration-none fw-semibold">
+                                            {{ row.player_name }}
+                                        </a>
+                                    </td>
+                                    <td class="text-center text-muted">{{ row.played }}</td>
+                                    <td class="text-center text-muted">{{ row.avg_points_display }}</td>
+                                    <td class="text-end pe-2 pe-sm-3 fw-bold fs-6">{{ row.total_points }}</td>
+                                </tr>
+                            {% empty %}
+                                <tr><td colspan="5" class="text-center text-muted py-4">No points recorded for this period.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% if leaderboards.most_points|length > page_size %}
+            <div class="card-footer bg-white py-2 d-flex justify-content-between align-items-center">
+                <small class="text-muted page-status"></small>
+                <div class="btn-group btn-group-sm">
+                    <button type="button" class="btn btn-outline-secondary btn-prev" disabled>&laquo; Prev {{ page_size }}</button>
+                    <button type="button" class="btn btn-outline-secondary btn-next">Next {{ page_size }} &raquo;</button>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- 4. Most Division Titles -->
+    <div class="col-12 col-lg-6">
+        <div class="card h-100 shadow-sm leaderboard-card" data-page-size="{{ page_size }}">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center gap-2">
+                <h5 class="mb-0 fw-bold">Most Division Titles</h5>
+                <span class="badge bg-light text-secondary border flex-shrink-0">#1 Finishes</span>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover table-sm align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-2 ps-sm-3" style="width: 36px;">#</th>
+                                <th>Player</th>
+                                <th class="text-center">Divisions Won</th>
+                                <th class="text-center">Rounds</th>
+                                <th class="text-end pe-2 pe-sm-3">Titles</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in leaderboards.most_titles %}
+                                <tr class="leaderboard-row {% if forloop.counter0 >= page_size %}d-none{% endif %}" data-index="{{ forloop.counter0 }}">
+                                    <td class="ps-2 ps-sm-3 text-muted fw-semibold">{{ forloop.counter }}</td>
+                                    <td>
+                                        <a href="{% url 'player_history' row.player_id %}" class="text-decoration-none fw-semibold">
+                                            {{ row.player_name }}
+                                        </a>
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="d-inline-flex flex-wrap justify-content-center gap-1">
+                                            {% for badge in row.divisions_won_badges %}
+                                                <span class="badge {% if badge.is_div1 %}bg-warning-subtle text-dark border border-warning-subtle{% else %}bg-light text-secondary border{% endif %}">
+                                                    {{ badge.label }}
+                                                </span>
+                                            {% endfor %}
+                                        </div>
+                                    </td>
+                                    <td class="text-center text-muted">{{ row.seasons_played }}</td>
+                                    <td class="text-end pe-2 pe-sm-3 fw-bold fs-6">{{ row.division_titles }}</td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted py-4">
+                                        No division titles recorded in this period.
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% if leaderboards.most_titles|length > page_size %}
+            <div class="card-footer bg-white py-2 d-flex justify-content-between align-items-center">
+                <small class="text-muted page-status"></small>
+                <div class="btn-group btn-group-sm">
+                    <button type="button" class="btn btn-outline-secondary btn-prev" disabled>&laquo; Prev {{ page_size }}</button>
+                    <button type="button" class="btn btn-outline-secondary btn-next">Next {{ page_size }} &raquo;</button>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- 5. Highest Match Completion % -->
+    <div class="col-12 col-lg-6">
+        <div class="card h-100 shadow-sm leaderboard-card" data-page-size="{{ page_size }}">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center gap-2">
+                <h5 class="mb-0 fw-bold">Match Completion %</h5>
+                <span class="badge bg-light text-secondary border flex-shrink-0">Min {{ filter.min_rounds }} round{{ filter.min_rounds|pluralize }}</span>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover table-sm align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-2 ps-sm-3" style="width: 36px;">#</th>
+                                <th>Player</th>
+                                <th class="text-center"><span class="d-none d-sm-inline">Played / Scheduled</span><span class="d-sm-none">Matches</span></th>
+                                <th class="text-center">Rounds</th>
+                                <th class="text-end pe-2 pe-sm-3"><span class="d-none d-sm-inline">Completion</span><span class="d-sm-none">Rate</span></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in leaderboards.highest_completion %}
+                                <tr class="leaderboard-row {% if forloop.counter0 >= page_size %}d-none{% endif %}" data-index="{{ forloop.counter0 }}">
+                                    <td class="ps-2 ps-sm-3 text-muted fw-semibold">{{ forloop.counter }}</td>
+                                    <td>
+                                        <a href="{% url 'player_history' row.player_id %}" class="text-decoration-none fw-semibold">
+                                            {{ row.player_name }}
+                                        </a>
+                                    </td>
+                                    <td class="text-center text-muted text-nowrap">{{ row.played_matches }}/{{ row.scheduled_matches }}</td>
+                                    <td class="text-center text-muted">{{ row.seasons_played }}</td>
+                                    <td class="text-end pe-2 pe-sm-3 fw-bold fs-6">{{ row.completion_rate_display }}</td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted py-4">
+                                        No players with at least {{ filter.min_rounds }} round{{ filter.min_rounds|pluralize }} in this period.
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% if leaderboards.highest_completion|length > page_size %}
+            <div class="card-footer bg-white py-2 d-flex justify-content-between align-items-center">
+                <small class="text-muted page-status"></small>
+                <div class="btn-group btn-group-sm">
+                    <button type="button" class="btn btn-outline-secondary btn-prev" disabled>&laquo; Prev {{ page_size }}</button>
+                    <button type="button" class="btn btn-outline-secondary btn-next">Next {{ page_size }} &raquo;</button>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- 6. Most Played Head-to-Head Rivalries -->
+    <div class="col-12 col-lg-6">
+        <div class="card h-100 shadow-sm leaderboard-card" data-page-size="{{ page_size }}">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center gap-2">
+                <h5 class="mb-0 fw-bold">Most Played Rivalries</h5>
+                <span class="badge bg-light text-secondary border flex-shrink-0">Head-to-Head</span>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover table-sm align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-2 ps-sm-3" style="width: 36px;">#</th>
+                                <th>Rivalry</th>
+                                <th class="text-center">Record</th>
+                                <th class="text-center d-none d-sm-table-cell">Last Played</th>
+                                <th class="text-end pe-2 pe-sm-3">Matches</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in leaderboards.top_rivalries %}
+                                {% url 'head_to_head' row.player_a_id row.player_b_id as h2h_url %}
+                                <tr class="leaderboard-row {% if forloop.counter0 >= page_size %}d-none{% endif %}"
+                                    data-index="{{ forloop.counter0 }}"
+                                    style="cursor: pointer;"
+                                    onclick="window.location='{{ h2h_url }}';">
+                                    <td class="ps-2 ps-sm-3 text-muted fw-semibold">{{ forloop.counter }}</td>
+                                    <td>
+                                        <a href="{{ h2h_url }}" class="text-decoration-none fw-semibold">
+                                            {{ row.player_a_name }} <span class="text-muted fw-normal small mx-1">vs</span> {{ row.player_b_name }}
+                                        </a>
+                                    </td>
+                                    <td class="text-center text-nowrap">
+                                        <span class="badge bg-light text-dark border">
+                                            {{ row.player_a_wins }}&ndash;{{ row.player_b_wins }}
+                                        </span>
+                                    </td>
+                                    <td class="text-center text-muted small d-none d-sm-table-cell text-nowrap">
+                                        {% if row.last_played %}{{ row.last_played|date:"M Y" }}{% else %}-{% endif %}
+                                    </td>
+                                    <td class="text-end pe-2 pe-sm-3 fw-bold fs-6">{{ row.matches_played }}</td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted py-4">
+                                        No repeat head-to-head matchups in this period.
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% if leaderboards.top_rivalries|length > page_size %}
+            <div class="card-footer bg-white py-2 d-flex justify-content-between align-items-center">
+                <small class="text-muted page-status"></small>
+                <div class="btn-group btn-group-sm">
+                    <button type="button" class="btn btn-outline-secondary btn-prev" disabled>&laquo; Prev {{ page_size }}</button>
+                    <button type="button" class="btn btn-outline-secondary btn-next">Next {{ page_size }} &raquo;</button>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- 7. Best Centile / Top Finishers -->
+    <div class="col-12">
+        <div class="card shadow-sm leaderboard-card" data-page-size="{{ page_size }}">
+            <div class="card-header bg-white py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <div>
+                    <h5 class="mb-0 fw-bold">Best Centile &amp; Top Finishers</h5>
+                    <small class="text-muted">Highest overall club standing achieved across divisions (higher % = higher up the club ladder)</small>
+                </div>
+                <span class="badge bg-light text-secondary border flex-shrink-0">{{ filter.filter_label }}</span>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover table-sm align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-2 ps-sm-3" style="width: 36px;">#</th>
+                                <th>Player</th>
+                                <th class="text-center"><span class="d-none d-sm-inline">Best Club </span>Rank</th>
+                                <th class="text-center d-none d-md-table-cell">Peak Ladder</th>
+                                <th class="text-center">Avg<span class="d-none d-sm-inline"> Centile</span></th>
+                                <th class="text-center d-none d-sm-table-cell">Rounds<span class="d-none d-md-inline"> Entered</span></th>
+                                <th class="text-end pe-2 pe-sm-3">Best<span class="d-none d-sm-inline"> Centile</span></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in leaderboards.best_centile %}
+                                <tr class="leaderboard-row {% if forloop.counter0 >= page_size %}d-none{% endif %}" data-index="{{ forloop.counter0 }}">
+                                    <td class="ps-2 ps-sm-3 text-muted fw-semibold">{{ forloop.counter }}</td>
+                                    <td>
+                                        <a href="{% url 'player_history' row.player_id %}" class="text-decoration-none fw-semibold">
+                                            {{ row.player_name }}
+                                        </a>
+                                        <div class="d-md-none small text-muted">
+                                            <a href="{% url 'ladder' row.best_year row.best_round row.best_division %}" class="text-decoration-none text-muted">
+                                                {{ row.best_year }} R{{ row.best_round }}&middot;D{{ row.best_division }}
+                                            </a>
+                                            <span class="d-sm-none">&middot; {{ row.seasons_played }} rds</span>
+                                        </div>
+                                    </td>
+                                    <td class="text-center text-muted text-nowrap">
+                                        #{{ row.best_rank }}<span class="small d-none d-sm-inline"> of {{ row.best_total_players }}</span><span class="small d-sm-none">/{{ row.best_total_players }}</span>
+                                        {% if row.peak_count > 1 %}
+                                            <span class="badge bg-secondary-subtle text-secondary border ms-1" title="Achieved #{{ row.best_rank }} ({{ row.best_centile }}%) in {{ row.peak_count }} rounds">&times;{{ row.peak_count }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center d-none d-md-table-cell text-nowrap">
+                                        <a href="{% url 'ladder' row.best_year row.best_round row.best_division %}" class="text-decoration-none small">
+                                            {{ row.best_year }} R{{ row.best_round }} &middot; Div {{ row.best_division }}
+                                        </a>
+                                    </td>
+                                    <td class="text-center text-muted">{{ row.avg_centile_display }}</td>
+                                    <td class="text-center text-muted d-none d-sm-table-cell">{{ row.seasons_played }}</td>
+                                    <td class="text-end pe-2 pe-sm-3 fw-bold fs-6">{{ row.best_centile }}%</td>
+                                </tr>
+                            {% empty %}
+                                <tr><td colspan="7" class="text-center text-muted py-4">No ladder standings recorded for this period.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% if leaderboards.best_centile|length > page_size %}
+            <div class="card-footer bg-white py-2 d-flex justify-content-between align-items-center">
+                <small class="text-muted page-status"></small>
+                <div class="btn-group btn-group-sm">
+                    <button type="button" class="btn btn-outline-secondary btn-prev" disabled>&laquo; Prev {{ page_size }}</button>
+                    <button type="button" class="btn btn-outline-secondary btn-next">Next {{ page_size }} &raquo;</button>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+</div>
+
+<!-- Per-Card Client-Side Pagination Script -->
+<script type="text/javascript">
+    (function () {
+        document.querySelectorAll('.leaderboard-card').forEach(function (card) {
+            var pageSize = parseInt(card.getAttribute('data-page-size') || '10', 10);
+            var rows = Array.prototype.slice.call(card.querySelectorAll('.leaderboard-row'));
+            var total = rows.length;
+            if (total <= pageSize) return;
+
+            var currentPage = 0;
+            var maxPage = Math.ceil(total / pageSize) - 1;
+            var prevBtn = card.querySelector('.btn-prev');
+            var nextBtn = card.querySelector('.btn-next');
+            var statusEl = card.querySelector('.page-status');
+
+            function renderPage() {
+                var start = currentPage * pageSize;
+                var end = Math.min(start + pageSize, total);
+
+                rows.forEach(function (row, idx) {
+                    if (idx >= start && idx < end) {
+                        row.classList.remove('d-none');
+                    } else {
+                        row.classList.add('d-none');
+                    }
+                });
+
+                if (statusEl) {
+                    statusEl.textContent = 'Showing ' + (start + 1) + '–' + end + ' of ' + total;
+                }
+                if (prevBtn) {
+                    prevBtn.disabled = (currentPage === 0);
+                }
+                if (nextBtn) {
+                    nextBtn.disabled = (currentPage >= maxPage);
+                }
+            }
+
+            if (prevBtn) {
+                prevBtn.addEventListener('click', function () {
+                    if (currentPage > 0) {
+                        currentPage--;
+                        renderPage();
+                    }
+                });
+            }
+            if (nextBtn) {
+                nextBtn.addEventListener('click', function () {
+                    if (currentPage < maxPage) {
+                        currentPage++;
+                        renderPage();
+                    }
+                });
+            }
+
+            renderPage();
+        });
+    })();
+</script>
+{% endblock container %}
