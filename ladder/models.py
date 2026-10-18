@@ -1,4 +1,4 @@
-from datetime import date
+import datetime
 import uuid
 from django.db import models
 from django.db.models import Avg, Count
@@ -7,8 +7,6 @@ from django.db.models.functions import TruncDate
 from django.urls import reverse
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-import datetime
-
 from django.utils.timezone import now
 
 
@@ -223,7 +221,7 @@ class Ladder(models.Model):
         """
         Is the ladder finished
         """
-        return date.today() > self.season.end_date
+        return datetime.date.today() > self.season.end_date
 
     def get_leader(self, user):
         """

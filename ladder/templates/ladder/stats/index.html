@@ -398,10 +398,14 @@
                                 <tr class="leaderboard-row {% if forloop.counter0 >= page_size %}d-none{% endif %}"
                                     data-index="{{ forloop.counter0 }}"
                                     style="cursor: pointer;"
-                                    onclick="window.location='{{ h2h_url }}';">
+                                    data-h2h-url="{{ h2h_url }}"
+                                    data-h2h-title="{{ row.player_a_name }} vs {{ row.player_b_name }}">
                                     <td class="ps-2 ps-sm-3 text-muted fw-semibold">{{ forloop.counter }}</td>
                                     <td>
-                                        <a href="{{ h2h_url }}" class="text-decoration-none fw-semibold">
+                                        <a href="{{ h2h_url }}"
+                                           data-h2h-url="{{ h2h_url }}"
+                                           data-h2h-title="{{ row.player_a_name }} vs {{ row.player_b_name }}"
+                                           class="text-decoration-none fw-semibold">
                                             {{ row.player_a_name }} <span class="text-muted fw-normal small mx-1">vs</span> {{ row.player_b_name }}
                                         </a>
                                     </td>
@@ -472,7 +476,7 @@
                                         </a>
                                         <div class="d-md-none small text-muted">
                                             <a href="{% url 'ladder' row.best_year row.best_round row.best_division %}" class="text-decoration-none text-muted">
-                                                {{ row.best_year }} R{{ row.best_round }}&middot;D{{ row.best_division }}
+                                                {{ row.best_year }} R{{ row.best_round }} &middot; Div {{ row.best_division }}
                                             </a>
                                             <span class="d-sm-none">&middot; {{ row.seasons_played }} rds</span>
                                         </div>
@@ -485,7 +489,7 @@
                                     </td>
                                     <td class="text-center d-none d-md-table-cell text-nowrap">
                                         <a href="{% url 'ladder' row.best_year row.best_round row.best_division %}" class="text-decoration-none small">
-                                            {{ row.best_year }} R{{ row.best_round }} &middot; Div {{ row.best_division }}
+                                            {{ row.best_year }} Round {{ row.best_round }} &middot; Division {{ row.best_division }}
                                         </a>
                                     </td>
                                     <td class="text-center text-muted">{{ row.avg_centile_display }}</td>
@@ -512,6 +516,8 @@
     </div>
 
 </div>
+
+{% include 'ladder/head_to_head/_lightbox_modal.html' %}
 
 <!-- Per-Card Client-Side Pagination Script -->
 <script type="text/javascript">
