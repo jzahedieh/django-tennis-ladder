@@ -34,16 +34,26 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 
-<h1> {{ ladder }} </h1>
-<h3>{{ ladder.season.start_date }} to {{ ladder.season.end_date }}</h3>
+<div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2 mb-3">
+    <div>
+        <h1 class="mb-1">{{ ladder }}</h1>
+        <h3 class="h5 text-muted fw-normal mb-0">{{ ladder.season.start_date }} to {{ ladder.season.end_date }}</h3>
+    </div>
+    {% if user.is_authenticated %}
+    <div class="flex-shrink-0">
+        <a href="{% url 'ladder_subscription' ladder.season.start_date|date:"Y" ladder.season.season_round ladder.division %}"
+           class="btn btn-sm {% if subscribed %}btn-outline-secondary{% else %}btn-outline-primary{% endif %}">
+            {% if subscribed %}Unsubscribe{% else %}Subscribe{% endif %}
+        </a>
+    </div>
+    {% endif %}
+</div>
+
     {% if messages %}
         {% for message in messages %}
             <div class="alert {% if message.tags %}alert-{{ message.tags }}{% endif %}" role="alert">{{ message }}</div>
         {% endfor %}
     {% endif %}
-    <a href="{% url 'ladder_subscription' ladder.season.start_date|date:"Y" ladder.season.season_round ladder.division %}">
-        {% if subscribed %}Unsubscribe{% else %}Subscribe{% endif %}
-    </a>
 
     <div class="table-responsive">
         <table id="ladderTable" class="table table-bordered table-sm ladder-table">
@@ -62,32 +72,38 @@ document.addEventListener('DOMContentLoaded', function () {
             <tbody>
             {% for league in ladder.league_set.all %}
                 {% with player_counter=forloop.counter %}
-                    <tr>
+                    {% get_player_name league.player user as row_player_name %}
+                    <tr{% if user.is_authenticated and league.player.user_id == user.id %} class="table-primary current-user-row"{% endif %}>
                         <td class="player_position"><strong> {{ player_counter }} </strong></td>
-                        <td class="player_name"> <a href="{% url 'player_history' league.player.id %}">{% get_player_name league.player user %}</a> </td>
+                        <td class="player_name"> <a href="{% url 'player_history' league.player.id %}">{{ row_player_name }}</a> </td>
                             {% for opponent in ladder.league_set.all %}
                                 {% with column_counter=forloop.counter %}
                                     {% if column_counter == player_counter %}
                                         <td class="box_grey score_field"></td>
                                     {% else %}
-                                        <td class="score_field selectable" data-player="{{ league.player.id }}"
+                                        {% url 'head_to_head' league.player.id opponent.player.id as h2h_url %}
+                                        {% get_player_name opponent.player user as col_opponent_name %}
+                                        <td class="score_field selectable"
+                                            data-player="{{ league.player.id }}"
                                             data-opp="{{ opponent.player.id }}"
-                                            onclick="location.href='{% url 'head_to_head' league.player.id opponent.player.id %}'">
-                                            <a href="{% url 'head_to_head' league.player.id opponent.player.id %}">
-                                                <div style="height:100%;width:100%">
-                                                    {% for result in results_dict|getkey:league.player.id %}
-                                                        {% if league.player == result.player and opponent.player == result.opponent %}
-                                                            {% if result.inaccurate_flag %}
-                                                                <span style="color:red; font-weight: bold"> {{ result.result }} <span class="astrix">*</span></span>
-                                                                <script type="text/javascript">
-                                                                    $('.score_error').show();
-                                                                </script>
-                                                            {% else %}
-                                                                {{ result.result }}
-                                                            {% endif %}
+                                            data-h2h-url="{{ h2h_url }}"
+                                            data-h2h-title="{{ row_player_name }} vs {{ col_opponent_name }}">
+                                            <a href="{{ h2h_url }}"
+                                               data-h2h-url="{{ h2h_url }}"
+                                               data-h2h-title="{{ row_player_name }} vs {{ col_opponent_name }}"
+                                               class="d-block w-100 h-100 text-decoration-none text-reset">
+                                                {% for result in results_dict|getkey:league.player.id %}
+                                                    {% if league.player.id == result.player.id and opponent.player.id == result.opponent.id %}
+                                                        {% if result.inaccurate_flag %}
+                                                            <span style="color:red; font-weight: bold"> {{ result.result }} <span class="astrix">*</span></span>
+                                                            <script type="text/javascript">
+                                                                $('.score_error').show();
+                                                            </script>
+                                                        {% else %}
+                                                            {{ result.result }}
                                                         {% endif %}
-                                                    {% endfor %}
-                                                </div>
+                                                    {% endif %}
+                                                {% endfor %}
                                             </a>
                                         </td>
                                     {% endif %}
@@ -105,7 +121,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     <div class="row mt-4">
         <div class="col-md-6 mb-4">
-            <h2 class="mb-4 text-nowrap">{{ current_season }} Stats</h2>
+            <h2 class="mb-4 text-nowrap">{{ ladder.season }} Stats</h2>
             <ul class="list-group list-group-flush" style="max-width: 550px;">
                 <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
                     <span>Total Matches in Division</span>
@@ -147,17 +163,16 @@ document.addEventListener('DOMContentLoaded', function () {
         </div>
     </div>
 
+    {% include 'ladder/head_to_head/_lightbox_modal.html' %}
+
     <script type="text/javascript">
-
         $(document).ready(function () {
-                    $(".selectable").hover(function () {
-                        opponentSelector(this).css("background-color", "#eee")
-                    }, function () {
-                        opponentSelector(this).css("background-color", "");
-                    });
-
-                }
-        );
+            $(document).on('mouseenter', '#ladderTable .selectable', function () {
+                opponentSelector(this).css("background-color", "#eee");
+            }).on('mouseleave', '#ladderTable .selectable', function () {
+                opponentSelector(this).css("background-color", "");
+            });
+        });
         function opponentSelector(element) {
             return $('td[data-player=' + $(element).data('opp') + '][data-opp=' + $(element).data('player') + ']');
         }

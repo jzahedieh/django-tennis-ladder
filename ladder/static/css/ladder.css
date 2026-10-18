@@ -13,6 +13,18 @@ a {
     background-color: #808080 !important;
 }
 
+.ladder-table tr.current-user-row > td:not(.box_grey) {
+    background-color: #e8f0fe;
+}
+
+.ladder-table tr.current-user-row td.player_name a {
+    font-weight: 700;
+}
+
+.ladder-table td.selectable {
+    cursor: pointer;
+}
+
 .ladder-table td.score_field {
     min-width: 30px;
     text-align: center !important;
