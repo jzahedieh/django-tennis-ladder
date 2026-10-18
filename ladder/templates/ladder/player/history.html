@@ -4,39 +4,41 @@
 {% block container %}
 
     <h1>{% get_player_name player user %}</h1>
-    <div class="row mb-4">
-        <div class="col-md-2"><h5>Played: {{ player_stats.played }}</h5></div>
-        <div class="col-md-3"><h5>Completion Rate: {{ player_stats.completion_rate }}</h5></div>
-        <div class="col-md-2"><h5>Win Rate: {{ player_stats.win_rate }}</h5></div>
-        <div class="col-md-2"><h5>Avg. Points: {{ player_stats.average }}</h5></div>
-        <div class="col-md-3"><h5>Best Centile: {{ player_stats.best_centile }}</h5></div>
+    <div class="row g-2 mb-4">
+        <div class="col-6 col-md"><h5>Played: {{ player_stats.played }}</h5></div>
+        <div class="col-6 col-md"><h5>Completion Rate: {{ player_stats.completion_rate }}</h5></div>
+        <div class="col-6 col-md"><h5>Win Rate: {{ player_stats.win_rate }}</h5></div>
+        <div class="col-6 col-md"><h5>Avg. Points: {{ player_stats.average }}</h5></div>
+        <div class="col-12 col-md"><h5>Best Centile: {{ player_stats.best_centile }}</h5></div>
     </div>
 
     <h2>Head-to-Head</h2>
 
     <div class="col-12 mb-5">
-        <table id="head-table" class="table">
-            <thead>
-            <tr>
-                <th>Player</th>
-                <th>Times Played</th>
-                <th>Last Played</th>
-                <th></th>
-            </tr>
-            </thead>
-
-            <tbody>
-            {% for h in head %}
+        <div class="table-responsive">
+            <table id="head-table" class="table">
+                <thead>
                 <tr>
-                    <td>{{ h.opponent__first_name }} {{ h.opponent__last_name|slice:":1" }}.</td>
-
-                    <td>{{ h.times_played|floatformat:"0" }}</td>
-                    <td>{{ h.last_played }}</td>
-                    <td><a href="{% url 'head_to_head' player.id h.opponent %}">More Detail</a></td>
+                    <th>Player</th>
+                    <th>Times Played</th>
+                    <th>Last Played</th>
+                    <th></th>
                 </tr>
-            {% endfor %}
-            </tbody>
-        </table>
+                </thead>
+
+                <tbody>
+                {% for h in head %}
+                    <tr>
+                        <td>{{ h.opponent__first_name }} {{ h.opponent__last_name|slice:":1" }}.</td>
+
+                        <td>{{ h.times_played|floatformat:"0" }}</td>
+                        <td>{{ h.last_played }}</td>
+                        <td><a href="{% url 'head_to_head' player.id h.opponent %}">More Detail</a></td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
 
         <form class="d-flex" style="max-width: 400px;" id="h2h_form">
             <div class="input-group">
@@ -86,35 +88,39 @@
 
     <h2>History</h2>
     <div class="col-12 mb-5">
-        <table id="seasons-table" class="table">
-            <thead>
-            <tr>
-                <th>Ladder</th>
-                <th>Centile</th>
-                <th>Perc. Played</th>
-                <th>Total Points</th>
-                <th>Matches</th>
-                <th>Won</th>
-                <th>Avg. Points</th>
-            </tr>
-            </thead>
-
-            <tbody>
-            {% for league in league_set %}
+        <div class="table-responsive">
+            <table id="seasons-table" class="table table-sm align-middle">
+                <thead>
                 <tr>
-                    <td><a href="{% url 'ladder' league.ladder.season.start_date|date:"Y" league.ladder.season.season_round league.ladder.division %}"> Division:  {{ league.ladder }} </a></td>
-                    <td {% if league.centile is not None %}title="Rank {{ league.centile_rank }} of {{ league.centile_total }}"{% endif %}>
-                        {% if league.centile is not None %}{{ league.centile }}%{% else %}-{% endif %}
-                    </td>
-                    <td>{{  league.player_stats.percplayed|floatformat:"2"}} %</td>
-                    <td>{{ league.player_stats.total_points|floatformat:"0" }}</td>
-                    <td>{{ league.player_stats.games|floatformat:"0" }}</td>
-                    <td>{{ league.player_stats.won_count }}</td>
-                    <td>{{ league.player_stats.pointsdivgames|floatformat:"2" }}</td>
+                    <th>Ladder</th>
+                    <th class="text-center">Centile</th>
+                    <th class="text-center">Played</th>
+                    <th class="text-center">Won</th>
+                    <th class="text-end">Points</th>
+                    <th class="text-end">Avg</th>
                 </tr>
-            {% endfor %}
-            </tbody>
-        </table>
+                </thead>
+
+                <tbody>
+                {% for league in league_set %}
+                    <tr>
+                        <td class="text-nowrap">
+                            <a href="{% url 'ladder' league.ladder.season.start_date|date:"Y" league.ladder.season.season_round league.ladder.division %}">
+                                {{ league.ladder.season.start_date|date:"Y" }} R{{ league.ladder.season.season_round }} &middot; Div {{ league.ladder.division }}
+                            </a>
+                        </td>
+                        <td class="text-center" {% if league.centile is not None %}title="Rank {{ league.centile_rank }} of {{ league.centile_total }}"{% endif %}>
+                            {% if league.centile is not None %}{{ league.centile }}%{% else %}-{% endif %}
+                        </td>
+                        <td class="text-center">{{ league.player_stats.percplayed|floatformat:"0" }}%</td>
+                        <td class="text-center text-nowrap">{{ league.player_stats.won_count }}/{{ league.player_stats.games|floatformat:"0" }}</td>
+                        <td class="text-end">{{ league.player_stats.total_points|floatformat:"0" }}</td>
+                        <td class="text-end">{{ league.player_stats.pointsdivgames|floatformat:"2" }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 
     {% if centile_chart_data|length >= 2 %}
@@ -124,9 +130,17 @@
 
         <h2>Centile Position</h2>
         <p class="text-muted small mb-3">
-            Position across the whole ladder as a percentage of total players (lower % = higher up the ladder).
+            Position across the whole ladder as a percentage (higher % = greater success / higher up the ladder).
         </p>
-        <div class="card bg-light p-4 mb-4">
+        <style>
+            #centile-chart .c3-bar {
+                opacity: 0.55;
+            }
+            #centile-chart .c3-bar:hover {
+                opacity: 0.8;
+            }
+        </style>
+        <div class="card bg-light p-3 p-md-4 mb-4">
             <div id="centile-chart"></div>
         </div>
 
@@ -151,7 +165,7 @@
                         columns: [centileCol, totalPlayersCol],
                         types: {
                             centile: 'line',
-                            total_players: 'line'
+                            total_players: 'bar'
                         },
                         axes: {
                             centile: 'y',
@@ -163,7 +177,12 @@
                         },
                         colors: {
                             centile: '#1f77b4',
-                            total_players: '#ff7f0e'
+                            total_players: '#d1d9e6'
+                        }
+                    },
+                    bar: {
+                        width: {
+                            ratio: 0.6
                         }
                     },
                     axis: {
@@ -178,11 +197,11 @@
                         },
                         y: {
                             label: 'Centile (%)',
-                            inverted: true,
-                            min: 1,
+                            min: 0,
                             max: 100,
-                            padding: { top: 10, bottom: 10 },
+                            padding: { top: 0, bottom: 0 },
                             tick: {
+                                values: [0, 20, 40, 60, 80, 100],
                                 format: function (d) { return Math.round(d) + '%'; }
                             }
                         },
@@ -190,7 +209,7 @@
                             show: true,
                             label: 'Total Players',
                             min: 0,
-                            padding: { bottom: 0 },
+                            padding: { top: 20, bottom: 0 },
                             tick: {
                                 format: d3.format('d')
                             }

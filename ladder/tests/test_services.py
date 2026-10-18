@@ -44,8 +44,8 @@ class CentileServiceTest(TestCase):
             all_lgs.sort(key=lambda x: (x.ladder.division, -get_pts(x), x.sort_order, x.id))
             rank = [x.id for x in all_lgs].index(lg.id) + 1
             total = len(all_lgs)
-            expected_centile = round((rank / total) * 100)
-            if expected_best is None or expected_centile < expected_best:
+            expected_centile = round(((total - rank) / total) * 100)
+            if expected_best is None or expected_centile > expected_best:
                 expected_best = expected_centile
 
             info = centile_history['by_league_id'][lg.id]
