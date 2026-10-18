@@ -4,6 +4,7 @@ from ladder import views
 
 urlpatterns = [
     re_path(r'^$', views.index, name='index'),
+    path('stats/', views.stats, name='stats'),
     re_path(r'^list/$', views.list_rounds, name='list'),
     re_path(r'^current/$', views.current_season_redirect, name='current'),
     # ex: /2013/round/1/

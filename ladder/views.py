@@ -15,6 +15,7 @@ from django.views.decorators.csrf import csrf_exempt
 from ladder.forms import AddResultForm, AddEntryForm
 from ladder.models import Ladder, Player, Result, Season, League, LadderSubscription
 from ladder.services.centile import CentileService
+from ladder.services.stats import ClubStatsService
 
 def _unplayed_opponents_for(user_player, ladder):
     # players in this ladder, in ladder order
@@ -53,6 +54,20 @@ def index(request):
         'at_players': at_players,
     }
     return render(request, 'ladder/index.html', context)
+
+
+def stats(request):
+    period = request.GET.get('period', 'all')
+    year = request.GET.get('year')
+    season_id = request.GET.get('season')
+
+    context = ClubStatsService.get_club_stats(
+        period=period,
+        year=year,
+        season_id=season_id,
+        authenticated=request.user.is_authenticated,
+    )
+    return render(request, 'ladder/stats/index.html', context)
 
 
 def list_rounds(request):

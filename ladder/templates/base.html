@@ -61,6 +61,7 @@
                                 {% endif %}
                             </ul>
                         </li>
+                        <li class="nav-item"><a class="nav-link text-dark" href="{% url 'stats' %}">Stats</a></li>
                         {% if user.is_authenticated %}
                             <li class="nav-item">
                                 <a class="nav-link text-dark" href="#" onclick="event.preventDefault(); document.getElementById('logout-form-nav').submit();">
