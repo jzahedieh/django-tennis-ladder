@@ -250,7 +250,7 @@ class Ladder(models.Model):
         if not totals:
             return {
                 'player': 'No Results',
-                'player_id': '../#',
+                'player_id': None,
                 'total': '-',
                 'division': self.division,
                 'url': url,

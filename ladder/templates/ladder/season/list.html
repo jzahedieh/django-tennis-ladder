@@ -1,42 +1,187 @@
 {% extends 'base.html' %}
 {% block container %}
-    <div class="col-12 mt-4">
-        <table cellspacing="1" id="seasons-table" class="table">
-            <thead>
-            <tr>
-                <th>Season</th>
-                <th>Divisions</th>
-                <th>Players</th>
-                <th>Matches</th>
-                <th>Played</th>
-                <th>Percentage</th>
-            </tr>
-            </thead>
-
-            <tbody>
-            {% for season in seasons %}
-                <tr class="season" data-season={{ season.id }}>
-                <td><a href="{% url 'season' season.start_date|date:"Y" season.season_round  %}">{{ season }}</a></td>
-                    <td>{{ season.ladder_set.all.count }}</td>
-                </tr>
-            {% endfor %}
-            </tbody>
-        </table>
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+    <div>
+        <h1 class="mb-1">All Ladders</h1>
+        <p class="text-muted mb-0">
+            Complete archive of published Highgate ladder rounds
+            {% if summary.years_span %}
+                <span class="badge bg-light text-secondary border ms-1">{{ summary.years_span }}</span>
+            {% endif %}
+        </p>
     </div>
-    <script type="text/javascript">
-        $(document).ready(function () {
-            $(".season").each(function () {
-                var season_id = $(this).data('season');
-                $.get('/season/ajax/stats/', { id: season_id }, function (data) {
-                    $('#total_divs').text(data.player_count);
-                    $("tr[data-season='" + season_id + "']").append(
-                            "<td>" + data.player_count + "</td>" +
-                            "<td>" + data.total_games_count + "</td>" +
-                            "<td>" + data.results_count + "</td>" +
-                            "<td>" + data.percentage_played + " % </td>"
-                    );
-                });
+    <div class="d-flex flex-wrap align-items-center gap-2">
+        <a href="{% url 'current' %}" class="btn btn-sm btn-primary">Current Ladder</a>
+        <a href="{% url 'stats' %}" class="btn btn-sm btn-outline-secondary">Club Stats &amp; Leaderboards</a>
+    </div>
+</div>
+
+<!-- Archive Summary KPI Strip -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="card bg-light border-0 h-100">
+            <div class="card-body py-3 text-center">
+                <div class="text-muted small text-uppercase fw-semibold">Ladders / Rounds</div>
+                <div class="fs-3 fw-bold text-dark">{{ summary.total_seasons }}</div>
+                {% if summary.years_span %}
+                    <div class="text-muted" style="font-size: 0.75rem;">{{ summary.years_span }}</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card bg-light border-0 h-100">
+            <div class="card-body py-3 text-center">
+                <div class="text-muted small text-uppercase fw-semibold">Total Divisions</div>
+                <div class="fs-3 fw-bold text-dark">{{ summary.total_divisions }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card bg-light border-0 h-100">
+            <div class="card-body py-3 text-center">
+                <div class="text-muted small text-uppercase fw-semibold">Matches Played</div>
+                <div class="fs-3 fw-bold text-dark">{{ summary.total_matches_played }}</div>
+                {% if summary.total_matches_scheduled %}
+                    <div class="text-muted" style="font-size: 0.75rem;">of {{ summary.total_matches_scheduled }} scheduled</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card bg-light border-0 h-100">
+            <div class="card-body py-3 text-center">
+                <div class="text-muted small text-uppercase fw-semibold">Overall Completion</div>
+                <div class="fs-3 fw-bold text-dark">{{ summary.overall_completion }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Historical Ladders Table Card -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-white py-3 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
+        <div>
+            <h2 class="h5 mb-0 fw-bold">Historical Ladders</h2>
+            <small class="text-muted" id="season-filter-status">{{ summary.total_seasons }} round{{ summary.total_seasons|pluralize }} recorded</small>
+        </div>
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            {% if available_years %}
+            <select id="season-year-filter" class="form-select form-select-sm" style="width: auto;" aria-label="Filter by Year">
+                <option value="">All Years</option>
+                {% for yr in available_years %}
+                    <option value="{{ yr }}">{{ yr }}</option>
+                {% endfor %}
+            </select>
+            {% endif %}
+            <input id="season-search" type="search" class="form-control form-control-sm" style="max-width: 220px;" placeholder="Filter rounds..." autocomplete="off" aria-label="Filter rounds">
+        </div>
+    </div>
+
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table id="seasons-table" class="table table-hover table-sm align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-3">Season</th>
+                        <th class="d-none d-md-table-cell">Dates</th>
+                        <th class="text-center">Divisions</th>
+                        <th class="text-center">Players</th>
+                        <th class="text-center">Matches</th>
+                        <th class="text-center">Played</th>
+                        <th class="text-end pe-3">Percentage</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for season in seasons %}
+                        <tr class="season season-row"
+                            data-season="{{ season.id }}"
+                            data-year="{{ season.start_date|date:'Y' }}"
+                            data-search-text="{{ season|lower }} {{ season.name|lower }} {{ season.start_date|date:'d M Y'|lower }} {{ season.end_date|date:'d M Y'|lower }}">
+                            <td class="ps-3 text-nowrap">
+                                <a href="{% url 'season' season.start_date|date:"Y" season.season_round %}" class="fw-semibold text-decoration-none">
+                                    {{ season }}
+                                </a>
+                                {% if season.is_latest %}
+                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle ms-2">Latest</span>
+                                {% endif %}
+                                <div class="d-md-none small text-muted">
+                                    {{ season.start_date|date:"d M Y" }} &ndash; {{ season.end_date|date:"d M Y" }}
+                                </div>
+                            </td>
+                            <td class="d-none d-md-table-cell text-muted small text-nowrap">
+                                {{ season.start_date|date:"d M Y" }} &ndash; {{ season.end_date|date:"d M Y" }}
+                            </td>
+                            <td class="text-center">{{ season.divisions_count }}</td>
+                            <td class="text-center">{{ season.player_count }}</td>
+                            <td class="text-center text-muted">{{ season.total_matches }}</td>
+                            <td class="text-center fw-semibold">{{ season.matches_played }}</td>
+                            <td class="text-end pe-3 text-nowrap">
+                                <div class="d-inline-flex align-items-center justify-content-end gap-2">
+                                    <div class="progress d-none d-sm-flex" style="width: 64px; height: 6px;" aria-hidden="true">
+                                        <div class="progress-bar {% if season.completion_pct >= 75 %}bg-success{% elif season.completion_pct >= 50 %}bg-primary{% else %}bg-secondary{% endif %}"
+                                             role="progressbar"
+                                             style="width: {{ season.completion_pct }}%;"></div>
+                                    </div>
+                                    <span class="badge {% if season.completion_pct >= 75 %}bg-success-subtle text-success border border-success-subtle{% elif season.completion_pct >= 50 %}bg-primary-subtle text-primary border border-primary-subtle{% else %}bg-light text-secondary border{% endif %}">
+                                        {{ season.percentage_played }}%
+                                    </span>
+                                </div>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-4">No published ladders found.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript">
+    (function () {
+        var searchInput = document.getElementById('season-search');
+        var yearSelect = document.getElementById('season-year-filter');
+        var statusEl = document.getElementById('season-filter-status');
+        var rows = Array.prototype.slice.call(document.querySelectorAll('#seasons-table .season-row'));
+        if (!rows.length) return;
+
+        function applyFilters() {
+            var q = (searchInput ? searchInput.value : '').trim().toLowerCase();
+            var yr = yearSelect ? yearSelect.value : '';
+            var visible = 0;
+
+            rows.forEach(function (row) {
+                var rowYr = row.getAttribute('data-year') || '';
+                var rowTxt = row.getAttribute('data-search-text') || '';
+                var matchYr = !yr || rowYr === yr;
+                var matchTxt = !q || rowTxt.indexOf(q) !== -1;
+
+                if (matchYr && matchTxt) {
+                    row.classList.remove('d-none');
+                    visible++;
+                } else {
+                    row.classList.add('d-none');
+                }
             });
-        });
-    </script>
+
+            if (statusEl) {
+                if (q || yr) {
+                    statusEl.textContent = 'Showing ' + visible + ' of ' + rows.length + ' rounds';
+                } else {
+                    statusEl.textContent = rows.length + ' round' + (rows.length === 1 ? '' : 's') + ' recorded';
+                }
+            }
+        }
+
+        if (searchInput) {
+            searchInput.addEventListener('input', applyFilters);
+        }
+        if (yearSelect) {
+            yearSelect.addEventListener('change', applyFilters);
+        }
+    })();
+</script>
 {% endblock %}

@@ -4,7 +4,7 @@ import json
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import PasswordChangeForm
-from django.db.models import Q
+from django.db.models import Count, Q
 from django.http import HttpResponseRedirect, Http404, HttpResponse, HttpResponseForbidden, JsonResponse, \
     HttpResponseBadRequest
 from django.shortcuts import render, get_object_or_404
@@ -45,8 +45,17 @@ def index(request):
     at_results = int(Result.objects.count() / 2)
     at_players = Player.objects.count()
 
+    season_stats = current_season.get_stats()
+    leader_stats = current_season.get_leader_stats(user=request.user)
+    current_leaders = list(leader_stats.get('current_leaders', {}).values())
+    progress_data = current_season.get_progress()
+
     context = {
         'current_season': current_season,
+        'season_stats': season_stats,
+        'current_leaders': current_leaders,
+        'progress_data': progress_data,
+        'progress_json': json.dumps(progress_data),
         'at_years': (cs_year - os_year),
         'at_years_str': ' (' + os_year.__str__() + ' -> ' + cs_year.__str__() + ')',
         'at_divisions': at_divisions,
@@ -72,9 +81,87 @@ def stats(request):
 
 
 def list_rounds(request):
-    seasons = Season.objects.filter(is_draft=False).order_by('-start_date')
+    seasons = list(
+        Season.objects.filter(is_draft=False).order_by('-start_date', '-season_round')
+    )
+    season_ids = [s.id for s in seasons]
+
+    divisions_by_season = {}
+    players_by_season = {}
+    total_matches_by_season = {}
+    played_by_season = {}
+
+    if season_ids:
+        ladder_rows = (
+            Ladder.objects.filter(season_id__in=season_ids)
+            .annotate(league_count=Count('league'))
+            .values('season_id', 'league_count')
+        )
+        for row in ladder_rows:
+            sid = row['season_id']
+            lc = int(row['league_count'] or 0)
+            divisions_by_season[sid] = divisions_by_season.get(sid, 0) + 1
+            players_by_season[sid] = players_by_season.get(sid, 0) + lc
+            total_matches_by_season[sid] = total_matches_by_season.get(sid, 0) + (lc * (lc - 1) // 2)
+
+        result_rows = (
+            Result.objects.filter(ladder__season_id__in=season_ids)
+            .values('ladder__season_id')
+            .annotate(result_count=Count('id'))
+        )
+        played_by_season = {
+            row['ladder__season_id']: int(row['result_count'] or 0) // 2
+            for row in result_rows
+        }
+
+    total_divisions = 0
+    total_matches_played = 0
+    total_matches_scheduled = 0
+
+    for idx, s in enumerate(seasons):
+        divs = divisions_by_season.get(s.id, 0)
+        players = players_by_season.get(s.id, 0)
+        total_games = total_matches_by_season.get(s.id, 0)
+        played = played_by_season.get(s.id, 0)
+        pct = (played / total_games * 100.0) if total_games > 0 else 0.0
+
+        s.divisions_count = divs
+        s.player_count = players
+        s.total_matches = total_games
+        s.total_games_count = total_games
+        s.matches_played = played
+        s.results_count = played
+        s.completion_pct = round(pct, 1)
+        s.percentage_played = f"{pct:.2f}"
+        s.is_latest = (idx == 0)
+
+        total_divisions += divs
+        total_matches_played += played
+        total_matches_scheduled += total_games
+
+    overall_pct = (
+        (total_matches_played / total_matches_scheduled * 100.0)
+        if total_matches_scheduled > 0
+        else 0.0
+    )
+    years_span = (
+        f"{seasons[-1].start_date.year}–{seasons[0].start_date.year}"
+        if seasons
+        else ""
+    )
+    available_years = sorted({s.start_date.year for s in seasons}, reverse=True)
+
     context = {
         'seasons': seasons,
+        'available_years': available_years,
+        'summary': {
+            'total_seasons': len(seasons),
+            'total_divisions': total_divisions,
+            'total_matches_played': total_matches_played,
+            'total_matches_scheduled': total_matches_scheduled,
+            'overall_completion': f"{overall_pct:.1f}%",
+            'years_span': years_span,
+        },
     }
     return render(request, 'ladder/season/list.html', context)
 
@@ -132,7 +219,7 @@ def ladder(request, year, season_round, division_id):
     )
 
     subscribed = False
-    if request.user.is_authenticated and not request.user.is_superuser:
+    if request.user.is_authenticated:
         subscribed = LadderSubscription.objects.filter(
             user=request.user,
             ladder__division=division_id,
@@ -156,7 +243,7 @@ def ladder(request, year, season_round, division_id):
 @never_cache
 def ladder_subscription(request, year, season_round, division_id):
 
-    if request.user.is_superuser or not request.user.is_authenticated:
+    if not request.user.is_authenticated:
         return HttpResponseForbidden()
 
     existing_subscription = LadderSubscription.objects.filter(
@@ -318,43 +405,6 @@ def player_search(request):
         limit=10,
     )
     return JsonResponse({"options": options})
-
-
-def season_ajax_stats(request):
-
-    season_id = request.GET.get('id', False)
-    if season_id is False:
-        raise Http404
-
-    try:
-        season_object = Season.objects.get(pk=season_id)
-    except Season.DoesNotExist:
-        raise Http404
-    except ValueError:
-        raise Http404
-
-    stats = season_object.get_stats()
-
-    include_leader = request.GET.get('leader', False)
-    if include_leader:
-        stats.update(season_object.get_leader_stats(user=request.user))
-
-    return HttpResponse(json.dumps(stats), content_type="application/json")
-
-
-def season_ajax_progress(request):
-    season_id = request.GET.get('id', False)
-    if season_id is False:
-        raise Http404
-
-    try:
-        season_object = Season.objects.get(pk=season_id)
-    except Season.DoesNotExist:
-        raise Http404
-    except ValueError:
-        raise Http404
-
-    return HttpResponse(json.dumps(season_object.get_progress()), content_type="application/json")
 
 
 @login_required

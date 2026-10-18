@@ -8,12 +8,16 @@
     <script type="text/javascript" src="{% static "js/dataTables.min.js" %}"></script>
 
     {% spaceless %}
-    <h1>{{ season }}</h1>
-    <h3>{{ season.start_date }} to {{ season.end_date }}</h3>
+    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2 mb-3">
+        <div>
+            <h1 class="mb-1">{{ season }}</h1>
+            <h3 class="h5 text-muted fw-normal mb-0">{{ season.start_date }} to {{ season.end_date }}</h3>
+        </div>
+    </div>
 
     {% for ladder in ladders %}
 
-        <a class="d-block mb-0 fw-semibold" href="{% url 'ladder' ladder.season.start_date|date:"Y" ladder.season.season_round ladder.division %}">Division: {{ ladder.division }}</a>
+        <a class="d-block mb-1 fw-semibold text-decoration-none" href="{% url 'ladder' ladder.season.start_date|date:"Y" ladder.season.season_round ladder.division %}">Division: {{ ladder.division }}</a>
         <div class="table-responsive mt-0">
             <table cellspacing="1" id="ladderTable{{ ladder.id }}" class="table table-bordered table-sm ladder-table">
             <thead>
@@ -22,6 +26,7 @@
             {% for i in ladder.league_set.all %}
                 <th class="score_field"><strong> {{ forloop.counter }} </strong></th>
             {% endfor %}
+            <th class="score_field score_total score_average">Avg</th>
             <th class="score_field score_total">Total</th>
             </tr>
             </thead>
@@ -29,34 +34,47 @@
             <tbody>
             {% for league in ladder.league_set.all %}
                 {% with player_counter=forloop.counter %}
-                    <tr>
+                    {% get_player_name league.player user as row_player_name %}
+                    <tr{% if user.is_authenticated and league.player.user_id == user.id %} class="table-primary current-user-row"{% endif %}>
                     <td class="player_position"><strong> {{ player_counter }} </strong></td>
-                    <td class="player_name"><span>{% get_player_name league.player user %}</span></td>
+                    <td class="player_name"><a href="{% url 'player_history' league.player.id %}">{{ row_player_name }}</a></td>
                     {% for opponent in ladder.league_set.all %}
                         {% with column_counter=forloop.counter %}
                             {% if column_counter == player_counter %}
                             <td class="box_grey score_field"></td>
                             {% else %}
-    <td class="score_field selectable" data-player="{{ league.player.id }}" data-opp="{{ opponent.player.id }}">
-    {% for result in results_dict|getkey:league.player.id %}
-    {% if league.player.id == result.player.id and opponent.player.id == result.opponent.id %}
-    {% if result.inaccurate_flag %}
-    <span style="color:red; font-weight: bold"> {{ result.result }} <span class="astrix">*</span></span>
-    <script type="text/javascript">
-    $('.score_error').show();
-    </script>
-    {% else %}
-    {{ result.result }}
-    {% endif %}
-    {% endif %}
-    {% endfor %}
-    </td>
+                            {% url 'head_to_head' league.player.id opponent.player.id as h2h_url %}
+                            {% get_player_name opponent.player user as col_opponent_name %}
+                            <td class="score_field selectable"
+                                data-player="{{ league.player.id }}"
+                                data-opp="{{ opponent.player.id }}"
+                                data-h2h-url="{{ h2h_url }}"
+                                data-h2h-title="{{ row_player_name }} vs {{ col_opponent_name }}">
+                                <a href="{{ h2h_url }}"
+                                   data-h2h-url="{{ h2h_url }}"
+                                   data-h2h-title="{{ row_player_name }} vs {{ col_opponent_name }}"
+                                   class="d-block w-100 h-100 text-decoration-none text-reset">
+                                    {% for result in results_dict|getkey:league.player.id %}
+                                        {% if league.player.id == result.player.id and opponent.player.id == result.opponent.id %}
+                                            {% if result.inaccurate_flag %}
+                                                <span style="color:red; font-weight: bold"> {{ result.result }} <span class="astrix">*</span></span>
+                                                <script type="text/javascript">
+                                                    $('.score_error').show();
+                                                </script>
+                                            {% else %}
+                                                {{ result.result }}
+                                            {% endif %}
+                                        {% endif %}
+                                    {% endfor %}
+                                </a>
+                            </td>
                             {% endif %}
                         {% endwith %}
                     {% endfor %}
+                    <td class="score_field score_total score_average"> {{ results_dict|getaverage:league.player.id }} </td>
+                    <td class="score_field score_total"> {{ results_dict|gettotal:league.player.id }} </td>
+                    </tr>
                 {% endwith %}
-            <td class="score_field score_total"> {{ results_dict|gettotal:league.player.id }} </td>
-            </tr>
             {% endfor %}
             </tbody>
             </table>
@@ -64,12 +82,14 @@
     {% endfor %}
     {% endspaceless %}
 
+    {% include 'ladder/head_to_head/_lightbox_modal.html' %}
+
     <script type="text/javascript">
         document.addEventListener('DOMContentLoaded', function () {
             document.querySelectorAll('.ladder-table').forEach(function (el) {
                 var numCols = el.querySelectorAll('thead th').length;
-                /* Score cells: index 2 up to (but not including) Total */
-                var scoreCols = Array.from({ length: numCols - 3 }, function (_, i) { return i + 2; });
+                /* Score cells: index 2 up to (but not including) Avg and Total */
+                var scoreCols = Array.from({ length: numCols - 4 }, function (_, i) { return i + 2; });
                 new DataTable(el, {
                     paging:    false,
                     info:      false,
@@ -83,10 +103,10 @@
                         bottomEnd: null
                     },
                     columnDefs: [
-                        /* Disable ordering on Name and score cells; pos # and Total remain sortable */
+                        /* Disable ordering on Name and score cells; pos #, Avg, and Total remain sortable */
                         { orderable: false, targets: [1].concat(scoreCols) },
                         /* Sortable columns default to highest first */
-                        { orderSequence: ['desc', 'asc'], targets: [0, -1] }
+                        { orderSequence: ['desc', 'asc'], targets: [0, -1, -2] }
                     ]
                 });
             });
@@ -101,7 +121,7 @@
             });
         });
         function opponentCellSeason(el) {
-            return $('td[data-player=' + $(el).data('opp') + '][data-opp=' + $(el).data('player') + ']');
+            return $(el).closest('.ladder-table').find('td[data-player=' + $(el).data('opp') + '][data-opp=' + $(el).data('player') + ']');
         }
     </script>
 {% endblock %}
