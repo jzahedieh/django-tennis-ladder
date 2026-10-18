@@ -1,37 +1,17 @@
 {% extends 'base.html' %}
 {% load ladder_extras %}
 {% block container %}
-    <h2>{{ player }} Vs {{ opponent }}</h2>
-    {% if not results %}
-        No results for match up.
-    {% else %}
-    <h4>Played: {{ stats.played }} Won: {{ stats.won }} Lost: {{ stats.lost }}</h4>
-    <div class="col-12 mt-4">
-        <table class="table table-sm">
-            <thead>
-            <tr>
-                <th>Date Added</th>
-                <th>Ladder</th>
-                <th>Winner</th>
-                <th>Result</th>
-                <th>Loser</th>
-                <th>Result</th>
-            </tr>
-            </thead>
-
-            <tbody>
-            {% for result in results %}
-                <tr>
-                    <td>{{ result.date_added }}</td>
-                    <td><a href="{% url 'ladder' result.ladder.season.start_date|date:"Y" result.ladder.season.season_round result.ladder.division %}">{{ result.ladder }}</a></td>
-                    <td>{% get_player_name result.opponent user %}</td>
-                    <td>9</td>
-                    <td>{% get_player_name result.player user %}</td>
-                    <td>{{ result.result }}</td>
-                </tr>
-            {% endfor %}
-            </tbody>
-        </table>
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <h2 class="mb-0">{% get_player_name player user %} vs {% get_player_name opponent user %}</h2>
+        <div class="d-flex gap-2">
+            <a href="{% url 'player_history' player.id %}" class="btn btn-sm btn-outline-secondary">
+                {% get_player_name player user %} Profile
+            </a>
+            <a href="{% url 'player_history' opponent.id %}" class="btn btn-sm btn-outline-secondary">
+                {% get_player_name opponent user %} Profile
+            </a>
+        </div>
     </div>
-    {% endif %}
+
+    {% include 'ladder/head_to_head/_modal_content.html' %}
 {% endblock %}

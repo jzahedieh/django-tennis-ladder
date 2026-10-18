@@ -2,19 +2,18 @@ import datetime
 import json
 
 from django.contrib.auth.decorators import login_required
-from django.db.models import Q, Count, Max
+from django.db.models import Q
 from django.http import HttpResponseRedirect, Http404, HttpResponse, HttpResponseForbidden, JsonResponse, \
     HttpResponseBadRequest
 from django.shortcuts import render, get_object_or_404
 from django.urls import reverse
-from django.utils.html import escape
 from django.views.decorators.cache import never_cache
 from django.contrib import messages
 from django.views.decorators.csrf import csrf_exempt
 
 from ladder.forms import AddResultForm, AddEntryForm
-from ladder.models import Ladder, Player, Result, Season, League, LadderSubscription
-from ladder.services.centile import CentileService
+from ladder.models import Ladder, Player, Result, Season, LadderSubscription
+from ladder.services.player import PlayerStatsService
 from ladder.services.stats import ClubStatsService
 
 def _unplayed_opponents_for(user_player, ladder):
@@ -258,71 +257,31 @@ def add(request, year, season_round, division_id):
 
 def player_history(request, player_id):
     get_object_or_404(Player, pk=player_id)
-
-    # Prefetch player results at the player level
     player = Player.objects.prefetch_related('result_player').get(pk=player_id)
 
-    # Get league_set with comprehensive prefetching
-    league_set = player.league_set.select_related(
-        'ladder__season'
-    ).prefetch_related(
-        'ladder__league_set'  # For league counts
-    ).order_by('-ladder__season__start_date')
+    context = PlayerStatsService.get_player_profile(
+        player=player,
+        authenticated=request.user.is_authenticated,
+    )
+    context['centile_chart_json'] = json.dumps(context['centile_chart_data'])
 
-    # Force evaluation of league_set to ensure prefetching works
-    league_list = list(league_set.filter(ladder__season__is_draft=False))
-
-    # Pre-calculate player stats and centile history
-    player_stats = player.player_stats()
-    centile_history = CentileService.get_player_centile_history(player)
-    player_stats['best_centile'] = centile_history['best_centile']
-
-    by_league_id = centile_history['by_league_id']
-    for lg in league_list:
-        info = by_league_id.get(lg.id)
-        if info and info['centile'] is not None:
-            lg.centile = info['centile']
-            lg.centile_rank = info['rank']
-            lg.centile_total = info['total_players']
-        else:
-            lg.centile = None
-            lg.centile_rank = None
-            lg.centile_total = None
-
-    # Return top 10 played against
-    try:
-        head = Result.objects.values('opponent', 'opponent__first_name', 'opponent__last_name').filter(
-            player=player).annotate(times_played=Count('opponent'), last_played=Max('date_added')).order_by(
-            '-times_played')[:10]
-    except Result.DoesNotExist:
-        raise Http404
-
-    return render(request, 'ladder/player/history.html', {
-        'player': player,
-        'league_set': league_list,  # Use the evaluated list
-        'ladder_set': league_list,
-        'head': head,
-        'player_stats': player_stats,
-        'centile_chart_data': centile_history['chart_data'],
-        'centile_chart_json': json.dumps(centile_history['chart_data']),
-    })
+    return render(request, 'ladder/player/history.html', context)
 
 
 def head_to_head(request, player_id, opponent_id):
     player = get_object_or_404(Player, pk=player_id)
     opponent = get_object_or_404(Player, pk=opponent_id)
 
-    results1 = Result.objects.filter(player=player, opponent=opponent, result__lt=9).order_by(
-        '-ladder__season__end_date')
-    results2 = Result.objects.filter(player=opponent, opponent=player, result__lt=9).order_by(
-        '-ladder__season__end_date')
+    context = PlayerStatsService.get_head_to_head(
+        player=player,
+        opponent=opponent,
+        authenticated=request.user.is_authenticated,
+    )
 
-    results = results1 | results2
+    if request.GET.get('modal') == '1' or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return render(request, 'ladder/head_to_head/_modal_content.html', context)
 
-    stats = {'won': results2.count(), 'lost': results1.count(), 'played': results1.count() + results2.count()}
-
-    return render(request, 'ladder/head_to_head/index.html',
-                  {'stats': stats, 'results': results, 'player': player, 'opponent': opponent})
+    return render(request, 'ladder/head_to_head/index.html', context)
 
 
 def player_result(request):
@@ -330,39 +289,19 @@ def player_result(request):
     if not query:
         raise Http404
 
-    terms = query.split()
-    qs = Player.objects.all()
-
-    if request.user.is_authenticated:
-        # Member view: allow first or last name search
-        for term in terms:
-            qs = qs.filter(Q(first_name__icontains=term) | Q(last_name__icontains=term))
-    else:
-        # Public view: block last-name enumeration
-        if len(terms) == 1:
-            # single token => treat as first name only
-            first = terms[0]
-            qs = qs.filter(first_name__icontains=first)
-        else:
-            # "First L." pattern allowed; ignore full surnames
-            first = terms[0]
-            last_token = terms[-1].rstrip('.')
-            if len(last_token) == 1:
-                qs = qs.filter(first_name__icontains=first, last_name__istartswith=last_token)
-            else:
-                # if they typed a full surname, fall back to first-name search only
-                qs = qs.filter(first_name__icontains=first)
-
-    results = list(qs[:25])  # small cap to avoid enumeration
+    results = PlayerStatsService.search_players(
+        query=query,
+        authenticated=request.user.is_authenticated,
+        limit=25,
+    )
 
     if len(results) == 1:
         return player_history(request, results[0].id)
 
-    # names will be trimmed for anonymous via full_name(authenticated=…)
     return render(
         request,
         'ladder/player/results.html',
-        {'players': results, 'query': escape(query)}
+        {'players': results, 'query': query}
     )
 
 
@@ -371,74 +310,12 @@ def player_search(request):
     if len(q) < 2:
         return JsonResponse({"options": []})
 
-    qs = Player.objects.all()
-    for term in q.split():
-        qs = qs.filter(Q(first_name__icontains=term) | Q(last_name__icontains=term))
-
-    authed = request.user.is_authenticated
-    options = [{"id": p.id, "label": p.full_name(authenticated=authed)} for p in qs[:10]]
+    options = PlayerStatsService.autocomplete_players(
+        query=q,
+        authenticated=request.user.is_authenticated,
+        limit=10,
+    )
     return JsonResponse({"options": options})
-
-
-def h2h_search(request, player_id):
-    q = (request.GET.get('query') or '').strip()
-    if not q:
-        raise Http404
-
-    terms = q.split()
-
-    # Start with this player's results
-    qs = Result.objects.filter(player_id=player_id)
-
-    if request.user.is_authenticated:
-        # Allow first OR last name searches
-        for term in terms:
-            qs = qs.filter(
-                Q(opponent__first_name__icontains=term) |
-                Q(opponent__last_name__icontains=term)
-            )
-    else:
-        # Public: block last-name enumeration
-        if len(terms) == 1:
-            qs = qs.filter(opponent__first_name__icontains=terms[0])
-        else:
-            first = terms[0]
-            last_token = terms[-1].rstrip('.')
-            if len(last_token) == 1:  # allow "First L." pattern
-                qs = qs.filter(
-                    opponent__first_name__icontains=first,
-                    opponent__last_name__istartswith=last_token
-                )
-            else:
-                qs = qs.filter(opponent__first_name__icontains=first)
-
-    # Aggregate and order by frequency
-    head = (qs.values('opponent', 'opponent__first_name', 'opponent__last_name')
-              .annotate(times_played=Count('opponent'))
-              .order_by('-times_played')[:10])
-
-    authed = request.user.is_authenticated
-
-    # Build response: { opponent_id: "N x First Last/LastInitial." }
-    def masked_name(first, last, authenticated):
-        if not last:
-            return first
-        if authenticated:
-            return f"{first} {last}"
-        parts = last.split()
-        parts[-1] = parts[-1][:1].capitalize() + '.'
-        return f"{first} {' '.join(parts)}"
-
-    results = {}
-    for row in head:
-        label = f"{row['times_played']} x " + masked_name(
-            row['opponent__first_name'].strip(),
-            row['opponent__last_name'].strip() if row['opponent__last_name'] else '',
-            authed
-        )
-        results[row['opponent']] = escape(label)
-
-    return HttpResponse(json.dumps({"options": results}), content_type="application/json")
 
 
 def season_ajax_stats(request):
@@ -477,8 +354,6 @@ def season_ajax_progress(request):
 
     return HttpResponse(json.dumps(season_object.get_progress()), content_type="application/json")
 
-# views.py
-# views.py  (replace the body of result_entry with this improved part)
 
 @login_required
 def result_entry(request):
@@ -499,7 +374,7 @@ def result_entry(request):
     entered_raw = (
         Result.objects
         .filter(ladder=ladder)
-        .filter(Q(player=me) | Q(opponent=me))  # <-- change models.Q -> Q
+        .filter(Q(player=me) | Q(opponent=me))
         .select_related('player', 'opponent', 'entered_by')
         .order_by('-date_added')
     )
@@ -557,7 +432,7 @@ def result_entry(request):
         'is_closed': ladder.is_closed(),
     })
 
-# views.py
+
 @login_required
 def result_entry_add(request):
     user = request.user

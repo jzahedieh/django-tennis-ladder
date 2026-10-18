@@ -2,241 +2,655 @@
 {% load ladder_extras %}
 {% load static %}
 {% block container %}
+{% get_player_name player user as main_player_name %}
 
-    <h1>{% get_player_name player user %}</h1>
-    <div class="row g-2 mb-4">
-        <div class="col-6 col-md"><h5>Played: {{ player_stats.played }}</h5></div>
-        <div class="col-6 col-md"><h5>Completion Rate: {{ player_stats.completion_rate }}</h5></div>
-        <div class="col-6 col-md"><h5>Win Rate: {{ player_stats.win_rate }}</h5></div>
-        <div class="col-6 col-md"><h5>Avg. Points: {{ player_stats.average }}</h5></div>
-        <div class="col-12 col-md"><h5>Best Centile: {{ player_stats.best_centile }}</h5></div>
-    </div>
-
-    <h2>Head-to-Head</h2>
-
-    <div class="col-12 mb-5">
-        <div class="table-responsive">
-            <table id="head-table" class="table">
-                <thead>
-                <tr>
-                    <th>Player</th>
-                    <th>Times Played</th>
-                    <th>Last Played</th>
-                    <th></th>
-                </tr>
-                </thead>
-
-                <tbody>
-                {% for h in head %}
-                    <tr>
-                        <td>{{ h.opponent__first_name }} {{ h.opponent__last_name|slice:":1" }}.</td>
-
-                        <td>{{ h.times_played|floatformat:"0" }}</td>
-                        <td>{{ h.last_played }}</td>
-                        <td><a href="{% url 'head_to_head' player.id h.opponent %}">More Detail</a></td>
-                    </tr>
-                {% endfor %}
-                </tbody>
-            </table>
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-3">
+    <div>
+        <h1 class="mb-1">{{ main_player_name }}</h1>
+        <div class="d-flex flex-wrap align-items-center gap-2 text-muted small">
+            {% if player_stats.first_year %}
+                <span>
+                    Active: <strong>{{ player_stats.first_year }}{% if player_stats.last_year != player_stats.first_year %}&ndash;{{ player_stats.last_year }}{% endif %}</strong>
+                </span>
+                <span>&middot;</span>
+            {% endif %}
+            <span><strong>{{ player_stats.seasons_played }}</strong> round{{ player_stats.seasons_played|pluralize }}</span>
+            {% if player_stats.unique_opponents %}
+                <span>&middot;</span>
+                <span><strong>{{ player_stats.unique_opponents }}</strong> opponent{{ player_stats.unique_opponents|pluralize }}</span>
+            {% endif %}
+            {% if player_stats.divisions_won_badges %}
+                <span class="d-none d-sm-inline">&middot;</span>
+                <span class="d-inline-flex flex-wrap gap-1 align-items-center">
+                    {% for badge in player_stats.divisions_won_badges %}
+                        <span class="badge {% if badge.is_div1 %}bg-warning-subtle text-dark border border-warning-subtle{% else %}bg-light text-secondary border{% endif %}" title="Division {{ badge.division }} Winner">
+                            &#127942; {{ badge.label }}
+                        </span>
+                    {% endfor %}
+                </span>
+            {% endif %}
         </div>
+    </div>
+</div>
 
-        <form class="d-flex" style="max-width: 400px;" id="h2h_form">
-            <div class="input-group">
-                <input id="h2h-search" type="text" class="form-control" name="player_name" placeholder="Not in list? Search Rival" autocomplete="off" list="h2h-datalist">
-                <datalist id="h2h-datalist"></datalist>
-                <button id="h2h_button" type="submit" disabled="disabled" class="btn btn-primary">More Details</button>
+<!-- Career KPI Strip -->
+<div class="row g-2 g-md-3 mb-4">
+    <div class="col-6 col-md-4 col-lg-2">
+        <div class="card bg-light border-0 h-100">
+            <div class="card-body py-2 px-3 text-center">
+                <div class="text-muted small text-uppercase fw-semibold">Played</div>
+                <div class="fs-4 fw-bold text-dark">{{ player_stats.played }}</div>
+                {% if insights.has_matches %}
+                    <div class="text-muted" style="font-size: 0.75rem;">{{ player_stats.won }}W &ndash; {{ player_stats.lost }}L</div>
+                {% endif %}
             </div>
-        </form>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-lg-2">
+        <div class="card bg-light border-0 h-100">
+            <div class="card-body py-2 px-3 text-center">
+                <div class="text-muted small text-uppercase fw-semibold">Win Rate</div>
+                <div class="fs-4 fw-bold text-dark">{{ player_stats.win_rate }}</div>
+                {% if insights.has_matches %}
+                    <div class="text-muted" style="font-size: 0.75rem;">{{ player_stats.won }} won</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-lg-2">
+        <div class="card bg-light border-0 h-100">
+            <div class="card-body py-2 px-3 text-center">
+                <div class="text-muted small text-uppercase fw-semibold">Completion</div>
+                <div class="fs-4 fw-bold text-dark">{{ player_stats.completion_rate }}</div>
+                {% if player_stats.scheduled_matches %}
+                    <div class="text-muted" style="font-size: 0.75rem;">{{ player_stats.played }}/{{ player_stats.scheduled_matches }} matches</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-lg-2">
+        <div class="card bg-light border-0 h-100">
+            <div class="card-body py-2 px-3 text-center">
+                <div class="text-muted small text-uppercase fw-semibold">Avg. Points</div>
+                <div class="fs-4 fw-bold text-dark">{{ player_stats.average }}</div>
+                {% if insights.has_matches %}
+                    <div class="text-muted" style="font-size: 0.75rem;">{{ player_stats.total_points }} total pts</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-lg-2">
+        <div class="card bg-light border-0 h-100">
+            <div class="card-body py-2 px-3 text-center">
+                <div class="text-muted small text-uppercase fw-semibold">Best Centile</div>
+                <div class="fs-4 fw-bold text-dark">{{ player_stats.best_centile }}</div>
+                <div class="text-muted" style="font-size: 0.75rem;">
+                    Avg: {{ player_stats.avg_centile }}{% if player_stats.best_rank %} &middot; #{{ player_stats.best_rank }}{% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-lg-2">
+        <div class="card bg-light border-0 h-100">
+            <div class="card-body py-2 px-3 text-center">
+                <div class="text-muted small text-uppercase fw-semibold">Div Titles</div>
+                <div class="fs-4 fw-bold text-dark">{{ player_stats.division_titles }}</div>
+                <div class="text-muted" style="font-size: 0.75rem;">
+                    Peak: Div {{ player_stats.highest_division }} &middot; {{ player_stats.seasons_played }} rds
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
-        <script type="text/javascript">
-            (function () {
-                var timeout;
-                var input = document.getElementById('h2h-search');
-                var datalist = document.getElementById('h2h-datalist');
-                var form = document.getElementById('h2h_form');
-                var btn = document.getElementById('h2h_button');
-                var mapped = {};
-
-                input.addEventListener('input', function(e) {
-                    var query = this.value;
-                    var id = mapped[query];
-                    if (id) {
-                        form.setAttribute('action', '/head_to_head/{{ player.id }}/vs/' + id + '/');
-                        btn.removeAttribute("disabled");
-                        return;
-                    }
-                    btn.setAttribute("disabled", "disabled");
-                    if (query.length < 2) return;
-                    
-                    if (timeout) clearTimeout(timeout);
-                    timeout = setTimeout(function () {
-                        $.get('/player/h2h/{{ player.id }}/', { query: query }, function (data) {
-                            mapped = {};
-                            datalist.innerHTML = '';
-                            $.each(data.options, function (playerId, playerName) {
-                                mapped[playerName] = playerId;
-                                var option = document.createElement('option');
-                                option.value = playerName;
-                                datalist.appendChild(option);
-                            });
-                        });
-                    }, 300);
-                });
-            })();
-        </script>
+{% if insights.has_matches %}
+<!-- Player Insights & Fun Highlights -->
+<div class="row g-3 mb-4">
+    <!-- Card 1: Form & Streaks -->
+    <div class="col-12 col-lg-4">
+        <div class="card h-100 shadow-sm">
+            <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-bold">Form &amp; Milestones</h6>
+                <span class="badge bg-light text-secondary border">Streaks</span>
+            </div>
+            <div class="card-body py-2 px-3 small">
+                <div class="d-flex justify-content-between align-items-center py-1 border-bottom">
+                    <span class="text-muted">Recent Form</span>
+                    <div class="d-inline-flex gap-1">
+                        {% for m in insights.recent_form %}
+                            {% url 'head_to_head' player.id m.opponent_id as form_h2h_url %}
+                            <a href="{{ form_h2h_url }}"
+                               data-h2h-url="{{ form_h2h_url }}"
+                               data-h2h-title="{{ main_player_name }} vs {{ m.opponent_name }}"
+                               class="badge text-decoration-none {% if m.won %}bg-success{% else %}bg-secondary{% endif %}"
+                               title="{{ m.season_label }}: {{ m.score_display }} vs {{ m.opponent_name }}">
+                                {% if m.won %}W{% else %}L{% endif %}
+                            </a>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="d-flex justify-content-between align-items-center py-1 border-bottom">
+                    <span class="text-muted">Longest Win Streak</span>
+                    <span class="fw-semibold">
+                        {{ insights.longest_win_streak }} win{{ insights.longest_win_streak|pluralize }}
+                        {% if insights.current_win_streak > 1 %}
+                            <span class="badge bg-success-subtle text-success border border-success-subtle ms-1">{{ insights.current_win_streak }} active</span>
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center py-1 border-bottom">
+                    <span class="text-muted">100% Rounds Completed</span>
+                    <span class="fw-semibold">{{ insights.full_completion_rounds }}/{{ player_stats.seasons_played }} <span class="text-muted fw-normal">({{ insights.full_completion_rate }})</span></span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center py-1">
+                    <span class="text-muted">Best Round Haul</span>
+                    <span class="fw-semibold">
+                        {% if insights.best_round_points %}
+                            {{ insights.best_round_points }} pts <span class="text-muted fw-normal">({{ insights.best_round_label }})</span>
+                        {% else %}
+                            -
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <h2>History</h2>
-    <div class="col-12 mb-5">
-        <div class="table-responsive">
-            <table id="seasons-table" class="table table-sm align-middle">
-                <thead>
-                <tr>
-                    <th>Ladder</th>
-                    <th class="text-center">Centile</th>
-                    <th class="text-center">Played</th>
-                    <th class="text-center">Won</th>
-                    <th class="text-end">Points</th>
-                    <th class="text-end">Avg</th>
-                </tr>
-                </thead>
+    <!-- Card 2: Matchup Profile -->
+    <div class="col-12 col-lg-4">
+        <div class="card h-100 shadow-sm">
+            <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-bold">Matchup Profile</h6>
+                <span class="badge bg-light text-secondary border">Performance</span>
+            </div>
+            <div class="card-body py-2 px-3 small">
+                <div class="d-flex justify-content-between align-items-center py-1 border-bottom">
+                    <span class="text-muted" title="Matches decided by 9-7 or 9-8">Close Matches (9&ndash;7 / 9&ndash;8)</span>
+                    <span class="fw-semibold">
+                        {% if insights.clutch_played > 0 %}
+                            {{ insights.clutch_won }}/{{ insights.clutch_played }} won <span class="text-muted fw-normal">({{ insights.clutch_win_rate }})</span>
+                        {% else %}
+                            0 played
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center py-1 border-bottom">
+                    <span class="text-muted" title="Wins by 9-0, 9-1, or 9-2">Dominant Wins (9&ndash;0 to 9&ndash;2)</span>
+                    <span class="fw-semibold">
+                        {{ insights.dominant_wins }}
+                        {% if insights.bagels_won > 0 %}
+                            <span class="badge bg-warning-subtle text-dark border border-warning-subtle ms-1">{{ insights.bagels_won }} &times; 9&ndash;0</span>
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center py-1 border-bottom">
+                    <span class="text-muted">Total Games Won / Lost</span>
+                    <span class="fw-semibold">{{ insights.total_games_won }}&ndash;{{ insights.total_games_lost }} <span class="text-muted fw-normal">({{ insights.games_win_rate }})</span></span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center py-1">
+                    <span class="text-muted">Avg Score (Win / Loss)</span>
+                    <span class="fw-semibold">9&ndash;{{ insights.avg_loser_score_in_wins }} <span class="text-muted fw-normal">/</span> {{ insights.avg_player_score_in_losses }}&ndash;9</span>
+                </div>
+            </div>
+        </div>
+    </div>
 
-                <tbody>
-                {% for league in league_set %}
+    <!-- Card 3: Rivalry Highlights -->
+    <div class="col-12 col-lg-4">
+        <div class="card h-100 shadow-sm">
+            <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-bold">Rivalry Highlights</h6>
+                <span class="badge bg-light text-secondary border">Click for H2H</span>
+            </div>
+            <div class="card-body py-2 px-3 small">
+                <div class="d-flex justify-content-between align-items-center py-1 border-bottom">
+                    <span class="text-muted">Most Played</span>
+                    {% if insights.most_played_rival %}
+                        {% url 'head_to_head' player.id insights.most_played_rival.opponent as mp_url %}
+                        <a href="{{ mp_url }}"
+                           data-h2h-url="{{ mp_url }}"
+                           data-h2h-title="{{ main_player_name }} vs {{ insights.most_played_rival.opponent_name }}"
+                           class="fw-semibold text-decoration-none">
+                            {{ insights.most_played_rival.opponent_name }}
+                            <span class="badge bg-light text-dark border ms-1">{{ insights.most_played_rival.won_played_display }}</span>
+                        </a>
+                    {% else %}
+                        <span>-</span>
+                    {% endif %}
+                </div>
+                <div class="d-flex justify-content-between align-items-center py-1 border-bottom">
+                    <span class="text-muted">Most Wins Against</span>
+                    {% if insights.favourite_rival %}
+                        {% url 'head_to_head' player.id insights.favourite_rival.opponent as fav_url %}
+                        <a href="{{ fav_url }}"
+                           data-h2h-url="{{ fav_url }}"
+                           data-h2h-title="{{ main_player_name }} vs {{ insights.favourite_rival.opponent_name }}"
+                           class="fw-semibold text-decoration-none">
+                            {{ insights.favourite_rival.opponent_name }}
+                            <span class="badge bg-success-subtle text-success border border-success-subtle ms-1">{{ insights.favourite_rival.won_played_display }}</span>
+                        </a>
+                    {% else %}
+                        <span>-</span>
+                    {% endif %}
+                </div>
+                <div class="d-flex justify-content-between align-items-center py-1 border-bottom">
+                    <span class="text-muted">Toughest Rival</span>
+                    {% if insights.toughest_rival %}
+                        {% url 'head_to_head' player.id insights.toughest_rival.opponent as tough_url %}
+                        <a href="{{ tough_url }}"
+                           data-h2h-url="{{ tough_url }}"
+                           data-h2h-title="{{ main_player_name }} vs {{ insights.toughest_rival.opponent_name }}"
+                           class="fw-semibold text-decoration-none">
+                            {{ insights.toughest_rival.opponent_name }}
+                            <span class="badge bg-secondary-subtle text-secondary border ms-1">{{ insights.toughest_rival.won_played_display }}</span>
+                        </a>
+                    {% else %}
+                        <span>-</span>
+                    {% endif %}
+                </div>
+                <div class="d-flex justify-content-between align-items-center py-1">
+                    <span class="text-muted">Unique Opponents</span>
+                    <span class="fw-semibold">{{ player_stats.unique_opponents }} player{{ player_stats.unique_opponents|pluralize }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Head-to-Head Card -->
+<div class="card shadow-sm mb-4 paginated-table-card" id="h2h-card" data-page-size="{{ h2h_page_size }}">
+    <div class="card-header bg-white py-3 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
+        <div>
+            <h2 class="h5 mb-0 fw-bold">Head-to-Head</h2>
+            <small class="text-muted">Click any matchup or "More Detail" to view full match history in a lightbox</small>
+        </div>
+
+        <div style="max-width: 260px; width: 100%;">
+            <input id="h2h-search" type="search" class="form-control form-control-sm" placeholder="Filter rivals..." autocomplete="off" aria-label="Filter rivals">
+        </div>
+    </div>
+
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table id="head-table" class="table table-hover table-sm align-middle mb-0">
+                <thead class="table-light">
                     <tr>
-                        <td class="text-nowrap">
-                            <a href="{% url 'ladder' league.ladder.season.start_date|date:"Y" league.ladder.season.season_round league.ladder.division %}">
-                                {{ league.ladder.season.start_date|date:"Y" }} R{{ league.ladder.season.season_round }} &middot; Div {{ league.ladder.division }}
-                            </a>
-                        </td>
-                        <td class="text-center" {% if league.centile is not None %}title="Rank {{ league.centile_rank }} of {{ league.centile_total }}"{% endif %}>
-                            {% if league.centile is not None %}{{ league.centile }}%{% else %}-{% endif %}
-                        </td>
-                        <td class="text-center">{{ league.player_stats.percplayed|floatformat:"0" }}%</td>
-                        <td class="text-center text-nowrap">{{ league.player_stats.won_count }}/{{ league.player_stats.games|floatformat:"0" }}</td>
-                        <td class="text-end">{{ league.player_stats.total_points|floatformat:"0" }}</td>
-                        <td class="text-end">{{ league.player_stats.pointsdivgames|floatformat:"2" }}</td>
+                        <th class="ps-3">Player</th>
+                        <th class="text-center">Won / Played</th>
+                        <th class="text-center d-none d-sm-table-cell">Win %</th>
+                        <th class="text-center">Last Played</th>
+                        <th class="text-end pe-3"></th>
                     </tr>
-                {% endfor %}
+                </thead>
+                <tbody>
+                    {% for h in head %}
+                        {% url 'head_to_head' player.id h.opponent as row_h2h_url %}
+                        <tr class="paginated-row {% if forloop.counter0 >= h2h_page_size %}d-none{% endif %}"
+                            data-index="{{ forloop.counter0 }}"
+                            data-search-text="{{ h.opponent_name|lower }}"
+                            style="cursor: pointer;"
+                            data-h2h-url="{{ row_h2h_url }}"
+                            data-h2h-title="{{ main_player_name }} vs {{ h.opponent_name }}">
+                            <td class="ps-3 fw-semibold">
+                                <a href="{% url 'player_history' h.opponent %}" class="text-decoration-none">
+                                    {{ h.opponent_name }}
+                                </a>
+                            </td>
+                            <td class="text-center text-nowrap">
+                                <span class="fw-bold">{{ h.won }}/{{ h.times_played|floatformat:"0" }}</span>
+                                <span class="badge d-sm-none ms-1 {% if h.win_rate > 50 %}bg-success-subtle text-success border border-success-subtle{% elif h.win_rate == 50 %}bg-light text-dark border{% else %}bg-light text-muted border{% endif %}">
+                                    {{ h.win_rate_display }}
+                                </span>
+                            </td>
+                            <td class="text-center d-none d-sm-table-cell">
+                                <span class="badge {% if h.win_rate > 50 %}bg-success-subtle text-success border border-success-subtle{% elif h.win_rate == 50 %}bg-light text-dark border{% else %}bg-light text-muted border{% endif %}">
+                                    {{ h.win_rate_display }}
+                                </span>
+                            </td>
+                            <td class="text-center text-muted small text-nowrap">
+                                <span class="d-sm-none">{{ h.last_played|date:"M Y" }}</span>
+                                <span class="d-none d-sm-inline">{{ h.last_played }}</span>
+                            </td>
+                            <td class="text-end pe-3 text-nowrap">
+                                <a href="{{ row_h2h_url }}"
+                                   data-h2h-url="{{ row_h2h_url }}"
+                                   data-h2h-title="{{ main_player_name }} vs {{ h.opponent_name }}"
+                                   class="btn btn-sm btn-outline-primary py-0 px-2">
+                                    More Detail
+                                </a>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-4">No head-to-head matches recorded yet.</td>
+                        </tr>
+                    {% endfor %}
                 </tbody>
             </table>
         </div>
     </div>
 
-    {% if centile_chart_data|length >= 2 %}
-        <link rel="stylesheet" type="text/css" href="{% static 'css/c3.css' %}"/>
-        <script type="text/javascript" src="{% static 'js/vendor/d3.min.js' %}"></script>
-        <script type="text/javascript" src="{% static 'js/vendor/c3.min.js' %}"></script>
-
-        <h2>Centile Position</h2>
-        <p class="text-muted small mb-3">
-            Position across the whole ladder as a percentage (higher % = greater success / higher up the ladder).
-        </p>
-        <style>
-            #centile-chart .c3-bar {
-                opacity: 0.55;
-            }
-            #centile-chart .c3-bar:hover {
-                opacity: 0.8;
-            }
-        </style>
-        <div class="card bg-light p-3 p-md-4 mb-4">
-            <div id="centile-chart"></div>
+    {% if head|length > h2h_page_size %}
+    <div class="card-footer bg-white py-2 d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <small class="text-muted page-status"></small>
+        <div class="d-flex align-items-center gap-2">
+            <button type="button" class="btn btn-sm btn-link text-decoration-none p-0 me-2 btn-toggle-all">Show all</button>
+            <div class="btn-group btn-group-sm">
+                <button type="button" class="btn btn-outline-secondary btn-prev" disabled>&laquo; Prev {{ h2h_page_size }}</button>
+                <button type="button" class="btn btn-outline-secondary btn-next">Next {{ h2h_page_size }} &raquo;</button>
+            </div>
         </div>
+    </div>
+    {% endif %}
+</div>
 
-        <script type="text/javascript">
-            $(document).ready(function () {
-                var rawData = {{ centile_chart_json|safe }};
-                if (!rawData || rawData.length < 2) return;
+<!-- History Card -->
+<div class="card shadow-sm mb-4 paginated-table-card" id="history-card" data-page-size="{{ history_page_size }}">
+    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center gap-2">
+        <div>
+            <h2 class="h5 mb-0 fw-bold">History</h2>
+            <small class="text-muted">{{ league_set|length }} ladder round{{ league_set|length|pluralize }} entered</small>
+        </div>
+        {% if player_stats.division_titles > 0 %}
+            <span class="badge bg-warning-subtle text-dark border border-warning-subtle">
+                &#127942; {{ player_stats.division_titles }} Division Title{{ player_stats.division_titles|pluralize }}
+            </span>
+        {% endif %}
+    </div>
 
-                var categories = [];
-                var centileCol = ['centile'];
-                var totalPlayersCol = ['total_players'];
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table id="seasons-table" class="table table-hover table-sm align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-3">Ladder</th>
+                        <th class="text-center">Centile</th>
+                        <th class="text-center">Played</th>
+                        <th class="text-center">Won</th>
+                        <th class="text-end">Points</th>
+                        <th class="text-end pe-3">Avg</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for league in league_set %}
+                        <tr class="paginated-row {% if forloop.counter0 >= history_page_size %}d-none{% endif %}" data-index="{{ forloop.counter0 }}">
+                            <td class="ps-3 text-nowrap">
+                                <a href="{% url 'ladder' league.ladder.season.start_date|date:"Y" league.ladder.season.season_round league.ladder.division %}" class="fw-semibold text-decoration-none">
+                                    <span class="d-md-none">{{ league.ladder.season.start_date|date:"Y" }} R{{ league.ladder.season.season_round }} &middot; Div {{ league.ladder.division }}</span>
+                                    <span class="d-none d-md-inline">{{ league.ladder.season.start_date|date:"Y" }} Round {{ league.ladder.season.season_round }} &middot; Division {{ league.ladder.division }}</span>
+                                </a>
+                                {% if league.is_division_winner %}
+                                    <span class="badge bg-warning-subtle text-dark border border-warning-subtle ms-1" title="Finished 1st in Division {{ league.ladder.division }}">&#127942; 1st</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center" {% if league.centile is not None %}title="Rank {{ league.centile_rank }} of {{ league.centile_total }}"{% endif %}>
+                                {% if league.centile is not None %}{{ league.centile }}%{% else %}-{% endif %}
+                            </td>
+                            <td class="text-center">{{ league.computed_stats.percplayed|floatformat:"0" }}%</td>
+                            <td class="text-center text-nowrap">{{ league.computed_stats.won_count }}/{{ league.computed_stats.games|floatformat:"0" }}</td>
+                            <td class="text-end">{{ league.computed_stats.total_points|floatformat:"0" }}</td>
+                            <td class="text-end pe-3">{{ league.computed_stats.pointsdivgames|floatformat:"2" }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-4">No ladder history recorded yet.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
 
-                rawData.forEach(function (item) {
-                    categories.push(item.season_label);
-                    centileCol.push(item.centile);
-                    totalPlayersCol.push(item.total_players);
-                });
+    {% if league_set|length > history_page_size %}
+    <div class="card-footer bg-white py-2 d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <small class="text-muted page-status"></small>
+        <div class="d-flex align-items-center gap-2">
+            <button type="button" class="btn btn-sm btn-link text-decoration-none p-0 me-2 btn-toggle-all">Show all</button>
+            <div class="btn-group btn-group-sm">
+                <button type="button" class="btn btn-outline-secondary btn-prev" disabled>&laquo; Prev {{ history_page_size }}</button>
+                <button type="button" class="btn btn-outline-secondary btn-next">Next {{ history_page_size }} &raquo;</button>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
 
-                c3.generate({
-                    bindto: '#centile-chart',
-                    data: {
-                        columns: [centileCol, totalPlayersCol],
-                        types: {
-                            centile: 'line',
-                            total_players: 'bar'
-                        },
-                        axes: {
-                            centile: 'y',
-                            total_players: 'y2'
-                        },
-                        names: {
-                            centile: 'Centile (%)',
-                            total_players: 'Total Players'
-                        },
-                        colors: {
-                            centile: '#1f77b4',
-                            total_players: '#d1d9e6'
+{% if centile_chart_data|length >= 2 %}
+    <link rel="stylesheet" type="text/css" href="{% static 'css/c3.css' %}"/>
+    <script type="text/javascript" src="{% static 'js/vendor/d3.min.js' %}"></script>
+    <script type="text/javascript" src="{% static 'js/vendor/c3.min.js' %}"></script>
+
+    <h2 class="h5 fw-bold">Centile Position</h2>
+    <p class="text-muted small mb-3">
+        Position across the whole ladder as a percentage (higher % = greater success / higher up the ladder).
+    </p>
+    <style>
+        #centile-chart .c3-bar {
+            opacity: 0.55;
+        }
+        #centile-chart .c3-bar:hover {
+            opacity: 0.8;
+        }
+    </style>
+    <div class="card bg-light p-3 p-md-4 mb-4">
+        <div id="centile-chart"></div>
+    </div>
+
+    <script type="text/javascript">
+        $(document).ready(function () {
+            var rawData = {{ centile_chart_json|safe }};
+            if (!rawData || rawData.length < 2) return;
+
+            var categories = [];
+            var centileCol = ['centile'];
+            var totalPlayersCol = ['total_players'];
+
+            rawData.forEach(function (item) {
+                categories.push(item.season_label);
+                centileCol.push(item.centile);
+                totalPlayersCol.push(item.total_players);
+            });
+
+            c3.generate({
+                bindto: '#centile-chart',
+                data: {
+                    columns: [centileCol, totalPlayersCol],
+                    types: {
+                        centile: 'line',
+                        total_players: 'bar'
+                    },
+                    axes: {
+                        centile: 'y',
+                        total_players: 'y2'
+                    },
+                    names: {
+                        centile: 'Centile (%)',
+                        total_players: 'Total Players'
+                    },
+                    colors: {
+                        centile: '#1f77b4',
+                        total_players: '#d1d9e6'
+                    }
+                },
+                bar: {
+                    width: {
+                        ratio: 0.6
+                    }
+                },
+                axis: {
+                    x: {
+                        type: 'category',
+                        categories: categories,
+                        tick: {
+                            rotate: categories.length > 10 ? -45 : 0,
+                            multiline: false,
+                            culling: { max: 16 }
                         }
                     },
-                    bar: {
-                        width: {
-                            ratio: 0.6
+                    y: {
+                        label: 'Centile (%)',
+                        min: 0,
+                        max: 100,
+                        padding: { top: 0, bottom: 0 },
+                        tick: {
+                            values: [0, 20, 40, 60, 80, 100],
+                            format: function (d) { return Math.round(d) + '%'; }
                         }
                     },
-                    axis: {
-                        x: {
-                            type: 'category',
-                            categories: categories,
-                            tick: {
-                                rotate: categories.length > 10 ? -45 : 0,
-                                multiline: false,
-                                culling: { max: 16 }
-                            }
-                        },
-                        y: {
-                            label: 'Centile (%)',
-                            min: 0,
-                            max: 100,
-                            padding: { top: 0, bottom: 0 },
-                            tick: {
-                                values: [0, 20, 40, 60, 80, 100],
-                                format: function (d) { return Math.round(d) + '%'; }
-                            }
-                        },
-                        y2: {
-                            show: true,
-                            label: 'Total Players',
-                            min: 0,
-                            padding: { top: 20, bottom: 0 },
-                            tick: {
-                                format: d3.format('d')
-                            }
-                        }
-                    },
-                    grid: {
-                        y: { show: true }
-                    },
-                    tooltip: {
-                        grouped: true,
-                        contents: function (d, defaultTitleFormat, defaultValueFormat, color) {
-                            var idx = d[0].index;
-                            var item = rawData[idx];
-                            if (!item) return '';
-
-                            var centileColor = color({ id: 'centile' });
-                            var totalColor = color({ id: 'total_players' });
-
-                            return '<table class="c3-tooltip">' +
-                                '<tr><th colspan="2">' + item.season_name + ' (Division ' + item.division + ')</th></tr>' +
-                                '<tr><td><span style="background-color:' + centileColor + '"></span>Centile</td><td class="value">' + item.centile + '%</td></tr>' +
-                                '<tr><td><span style="background-color:' + totalColor + '"></span>Rank</td><td class="value">' + item.rank + ' of ' + item.total_players + '</td></tr>' +
-                                '</table>';
+                    y2: {
+                        show: true,
+                        label: 'Total Players',
+                        min: 0,
+                        padding: { top: 20, bottom: 0 },
+                        tick: {
+                            format: d3.format('d')
                         }
                     }
-                });
+                },
+                grid: {
+                    y: { show: true }
+                },
+                tooltip: {
+                    grouped: true,
+                    contents: function (d, defaultTitleFormat, defaultValueFormat, color) {
+                        var idx = d[0].index;
+                        var item = rawData[idx];
+                        if (!item) return '';
+
+                        var centileColor = color({ id: 'centile' });
+                        var totalColor = color({ id: 'total_players' });
+
+                        return '<table class="c3-tooltip">' +
+                            '<tr><th colspan="2">' + item.season_name + ' (Division ' + item.division + ')</th></tr>' +
+                            '<tr><td><span style="background-color:' + centileColor + '"></span>Centile</td><td class="value">' + item.centile + '%</td></tr>' +
+                            '<tr><td><span style="background-color:' + totalColor + '"></span>Rank</td><td class="value">' + item.rank + ' of ' + item.total_players + '</td></tr>' +
+                            '</table>';
+                    }
+                }
             });
-        </script>
-    {% endif %}
+        });
+    </script>
+{% endif %}
+
+{% include 'ladder/head_to_head/_lightbox_modal.html' %}
+
+<script type="text/javascript">
+    (function () {
+        // 1. Reusable Pagination + Show All + Optional Search Filter for Cards
+        function initPaginatedCard(card) {
+            var pageSize = parseInt(card.getAttribute('data-page-size') || '10', 10);
+            var allRows = Array.prototype.slice.call(card.querySelectorAll('.paginated-row'));
+            if (!allRows.length) return null;
+
+            var currentPage = 0;
+            var showAll = false;
+            var filterQuery = '';
+            var prevBtn = card.querySelector('.btn-prev');
+            var nextBtn = card.querySelector('.btn-next');
+            var toggleAllBtn = card.querySelector('.btn-toggle-all');
+            var statusEl = card.querySelector('.page-status');
+
+            function getMatchedRows() {
+                if (!filterQuery) return allRows;
+                var q = filterQuery.toLowerCase();
+                return allRows.filter(function (row) {
+                    var txt = row.getAttribute('data-search-text') || '';
+                    return txt.indexOf(q) !== -1;
+                });
+            }
+
+            function render() {
+                var matched = getMatchedRows();
+                var total = matched.length;
+                var maxPage = Math.max(0, Math.ceil(total / pageSize) - 1);
+                if (currentPage > maxPage) currentPage = maxPage;
+
+                allRows.forEach(function (row) {
+                    row.classList.add('d-none');
+                });
+
+                if (showAll || filterQuery) {
+                    matched.forEach(function (row) {
+                        row.classList.remove('d-none');
+                    });
+                    if (statusEl) {
+                        statusEl.textContent = filterQuery
+                            ? ('Showing ' + total + ' matching rival' + (total === 1 ? '' : 's'))
+                            : ('Showing all ' + total);
+                    }
+                    if (prevBtn) prevBtn.disabled = true;
+                    if (nextBtn) nextBtn.disabled = true;
+                } else {
+                    var start = currentPage * pageSize;
+                    var end = Math.min(start + pageSize, total);
+                    matched.slice(start, end).forEach(function (row) {
+                        row.classList.remove('d-none');
+                    });
+                    if (statusEl) {
+                        statusEl.textContent = total > 0
+                            ? ('Showing ' + (start + 1) + '–' + end + ' of ' + total)
+                            : 'No results';
+                    }
+                    if (prevBtn) prevBtn.disabled = (currentPage === 0);
+                    if (nextBtn) nextBtn.disabled = (currentPage >= maxPage);
+                }
+
+                if (toggleAllBtn) {
+                    toggleAllBtn.textContent = showAll ? ('Paginate (' + pageSize + '/page)') : ('Show all (' + allRows.length + ')');
+                    toggleAllBtn.style.display = filterQuery ? 'none' : '';
+                }
+            }
+
+            if (prevBtn) {
+                prevBtn.addEventListener('click', function () {
+                    if (currentPage > 0) {
+                        currentPage--;
+                        render();
+                    }
+                });
+            }
+            if (nextBtn) {
+                nextBtn.addEventListener('click', function () {
+                    var matched = getMatchedRows();
+                    var maxPage = Math.max(0, Math.ceil(matched.length / pageSize) - 1);
+                    if (currentPage < maxPage) {
+                        currentPage++;
+                        render();
+                    }
+                });
+            }
+            if (toggleAllBtn) {
+                toggleAllBtn.addEventListener('click', function () {
+                    showAll = !showAll;
+                    currentPage = 0;
+                    render();
+                });
+            }
+
+            render();
+
+            return {
+                setFilter: function (q) {
+                    filterQuery = (q || '').trim();
+                    currentPage = 0;
+                    render();
+                }
+            };
+        }
+
+        var h2hCard = document.getElementById('h2h-card');
+        var historyCard = document.getElementById('history-card');
+        var h2hPager = h2hCard ? initPaginatedCard(h2hCard) : null;
+        if (historyCard) initPaginatedCard(historyCard);
+
+        // 2. Rival Grid Filter
+        var input = document.getElementById('h2h-search');
+        if (input && h2hPager) {
+            input.addEventListener('input', function () {
+                h2hPager.setFilter(this.value);
+            });
+        }
+    })();
+</script>
 {% endblock container %}

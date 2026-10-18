@@ -7,8 +7,8 @@ register = template.Library()
 def getkey(value, arg):
     try:
         return value[arg]
-    except:
-        return
+    except (KeyError, TypeError, IndexError):
+        return None
 
 @register.filter(name='gettotal')
 def gettotal(value, arg):
@@ -20,7 +20,7 @@ def gettotal(value, arg):
             else:
                 total = total + result.result + 1
         return total
-    except KeyError:
+    except (KeyError, TypeError):
         return total
 
 @register.filter(name='getaverage')
@@ -37,19 +37,17 @@ def getaverage(value, arg):
         if count != 0:
             return "%.2f" % (total / count)
         return 0
-    except KeyError:
+    except (KeyError, TypeError):
         if count != 0:
             return "%.2f" % (total / count)
         return 0
+
 @register.filter(name='unplayed')
 def unplayed(value, arg):
-    not_played = []
     try:
-        not_played = [player for player in value if player.id != arg]
-
-        return not_played
-    except:
-        return
+        return [player for player in value if player.id != arg]
+    except (TypeError, AttributeError):
+        return []
 
 
 @register.simple_tag

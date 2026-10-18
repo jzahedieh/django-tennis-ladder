@@ -1,0 +1,107 @@
+{% load ladder_extras %}
+
+<div class="h2h-detail-content">
+    <!-- Players & Big Scoreline Header -->
+    <div class="card bg-light border-0 mb-3">
+        <div class="card-body py-3 px-3 px-sm-4">
+            <div class="row align-items-center text-center g-2">
+                <div class="col-5 text-start">
+                    <a href="{% url 'player_history' player.id %}" class="fw-bold text-decoration-none fs-6 fs-sm-5 d-block text-truncate" title="{{ player_name }}">
+                        {{ player_name }}
+                    </a>
+                    <span class="text-muted small">{{ stats.player_win_pct }}% wins &middot; {{ stats.player_games }} games</span>
+                </div>
+                <div class="col-2">
+                    <div class="d-inline-flex align-items-center justify-content-center gap-1 fw-bold fs-4 text-nowrap">
+                        <span class="{% if stats.won > stats.lost %}text-success{% elif stats.won < stats.lost %}text-secondary{% else %}text-dark{% endif %}">{{ stats.won }}</span>
+                        <span class="text-muted fw-normal fs-6">&ndash;</span>
+                        <span class="{% if stats.lost > stats.won %}text-primary{% elif stats.lost < stats.won %}text-secondary{% else %}text-dark{% endif %}">{{ stats.lost }}</span>
+                    </div>
+                    <div class="text-muted" style="font-size: 0.72rem;">{{ stats.played }} played</div>
+                </div>
+                <div class="col-5 text-end">
+                    <a href="{% url 'player_history' opponent.id %}" class="fw-bold text-decoration-none fs-6 fs-sm-5 d-block text-truncate" title="{{ opponent_name }}">
+                        {{ opponent_name }}
+                    </a>
+                    <span class="text-muted small">{{ stats.opponent_win_pct }}% wins &middot; {{ stats.opponent_games }} games</span>
+                </div>
+            </div>
+
+            {% if stats.played > 0 %}
+                <!-- Win Ratio Bar -->
+                <div class="progress mt-3" style="height: 8px;" aria-label="Head-to-head win ratio">
+                    <div class="progress-bar bg-success" role="progressbar" style="width: {{ stats.player_win_pct }}%" title="{{ player_name }}: {{ stats.won }} ({{ stats.player_win_pct }}%)"></div>
+                    <div class="progress-bar bg-primary" role="progressbar" style="width: {{ stats.opponent_win_pct }}%" title="{{ opponent_name }}: {{ stats.lost }} ({{ stats.opponent_win_pct }}%)"></div>
+                </div>
+
+                <!-- Summary Pills -->
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-2 pt-1 small text-muted">
+                    <span>
+                        Played: <strong>{{ stats.played }}</strong> &middot;
+                        Won: <strong>{{ stats.won }}</strong> &middot;
+                        Lost: <strong>{{ stats.lost }}</strong>
+                    </span>
+                    <span>
+                        {% if stats.close_matches > 0 %}
+                            <span class="badge bg-warning-subtle text-dark border border-warning-subtle" title="Matches decided 9-7 or 9-8">
+                                {{ stats.close_matches }} close match{{ stats.close_matches|pluralize:"es" }} (9&ndash;7 / 9&ndash;8)
+                            </span>
+                        {% endif %}
+                    </span>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if not matches %}
+        <div class="text-center text-muted py-4">
+            No results recorded for this match-up.
+        </div>
+    {% else %}
+        <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-2">Date</th>
+                        <th>Ladder</th>
+                        <th>Winner</th>
+                        <th class="text-center">Score</th>
+                        <th class="d-none d-sm-table-cell pe-2">Loser</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for m in matches %}
+                        <tr>
+                            <td class="ps-2 text-nowrap text-muted small">
+                                <span class="d-sm-none">{{ m.date_added|date:"d M y" }}</span>
+                                <span class="d-none d-sm-inline">{{ m.date_added|date:"j M Y" }}</span>
+                            </td>
+                            <td class="text-nowrap">
+                                <a href="{% url 'ladder' m.year m.season_round m.division %}" class="text-decoration-none">
+                                    <span class="d-md-none">{{ m.ladder_short }}</span>
+                                    <span class="d-none d-md-inline">{{ m.ladder_full }}</span>
+                                </a>
+                            </td>
+                            <td class="text-nowrap fw-semibold">
+                                <span class="badge {% if m.player_won %}bg-success-subtle text-success border border-success-subtle{% else %}bg-primary-subtle text-primary border border-primary-subtle{% endif %} me-1">W</span>
+                                <a href="{% url 'player_history' m.winner_id %}" class="text-decoration-none text-dark">
+                                    {{ m.winner_name }}
+                                </a>
+                            </td>
+                            <td class="text-center text-nowrap">
+                                <span class="badge {% if m.is_close %}bg-warning-subtle text-dark border border-warning-subtle{% else %}bg-light text-dark border{% endif %} fw-bold">
+                                    9 &ndash; {{ m.losing_score }}
+                                </span>
+                            </td>
+                            <td class="d-none d-sm-table-cell pe-2 text-nowrap text-muted">
+                                <a href="{% url 'player_history' m.loser_id %}" class="text-decoration-none text-muted">
+                                    {{ m.loser_name }}
+                                </a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+</div>
