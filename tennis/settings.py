@@ -152,7 +152,7 @@ MIDDLEWARE = (
     'django.contrib.messages.middleware.MessageMiddleware',
 )
 
-LOGIN_REDIRECT_URL = '/result/entry/'
+LOGIN_REDIRECT_URL = '/account/'
 LOGOUT_REDIRECT_URL = '/'
 
 ROOT_URLCONF = 'tennis.urls'

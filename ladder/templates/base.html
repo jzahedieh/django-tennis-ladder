@@ -46,7 +46,9 @@
                 <div class="collapse navbar-collapse" id="navbarCollapse">
                     <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                         <li class="nav-item"><a class="nav-link text-dark" href="{% url 'result_entry' %}">Enter Result</a></li>
+                        {% if season_first %}
                         <li class="nav-item"><a class="nav-link text-dark" href="{% url 'season' season_first.start_date|date:'Y' season_first.season_round %}">Current Ladder</a></li>
+                        {% endif %}
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle text-dark" href="#" id="previousLaddersDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                 Previous Ladders
@@ -62,22 +64,76 @@
                             </ul>
                         </li>
                         <li class="nav-item"><a class="nav-link text-dark" href="{% url 'stats' %}">Stats</a></li>
-                        {% if user.is_authenticated %}
-                            <li class="nav-item">
-                                <a class="nav-link text-dark" href="#" onclick="event.preventDefault(); document.getElementById('logout-form-nav').submit();">
-                                    Log Out
-                                </a>
-                                <form id="logout-form-nav" action="{% url 'logout' %}" method="post" style="display:none;">
-                                    {% csrf_token %}
-                                </form>
-                            </li>
-                        {% endif %}
                     </ul>
                     <form class="d-flex mt-2 mt-lg-0 w-100" style="max-width: 300px;" id="find_player_form" action="{% url 'player_result' %}" method="get">
                         <input id="player-search" class="form-control me-2" style="min-width: 0;" type="search" name="player_name" placeholder="Search Players" autocomplete="off" list="player-datalist">
                         <datalist id="player-datalist"></datalist>
                         <button type="submit" class="btn btn-outline-dark">Find</button>
                     </form>
+                    <ul class="navbar-nav ms-lg-3 mt-2 mt-lg-0 align-items-lg-center">
+                        {% if user.is_authenticated %}
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle text-dark fw-semibold d-flex align-items-center gap-1" href="#" id="userAccountDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-person-circle" viewBox="0 0 16 16" aria-hidden="true">
+                                        <path d="M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0"/>
+                                        <path fill-rule="evenodd" d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8m8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 4.805 10 8 10s4.757 1.225 5.468 2.37A7 7 0 0 0 8 1"/>
+                                    </svg>
+                                    <span>
+                                        {% if nav_player %}
+                                            {{ nav_player.first_name }} {{ nav_player.last_name }}
+                                        {% elif user.get_full_name %}
+                                            {{ user.get_full_name }}
+                                        {% else %}
+                                            {{ user.username }}
+                                        {% endif %}
+                                    </span>
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userAccountDropdown">
+                                    <li><a class="dropdown-item" href="{% url 'account' %}">My Account</a></li>
+                                    {% if nav_player %}
+                                        <li><a class="dropdown-item" href="{% url 'player_history' nav_player.id %}">My Player Profile</a></li>
+                                    {% endif %}
+                                    <li><a class="dropdown-item" href="{% url 'result_entry' %}">Enter Result</a></li>
+                                    {% if user.is_staff or user.is_superuser %}
+                                        <li><a class="dropdown-item" href="{% url 'admin:index' %}">Admin</a></li>
+                                    {% endif %}
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <form id="logout-form-nav" action="{% url 'logout' %}" method="post" class="m-0">
+                                            {% csrf_token %}
+                                            <button type="submit" class="dropdown-item text-danger">Log Out</button>
+                                        </form>
+                                    </li>
+                                </ul>
+                            </li>
+                        {% else %}
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle text-dark fw-semibold" href="{% url 'login' %}" id="loginDropdown" role="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                                    Log In
+                                </a>
+                                <div class="dropdown-menu dropdown-menu-end shadow border-0 p-3 mt-2" aria-labelledby="loginDropdown" style="min-width: 300px;">
+                                    <form method="post" action="{% url 'login' %}">
+                                        {% csrf_token %}
+                                        <div class="mb-2">
+                                            <label for="nav-login-username" class="form-label small fw-bold mb-1">Email</label>
+                                            <input type="text" name="username" id="nav-login-username" class="form-control form-control-sm" placeholder="you@example.com" autocomplete="username" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                                <label for="nav-login-password" class="form-label small fw-bold mb-0">Password</label>
+                                                <a href="{% url 'password_reset' %}" class="small text-decoration-none">Forgot?</a>
+                                            </div>
+                                            <input type="password" name="password" id="nav-login-password" class="form-control form-control-sm" autocomplete="current-password" required>
+                                        </div>
+                                        <button type="submit" class="btn btn-primary btn-sm w-100">Log In</button>
+                                    </form>
+                                    <div class="border-top mt-3 pt-2 text-muted" style="font-size: 0.75rem;">
+                                        First time logging in? <a href="{% url 'password_reset' %}" class="text-decoration-none">Set your password</a>.
+                                    </div>
+                                </div>
+                            </li>
+                        {% endif %}
+                    </ul>
                 </div>
             </div>
         </nav>

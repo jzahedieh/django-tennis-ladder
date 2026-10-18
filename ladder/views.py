@@ -1,7 +1,9 @@
 import datetime
 import json
 
+from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import PasswordChangeForm
 from django.db.models import Q
 from django.http import HttpResponseRedirect, Http404, HttpResponse, HttpResponseForbidden, JsonResponse, \
     HttpResponseBadRequest
@@ -12,7 +14,7 @@ from django.contrib import messages
 from django.views.decorators.csrf import csrf_exempt
 
 from ladder.forms import AddResultForm, AddEntryForm
-from ladder.models import Ladder, Player, Result, Season, LadderSubscription
+from ladder.models import Ladder, League, Player, Result, Season, LadderSubscription
 from ladder.services.player import PlayerStatsService
 from ladder.services.stats import ClubStatsService
 
@@ -606,4 +608,55 @@ def unsubscribe_token(request, token):
     subscription.delete()
     messages.success(request, f"Successfully unsubscribed from {ladder} email notifications.")
     return HttpResponseRedirect(reverse("ladder", args=(year, season_round, division_id)))
+
+
+@login_required
+def account(request):
+    user = request.user
+    player = Player.objects.filter(user=user).first()
+
+    current_season = Season.objects.filter(is_draft=False).order_by('-start_date').first()
+    current_league = None
+    latest_league = None
+
+    if player:
+        if current_season:
+            current_league = (
+                League.objects
+                .filter(player=player, ladder__season=current_season)
+                .select_related('ladder__season')
+                .first()
+            )
+        latest_league = (
+            League.objects
+            .filter(player=player, ladder__season__is_draft=False)
+            .select_related('ladder__season')
+            .order_by('-ladder__season__start_date', 'ladder__division')
+            .first()
+        )
+
+    if request.method == 'POST':
+        password_form = PasswordChangeForm(user=user, data=request.POST)
+        if password_form.is_valid():
+            updated_user = password_form.save()
+            update_session_auth_hash(request, updated_user)
+            messages.success(request, 'Your password has been updated successfully.')
+            return HttpResponseRedirect(reverse('account'))
+    else:
+        password_form = PasswordChangeForm(user=user)
+
+    for name, field in password_form.fields.items():
+        css_class = 'form-control'
+        if password_form.is_bound and password_form[name].errors:
+            css_class += ' is-invalid'
+        field.widget.attrs['class'] = css_class
+
+    return render(request, 'ladder/account/index.html', {
+        'player': player,
+        'current_season': current_season,
+        'current_league': current_league,
+        'latest_league': latest_league,
+        'password_form': password_form,
+    })
+
 
