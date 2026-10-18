@@ -13,7 +13,8 @@ class CentileService:
       - Ties in points are broken by initial league sort_order.
       - A player's overall club rank for the season is:
           (total players in higher divisions) + (player's rank within their division).
-      - Centile is: round((rank / total_season_players) * 100).
+      - Centile is measured from the bottom up, so higher % = greater success:
+          round(((total_season_players - rank) / total_season_players) * 100).
     """
 
     @classmethod
@@ -98,8 +99,9 @@ class CentileService:
             total_players = season_totals.get(season_id, 0)
             rank = rank_by_league_id.get(lg.id, 0)
             if total_players > 0 and rank > 0:
-                centile = round((rank / total_players) * 100)
-                if best_centile_val is None or centile < best_centile_val:
+                # Higher % = greater success (e.g. Rank 25 of 130 -> (130-25)/130 = 81%)
+                centile = round(((total_players - rank) / total_players) * 100)
+                if best_centile_val is None or centile > best_centile_val:
                     best_centile_val = centile
             else:
                 centile = None
