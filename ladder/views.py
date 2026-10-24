@@ -37,18 +37,13 @@ def _unplayed_opponents_for(user_player, ladder):
 
 def index(request):
     current_season = Season.objects.filter(is_draft=False).latest('start_date')
-    os_year = Season.objects.order_by('start_date')[0].start_date.year
-    cs_year = current_season.start_date.year
-
-    at_ladders = Season.objects.count()
-    at_divisions = Ladder.objects.count()
-    at_results = int(Result.objects.count() / 2)
-    at_players = Player.objects.count()
 
     season_stats = current_season.get_stats()
     leader_stats = current_season.get_leader_stats(user=request.user)
     current_leaders = list(leader_stats.get('current_leaders', {}).values())
     progress_data = current_season.get_progress()
+    recent_results = current_season.get_recent_results(user=request.user, limit=50)
+    results_page_size = len(current_leaders) if len(current_leaders) >= 10 else 15
 
     context = {
         'current_season': current_season,
@@ -56,12 +51,8 @@ def index(request):
         'current_leaders': current_leaders,
         'progress_data': progress_data,
         'progress_json': json.dumps(progress_data),
-        'at_years': (cs_year - os_year),
-        'at_years_str': ' (' + os_year.__str__() + ' -> ' + cs_year.__str__() + ')',
-        'at_divisions': at_divisions,
-        'at_ladders': at_ladders,
-        'at_results': at_results,
-        'at_players': at_players,
+        'recent_results': recent_results,
+        'results_page_size': results_page_size,
     }
     return render(request, 'ladder/index.html', context)
 
