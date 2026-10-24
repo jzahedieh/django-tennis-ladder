@@ -1,70 +1,169 @@
 {% extends 'base.html' %}
 {% block container %}
-<div class="row mt-4">
-    <div class="col-md-8 col-lg-6">
-        
-        <h2 class="mb-1">Edit Result</h2>
-        <h4 class="text-muted mb-4">{{ ladder }}</h4>
+<div class="result-edit-wrap my-3">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h1 class="h3 mb-1">Edit Result</h1>
+            <div class="text-muted small fw-semibold">{{ ladder }}</div>
+        </div>
+        <a href="{% url 'result_entry' %}" class="btn btn-sm btn-outline-secondary">&larr; Back</a>
+    </div>
 
-        <div class="card shadow-sm">
-            <div class="card-body p-4 p-md-5">
-                <form id="edit_result_form" method="post">
-                    {% csrf_token %}
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert {% if message.tags %}alert-{{ message.tags }}{% else %}alert-info{% endif %} py-2 small" role="alert">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
 
-                    <div class="mb-4">
-                        <label class="form-label fw-bold" for="winner_id">Winner:</label>
-                        <select name="winner_id" id="winner_id" class="form-select">
-                            <option value="{{ winner.id }}">{{ winner.first_name }} {{ winner.last_name }}</option>
-                            <option value="{{ loser.id }}">{{ loser.first_name }} {{ loser.last_name }}</option>
-                        </select>
-                    </div>
+    <div class="card shadow-sm">
+        <div class="card-header bg-light py-3">
+            <h5 class="mb-0 fw-bold">{{ winner.first_name }} {{ winner.last_name }} vs {{ loser.first_name }} {{ loser.last_name }}</h5>
+        </div>
+        <div class="card-body p-3 p-sm-4">
+            <form id="edit_result_form" method="post">
+                {% csrf_token %}
 
-                    <div class="mb-4">
-                        <label class="form-label fw-bold" for="losing_score">Losing Result:</label>
-                        <input type="number" name="losing_score" id="losing_score" min="0" max="8"
-                               value="{{ losing_score }}" class="form-control" style="max-width: 100px;">
-                    </div>
-
-                    <div class="mb-4 form-check">
-                        <input type="checkbox" class="form-check-input" id="confirmBox" name="confirm" required aria-required="true" title="Please tick to confirm the update.">
-                        <label class="form-check-label ms-2" for="confirmBox">
-                            I confirm I want to update this result
-                        </label>
-                        <div id="confirmHelp" class="text-danger small mt-1" style="display:none;">
-                            Please tick to confirm the update.
+                <!-- Winner Selection (2-button toggle synced to hidden select) -->
+                <div class="mb-4">
+                    <label class="form-label fw-bold mb-2" for="winner_id">1. Match Winner</label>
+                    <select name="winner_id" id="winner_id" class="form-select d-none">
+                        <option value="{{ winner.id }}" selected>{{ winner.first_name }} {{ winner.last_name }}</option>
+                        <option value="{{ loser.id }}">{{ loser.first_name }} {{ loser.last_name }}</option>
+                    </select>
+                    <div class="row g-2" role="group" aria-label="Select Winner">
+                        <div class="col-6">
+                            <input type="radio" class="btn-check" name="winner_radio" id="win_radio_a" value="{{ winner.id }}" checked autocomplete="off">
+                            <label class="btn btn-outline-primary w-100 py-2 fw-bold text-truncate" for="win_radio_a">
+                                &#127942; {{ winner.first_name }} {{ winner.last_name }}
+                            </label>
+                        </div>
+                        <div class="col-6">
+                            <input type="radio" class="btn-check" name="winner_radio" id="win_radio_b" value="{{ loser.id }}" autocomplete="off">
+                            <label class="btn btn-outline-primary w-100 py-2 fw-bold text-truncate" for="win_radio_b">
+                                &#127942; {{ loser.first_name }} {{ loser.last_name }}
+                            </label>
                         </div>
                     </div>
+                </div>
 
-                    <div class="d-flex justify-content-between mt-5">
-                        <button id="saveBtn" class="btn btn-primary px-4" type="submit">Save</button>
-                        <a class="btn btn-outline-danger" href="{% url 'result_entry_delete' pair_key %}">Delete</a>
+                <!-- Losing Score Selection (0-8 Tap Grid synced to hidden input) -->
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <label class="form-label fw-bold mb-0" for="losing_score">2. Loser's Score (Games Won)</label>
+                        <small class="text-muted">Winner scored 9</small>
                     </div>
-                </form>
-            </div>
+                    <input type="number" name="losing_score" id="losing_score" min="0" max="8"
+                           value="{{ losing_score }}" class="form-control d-none">
+
+                    <div class="score-picker-grid" id="editScoreGrid">
+                        {% for s in "012345678" %}
+                            <button type="button"
+                                    class="score-btn {% if forloop.counter0 == losing_score %}active{% endif %}"
+                                    data-score="{{ forloop.counter0 }}">
+                                {{ forloop.counter0 }}
+                            </button>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Live Scoreboard Preview -->
+                <div class="scoreboard-preview mb-4">
+                    <div class="d-flex justify-content-between align-items-center text-center">
+                        <div class="text-start" style="flex: 1; min-width: 0;">
+                            <div class="text-muted text-uppercase fw-semibold" style="font-size: 0.7rem;">Winner</div>
+                            <div class="fw-bold text-truncate" id="editWinnerName">{{ winner.first_name }} {{ winner.last_name }}</div>
+                        </div>
+                        <div class="px-3 flex-shrink-0">
+                            <div class="scoreboard-digits">
+                                <span>9</span>
+                                <span class="text-muted fw-normal mx-1">&ndash;</span>
+                                <span id="editLoserScoreText">{{ losing_score }}</span>
+                            </div>
+                        </div>
+                        <div class="text-end" style="flex: 1; min-width: 0;">
+                            <div class="text-muted text-uppercase fw-semibold" style="font-size: 0.7rem;">Loser</div>
+                            <div class="fw-bold text-truncate" id="editLoserName">{{ loser.first_name }} {{ loser.last_name }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-4 form-check p-3 border rounded bg-light">
+                    <input type="checkbox" class="form-check-input ms-0 me-2" id="confirmBox" name="confirm" required aria-required="true">
+                    <label class="form-check-label fw-semibold" for="confirmBox">
+                        I confirm I want to update this result
+                    </label>
+                    <div id="confirmHelp" class="text-danger small mt-1" style="display:none;">
+                        Please tick to confirm the update.
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center gap-2">
+                    <button id="saveBtn" class="btn btn-primary px-4 fw-semibold" type="submit">Save Changes</button>
+                    <a class="btn btn-outline-danger" href="{% url 'result_entry_delete' pair_key %}">Delete Result</a>
+                </div>
+            </form>
         </div>
     </div>
 </div>
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-  var form  = document.getElementById('edit_result_form');
-  var box   = document.getElementById('confirmBox');
-  var help  = document.getElementById('confirmHelp');
-  if (!form || !box) return;
+    const form = document.getElementById('edit_result_form');
+    const box = document.getElementById('confirmBox');
+    const help = document.getElementById('confirmHelp');
+    const winnerSelect = document.getElementById('winner_id');
+    const losingInput = document.getElementById('losing_score');
+    const radioA = document.getElementById('win_radio_a');
+    const radioB = document.getElementById('win_radio_b');
+    const scoreBtns = Array.prototype.slice.call(document.querySelectorAll('#editScoreGrid .score-btn'));
+    const editWinnerName = document.getElementById('editWinnerName');
+    const editLoserName = document.getElementById('editLoserName');
+    const editLoserScoreText = document.getElementById('editLoserScoreText');
 
-  // Show/hide helper when user toggles the checkbox
-  box.addEventListener('change', function () {
-    if (help) help.style.display = box.checked ? 'none' : '';
-  });
+    const nameA = "{{ winner.first_name|escapejs }} {{ winner.last_name|escapejs }}";
+    const nameB = "{{ loser.first_name|escapejs }} {{ loser.last_name|escapejs }}";
 
-  // If user tries to submit without ticking, native required will block.
-  // We also reveal our helper for clarity.
-  form.addEventListener('submit', function (e) {
-    if (!box.checked) {
-      if (help) help.style.display = '';
-      box.focus();
+    function syncWinner() {
+        if (radioA && radioA.checked) {
+            winnerSelect.value = radioA.value;
+            editWinnerName.textContent = nameA;
+            editLoserName.textContent = nameB;
+        } else if (radioB && radioB.checked) {
+            winnerSelect.value = radioB.value;
+            editWinnerName.textContent = nameB;
+            editLoserName.textContent = nameA;
+        }
     }
-  });
+
+    if (radioA && radioB) {
+        radioA.addEventListener('change', syncWinner);
+        radioB.addEventListener('change', syncWinner);
+    }
+
+    scoreBtns.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            const val = parseInt(btn.getAttribute('data-score'), 10);
+            losingInput.value = val;
+            editLoserScoreText.textContent = String(val);
+            scoreBtns.forEach(function (b) {
+                b.classList.toggle('active', b === btn);
+            });
+        });
+    });
+
+    if (form && box) {
+        box.addEventListener('change', function () {
+            if (help) help.style.display = box.checked ? 'none' : '';
+        });
+        form.addEventListener('submit', function () {
+            if (!box.checked) {
+                if (help) help.style.display = '';
+                box.focus();
+            }
+        });
+    }
 });
 </script>
 {% endblock %}

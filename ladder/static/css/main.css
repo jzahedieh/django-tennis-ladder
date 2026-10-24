@@ -112,3 +112,142 @@ a:focus {
   color: #005580;
   text-decoration: underline;
 }
+
+/* ==========================================================================
+   Result Entry, Edit & Delete Styles
+   ========================================================================== */
+
+.result-entry-wrap {
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+.result-edit-wrap {
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+.opponent-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.5rem;
+}
+
+.opponent-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  border: 1.5px solid #dee2e6;
+  border-radius: 0.5rem;
+  background-color: #fff;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+  user-select: none;
+}
+
+.opponent-option:hover {
+  border-color: #86b7fe;
+  background-color: #f8faff;
+}
+
+.opponent-option.active {
+  border-color: #0d6efd;
+  background-color: #eff6ff;
+  box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.15);
+}
+
+.opponent-option .opp-check {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid #adb5bd;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.opponent-option.active .opp-check {
+  border-color: #0d6efd;
+  background-color: #0d6efd;
+}
+
+.opponent-option.active .opp-check::after {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #fff;
+}
+
+.score-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  gap: 0.35rem;
+}
+
+.score-btn {
+  min-height: 46px;
+  padding: 0.35rem 0;
+  font-weight: 700;
+  font-size: 1.05rem;
+  border-radius: 0.45rem;
+  border: 1.5px solid #ced4da;
+  background-color: #fff;
+  color: #212529;
+  transition: all 0.12s ease;
+  touch-action: manipulation;
+}
+
+.score-btn:hover {
+  border-color: #0d6efd;
+  background-color: #f0f6ff;
+}
+
+.score-btn.active {
+  background-color: #0d6efd;
+  border-color: #0d6efd;
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(13, 110, 253, 0.3);
+}
+
+.scoreboard-preview {
+  border-radius: 0.6rem;
+  border: 1px solid #dee2e6;
+  background-color: #f8f9fa;
+  padding: 0.85rem 1rem;
+  transition: all 0.15s ease;
+}
+
+.scoreboard-preview.state-won {
+  background-color: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.scoreboard-preview.state-lost {
+  background-color: #fef2f2;
+  border-color: #fecaca;
+}
+
+.scoreboard-digits {
+  font-size: 1.65rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+@media (max-width: 575.98px) {
+  .opponent-grid {
+    grid-template-columns: 1fr;
+  }
+  .score-picker-grid {
+    gap: 0.25rem;
+  }
+  .score-btn {
+    min-height: 44px;
+    font-size: 1rem;
+  }
+}
