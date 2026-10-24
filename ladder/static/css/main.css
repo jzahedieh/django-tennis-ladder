@@ -204,13 +204,18 @@ a:focus {
 
 .player-search-item {
   display: block;
-  padding: 0.5rem 0.85rem;
+  padding: 0.45rem 0.85rem;
   color: #212529;
   text-decoration: none;
   font-size: 0.92rem;
   line-height: 1.35;
   cursor: pointer;
   transition: background-color 0.1s ease;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+.player-search-item:last-child {
+  border-bottom: none;
 }
 
 .player-search-item:hover,
@@ -219,6 +224,22 @@ a:focus {
   background-color: #eef3fa;
   color: #111827;
   text-decoration: none;
+}
+
+.player-search-name {
+  font-weight: 500;
+  line-height: 1.25;
+}
+
+.player-search-meta {
+  font-size: 0.75rem;
+  color: #6c757d;
+  margin-top: 0.15rem;
+  line-height: 1.2;
+}
+
+.player-search-item.is-active .player-search-meta {
+  color: #4b5563;
 }
 
 .player-search-match {

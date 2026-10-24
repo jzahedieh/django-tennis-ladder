@@ -532,10 +532,27 @@ class PlayerStatsService:
     @classmethod
     def autocomplete_players(cls, query: str, authenticated: bool = False, limit: int = 10) -> list:
         """
-        Returns autocomplete option dicts [{'id': id, 'label': masked_name}] for navbar search.
+        Returns autocomplete option dicts [{'id': id, 'label': masked_name, 'subtext': ...}] for navbar search.
         """
         players = cls.search_players(query=query, authenticated=authenticated, limit=limit)
-        return [
-            {"id": p.id, "label": p.full_name(authenticated=authenticated)}
-            for p in players
-        ]
+        options = []
+        for p in players:
+            parts = []
+            rounds = getattr(p, "seasons_played", 0) or 0
+            first_date = getattr(p, "first_season_date", None)
+            last_date = getattr(p, "last_season_date", None)
+
+            if rounds:
+                parts.append(f"{rounds} round{'s' if rounds != 1 else ''}")
+            if first_date and last_date:
+                if first_date.year == last_date.year:
+                    parts.append(f"active {last_date.year}")
+                else:
+                    parts.append(f"active {first_date.year}–{last_date.year}")
+
+            options.append({
+                "id": p.id,
+                "label": p.full_name(authenticated=authenticated),
+                "subtext": " · ".join(parts),
+            })
+        return options

@@ -51,12 +51,16 @@ class PlayerSearchTestCase(TestCase):
             [opt["label"] for opt in anon_options],
             ["Adam M.", "Adam F.", "Ahmad Z."],
         )
+        self.assertEqual(anon_options[0]["subtext"], "1 round · active 2026")
+        self.assertEqual(anon_options[1]["subtext"], "1 round · active 2022")
+        self.assertEqual(anon_options[2]["subtext"], "")
 
         auth_options = PlayerStatsService.autocomplete_players(query="ad", authenticated=True)
         self.assertEqual(
             [opt["label"] for opt in auth_options],
             ["Adam MCCARTHY", "Adam FRANTZIS", "Ahmad ZAHEDIEH", "Shashi GADGIL"],
         )
+        self.assertEqual(auth_options[0]["subtext"], "1 round · active 2026")
 
     def test_results_view_displays_chopped_or_full_names_by_auth_state(self):
         url = reverse("player_result") + "?player_name=ad"

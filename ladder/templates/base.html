@@ -239,7 +239,19 @@
                   link.className = 'player-search-item';
                   link.setAttribute('role', 'option');
                   link.href = '/player/' + encodeURIComponent(opt.id) + '/';
-                  link.innerHTML = highlightMatch(opt.label, query);
+
+                  var nameEl = document.createElement('div');
+                  nameEl.className = 'player-search-name';
+                  nameEl.innerHTML = highlightMatch(opt.label, query);
+                  link.appendChild(nameEl);
+
+                  if (opt.subtext) {
+                    var metaEl = document.createElement('div');
+                    metaEl.className = 'player-search-meta';
+                    metaEl.textContent = opt.subtext;
+                    link.appendChild(metaEl);
+                  }
+
                   link.addEventListener('mouseenter', function () {
                     setActive(idx);
                   });
