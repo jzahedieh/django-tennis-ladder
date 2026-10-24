@@ -100,7 +100,6 @@ class Season(models.Model):
         played_days = []
         played_cumulative = []
         played_cumulative_count = 0
-        latest_result = None
 
         for r in daily_results:
             date_added = r['date_only']
@@ -114,7 +113,6 @@ class Season(models.Model):
 
             played_cumulative_count += matches_today
             played_cumulative.append(int(played_cumulative_count))
-            latest_result = date_added
 
         # Total possible matches across ladders: nC2 per ladder
         total_matches = sum(
@@ -133,7 +131,6 @@ class Season(models.Model):
             "played_days": played_days,
             "played": played,
             "played_cumulative": played_cumulative,
-            "latest_result": latest_result.strftime("%B %d, %Y") if latest_result else "-",
             "season_start": self.start_date.isoformat(),  # "YYYY-MM-DD"
             "today_day": today_idx,
         }
