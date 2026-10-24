@@ -1,16 +1,74 @@
 {% extends 'base.html' %}
+{% load ladder_extras %}
 {% block container %}
-<div>
-    <h1> {{ players|length }} Results for "{{ query }}"</h1>
-
-    <div class="col-12 mt-4">
-        <table class="table table-sm">
-            {% for player in players %}
-                <tr>
-                    <td><a href="{% url 'player_history' player.id %}"> {{ player }} </a></td>
-                </tr>
-            {% endfor %}
-        </table>
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+    <div>
+        <h1 class="mb-1">Player Search</h1>
+        <p class="text-muted mb-0">
+            {{ players|length }} result{{ players|length|pluralize }} for
+            <span class="badge bg-light text-dark border ms-1">&ldquo;{{ query }}&rdquo;</span>
+        </p>
     </div>
+    <form class="d-flex align-items-center gap-2" action="{% url 'player_result' %}" method="get" role="search">
+        <input type="search" name="player_name" value="{{ query }}" class="form-control form-control-sm" style="min-width: 220px;" placeholder="Refine player search..." aria-label="Refine player search">
+    </form>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+        <h2 class="h5 mb-0 fw-bold">Matching Players</h2>
+        <small class="text-muted">{{ players|length }} player{{ players|length|pluralize }}</small>
+    </div>
+
+    {% if players %}
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-3">Player</th>
+                            <th class="text-center">Rounds Played</th>
+                            <th class="text-end pe-3">Active Years</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for player in players %}
+                            {% get_player_name player user as formatted_name %}
+                            <tr>
+                                <td class="ps-3">
+                                    <a href="{% url 'player_history' player.id %}" class="fw-semibold text-decoration-none">
+                                        {{ formatted_name }}
+                                    </a>
+                                </td>
+                                <td class="text-center">
+                                    {% if player.seasons_played %}
+                                        <span class="badge bg-light text-secondary border">{{ player.seasons_played }}</span>
+                                    {% else %}
+                                        <span class="text-muted">&ndash;</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end pe-3 text-muted small text-nowrap">
+                                    {% if player.first_season_date and player.last_season_date %}
+                                        {% if player.first_season_date.year == player.last_season_date.year %}
+                                            {{ player.last_season_date.year }}
+                                        {% else %}
+                                            {{ player.first_season_date.year }}&ndash;{{ player.last_season_date.year }}
+                                        {% endif %}
+                                    {% else %}
+                                        &ndash;
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    {% else %}
+        <div class="card-body py-5 text-center text-muted">
+            <p class="mb-1 fw-semibold text-dark">No players found matching &ldquo;{{ query }}&rdquo;</p>
+            <p class="small mb-0">Try searching by first name{% if not user.is_authenticated %} (or first name and surname initial){% endif %}.</p>
+        </div>
+    {% endif %}
 </div>
 {% endblock container %}

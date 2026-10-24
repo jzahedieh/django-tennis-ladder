@@ -1,5 +1,5 @@
 from collections import defaultdict
-from django.db.models import Q
+from django.db.models import Case, Count, F, IntegerField, Max, Min, Q, Value, When
 
 from ladder.models import Player, Result
 from ladder.services.centile import CentileService
@@ -476,9 +476,13 @@ class PlayerStatsService:
     @classmethod
     def search_players(cls, query: str, authenticated: bool = False, limit: int = 25) -> list:
         """
-        Searches players by name, applying surname enumeration protection for anonymous users.
+        Searches players by name with relevance ranking (prefix matches first,
+        then recently active players) and surname enumeration protection for anonymous users.
         """
-        terms = query.split()
+        terms = (query or "").split()
+        if not terms:
+            return []
+
         qs = Player.objects.all()
 
         if authenticated:
@@ -498,14 +502,57 @@ class PlayerStatsService:
                 else:
                     qs = qs.filter(first_name__icontains=first)
 
-        return list(qs[:limit])
+        first_term = terms[0]
+        published_filter = Q(league__ladder__season__is_draft=False)
+
+        qs = qs.annotate(
+            match_priority=Case(
+                When(first_name__istartswith=first_term, then=Value(0)),
+                When(last_name__istartswith=first_term, then=Value(1)),
+                When(first_name__icontains=first_term, then=Value(2)),
+                default=Value(3),
+                output_field=IntegerField(),
+            ),
+            seasons_played=Count("league", filter=published_filter, distinct=True),
+            first_season_date=Min("league__ladder__season__start_date", filter=published_filter),
+            last_season_date=Max("league__ladder__season__start_date", filter=published_filter),
+        ).order_by(
+            "match_priority",
+            F("last_season_date").desc(nulls_last=True),
+            "-seasons_played",
+            "first_name",
+            "last_name",
+        )
+
+        players = list(qs[:limit])
+        for p in players:
+            p.is_authed = authenticated
+        return players
 
     @classmethod
     def autocomplete_players(cls, query: str, authenticated: bool = False, limit: int = 10) -> list:
         """
-        Returns autocomplete option dicts [{'id': id, 'label': masked_name}] for navbar search.
+        Returns autocomplete option dicts [{'id': id, 'label': masked_name, 'subtext': ...}] for navbar search.
         """
-        qs = Player.objects.all()
-        for term in query.split():
-            qs = qs.filter(Q(first_name__icontains=term) | Q(last_name__icontains=term))
-        return [{"id": p.id, "label": p.full_name(authenticated=authenticated)} for p in qs[:limit]]
+        players = cls.search_players(query=query, authenticated=authenticated, limit=limit)
+        options = []
+        for p in players:
+            parts = []
+            rounds = getattr(p, "seasons_played", 0) or 0
+            first_date = getattr(p, "first_season_date", None)
+            last_date = getattr(p, "last_season_date", None)
+
+            if rounds:
+                parts.append(f"{rounds} round{'s' if rounds != 1 else ''}")
+            if first_date and last_date:
+                if first_date.year == last_date.year:
+                    parts.append(f"active {last_date.year}")
+                else:
+                    parts.append(f"active {first_date.year}–{last_date.year}")
+
+            options.append({
+                "id": p.id,
+                "label": p.full_name(authenticated=authenticated),
+                "subtext": " · ".join(parts),
+            })
+        return options
