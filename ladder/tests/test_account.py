@@ -88,3 +88,17 @@ class AccountViewTests(TestCase):
         self.assertContains(response, 'is-invalid')
         self.user.refresh_from_db()
         self.assertTrue(self.user.check_password('oldpassword123'))
+
+    def test_result_entry_renders_opponent_cards_and_score_picker(self):
+        opponent = Player.objects.create(first_name='Rafael', last_name='Nadal')
+        League.objects.create(ladder=self.ladder, player=opponent, sort_order=20)
+
+        self.client.login(username='roger@example.com', password='oldpassword123')
+        response = self.client.get(reverse('result_entry'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Rafael Nadal')
+        self.assertContains(response, reverse('player_history', args=[opponent.id]))
+        self.assertContains(response, reverse('head_to_head', args=[self.player.id, opponent.id]))
+        self.assertContains(response, 'score-picker-grid')
+        self.assertContains(response, 'h2hLightboxModal')
+

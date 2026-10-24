@@ -1,227 +1,465 @@
 {% extends 'base.html' %}
 {% block container %}
-<style>
-    /* Slider + ticks: edge‑to‑edge; 0 and 8 exactly at the ends */
-    #add_result_form .range-wrap {
-        max-width: 420px;
-    }
-
-    #add_result_form .range-wrap input[type=range] {
-        width: 100%;
-        margin: 0;
-    }
-
-    #add_result_form .tickline {
-        display: table;
-        table-layout: fixed;
-        width: 100%;
-        /* match slider track width */
-        margin: 4px 0 0;
-        /* a bit more breathing room */
-        font-size: 12px;
-        color: #6c757d;
-        user-select: none;
-    }
-
-    #add_result_form .tickline span {
-        display: table-cell;
-        text-align: center;
-        white-space: nowrap;
-    }
-
-    /* Number + preview: sit on one line with a little gap */
-    #add_result_form #id_result {
-        width: 70px;
-        margin-top: 6px;
-    }
-
-    #add_result_form .score-line {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        margin-top: 8px;
-        /* space above the row */
-    }
-
-    #add_result_form #scorePreview {
-        margin: 0;
-    }
-</style>
-
-
-<h1>Enter Result</h1>
-<h3 class="mb-4">{{ ladder }}</h3>
-
-{% if is_closed %}
-<h2>This ladder is now closed.</h2>
-<p>If you have a result to fix, email <a href="mailto:results@highgate-ladder.co.uk">results@highgate-ladder.co.uk</a>
-</p>
-{% else %}
-
-<section class="mb-5">
-    <div class="card shadow-sm">
-        <div class="card-header bg-light">
-            <h5 class="mb-0">Unplayed Matches</h5>
-        </div>
-        <div class="card-body p-4">
-
-            {# ---- Unplayed Matches ---- #}
-            {% if unplayed and unplayed|length > 0 %}
-            <form id="add_result_form" method="post" action="{% url 'result_entry_add' %}">
-                {% csrf_token %}
-                {{ form.player }}
-
-                <div class="mb-3">
-                    <label class="form-label" for="{{ form.opponent.id_for_label }}">Opponent:</label>
-                    {{ form.opponent }}
-                </div>
-
-                <div class="mb-4">
-                    <label class="form-label fw-bold">Match Result:</label>
-                    <div class="d-none">{{ form.winner }}</div>
-                    <div class="btn-group w-100" role="group">
-                        <input type="radio" class="btn-check" name="btnradio_result" id="btnradio_won"
-                            autocomplete="off">
-                        <label class="btn btn-outline-success" for="btnradio_won">I Won</label>
-
-                        <input type="radio" class="btn-check" name="btnradio_result" id="btnradio_lost"
-                            autocomplete="off">
-                        <label class="btn btn-outline-danger" for="btnradio_lost">I Lost</label>
-                    </div>
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label">Losing Result:</label>
-                    <div class="range-wrap">
-                        <input type="range" class="form-range" id="lossRange" min="0" max="8" value="4">
-                        <div class="tickline">
-                            <span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span>
-                        </div>
-                        <div class="score-line">
-                            <span style="display:inline-block;width:85px;">{{ form.result }}</span>
-                            <span id="scorePreview" class="text-muted"></span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="mt-4">
-                    <button class="btn btn-primary">Add Result</button>
-                </div>
-            </form>
-
-            {% else %}
-            <div class="text-muted">Nice! You’ve played all your matches.</div>
-            {% endif %}
-        </div>
-    </div>
-</section>
-
-<section class="mt-4">
-    <div class="card shadow-sm">
-        <div class="card-header bg-light">
-            <h5 class="mb-0">Played Matches</h5>
-        </div>
-        <div class="card-body">
-            {% if entered %}
-            <div class="table-responsive">
-                <table class="table align-middle">
-                    <thead>
-                        <tr>
-                            <th>Match</th>
-                            <th>Result</th>
-                            <th>Date</th>
-                            <th class="d-none d-sm-table-cell">Entered By</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for r in entered %}
-                        <tr>
-                            <td>
-                                <div class="fw-bold">{{ r.winner.first_name }} {{ r.winner.last_name }}</div>
-                                <div class="text-muted small">vs {{ r.loser.first_name }} {{ r.loser.last_name }}</div>
-                            </td>
-                            <td class="align-middle">9–{{ r.losing_score }}</td>
-                            <td class="align-middle text-nowrap">{{ r.date_added|date:"M j" }}</td>
-                            <td class="align-middle d-none d-sm-table-cell">
-                                {% if r.entered_by %}{{ r.entered_by.first_name }}{% else %}<em>—</em>{% endif %}
-                            </td>
-                            <td class="align-middle text-end">
-                                <a class="btn btn-outline-secondary btn-sm"
-                                    href="{% url 'result_entry_edit' r.pair_key %}">Edit</a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+<div class="result-entry-wrap">
+    <!-- Page Header -->
+    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2 mb-4">
+        <div>
+            <h1 class="h2 mb-1">Enter Result</h1>
+            <div class="d-flex flex-wrap align-items-center gap-2 text-muted">
+                <span class="fw-semibold text-dark">{{ ladder }}</span>
+                {% if total_opponents %}
+                    <span>&middot;</span>
+                    <span class="badge bg-light text-secondary border">
+                        {{ entered|length }} of {{ total_opponents }} played
+                    </span>
+                {% endif %}
             </div>
-            {% else %}
-            <p class="text-muted mb-0">No results yet.</p>
-            {% endif %}
+        </div>
+        <div>
+            <a href="{% url 'ladder' ladder.season.start_date|date:'Y' ladder.season.season_round ladder.division %}"
+               class="btn btn-sm btn-outline-secondary">
+                View Division Table &rarr;
+            </a>
         </div>
     </div>
-</section>
 
-<script>
-    (function () {
-        const range = document.getElementById('lossRange');
-        const number = document.getElementById('id_result');
-        const winner = document.getElementById('id_winner');
-        const preview = document.getElementById('scorePreview');
-        const btnRadioWon = document.getElementById('btnradio_won');
-        const btnRadioLost = document.getElementById('btnradio_lost');
-        const opponent = document.getElementById('id_opponent');
+    {% if is_closed %}
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body p-4 text-center">
+            <h4 class="fw-bold mb-2">This ladder round is now closed</h4>
+            <p class="text-muted mb-0">
+                If you have a result to fix, please email
+                <a href="mailto:results@highgate-ladder.co.uk">results@highgate-ladder.co.uk</a>.
+            </p>
+        </div>
+    </div>
+    {% else %}
 
-        if (!range || !number || !preview) return;
+    <!-- Record Match Result Card -->
+    <section class="mb-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-light py-3 d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 fw-bold">Record Match</h5>
+                {% if unplayed %}
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle">
+                        {{ unplayed|length }} remaining
+                    </span>
+                {% endif %}
+            </div>
+            <div class="card-body p-3 p-sm-4">
+                {% if unplayed and unplayed|length > 0 %}
+                <form id="add_result_form" method="post" action="{% url 'result_entry_add' %}">
+                    {% csrf_token %}
+                    {{ form.player }}
 
-        if (opponent) {
-            opponent.classList.add('form-select');
-        }
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger py-2 small">
+                            {% for err in form.non_field_errors %}<div>{{ err }}</div>{% endfor %}
+                        </div>
+                    {% endif %}
 
-        if (winner && btnRadioWon && btnRadioLost) {
-            if (winner.checked) btnRadioWon.checked = true;
-            else btnRadioLost.checked = true;
+                    <!-- Step 1: Opponent Selection -->
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <label class="form-label fw-bold mb-0" for="{{ form.opponent.id_for_label }}">
+                                1. Who did you play?
+                            </label>
+                            <small class="text-muted">Tap opponent or view stats</small>
+                        </div>
 
-            btnRadioWon.addEventListener('change', function () {
-                winner.checked = true;
-                update();
+                        <!-- Hidden/Accessible native select kept in sync for form submission -->
+                        <div class="d-none">
+                            {{ form.opponent }}
+                        </div>
+
+                        <!-- Interactive Opponent Cards with Profile & H2H links -->
+                        <div class="opponent-grid" id="opponentCardsGrid" role="radiogroup" aria-label="Select opponent">
+                            {% for opp in unplayed %}
+                                {% url 'head_to_head' me.id opp.id as opp_h2h_url %}
+                                <div class="opponent-option"
+                                     data-opp-id="{{ opp.id }}"
+                                     data-opp-name="{{ opp.first_name }} {{ opp.last_name }}"
+                                     role="radio"
+                                     aria-checked="false"
+                                     tabindex="0">
+                                    <div class="d-flex align-items-center gap-2 text-truncate">
+                                        <span class="opp-check" aria-hidden="true"></span>
+                                        <span class="fw-semibold text-dark text-truncate">{{ opp.first_name }} {{ opp.last_name }}</span>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-1 flex-shrink-0">
+                                        <a href="{{ opp_h2h_url }}"
+                                           data-h2h-url="{{ opp_h2h_url }}"
+                                           data-h2h-title="{{ me.first_name }} {{ me.last_name }} vs {{ opp.first_name }} {{ opp.last_name }}"
+                                           class="badge bg-light text-secondary border text-decoration-none opp-action-link"
+                                           title="View Head-to-Head History">
+                                            H2H
+                                        </a>
+                                        <a href="{% url 'player_history' opp.id %}"
+                                           target="_blank"
+                                           rel="noopener noreferrer"
+                                           class="badge bg-light text-secondary border text-decoration-none opp-action-link"
+                                           title="View {{ opp.first_name }}'s Player Profile (opens in new tab)">
+                                            Profile &nearr;
+                                        </a>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        {% if form.opponent.errors %}
+                            <div class="invalid-feedback d-block mt-1">
+                                {% for err in form.opponent.errors %}{{ err }}{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Step 2: Match Outcome (Won / Lost) -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold mb-2">2. Match Outcome</label>
+                        <div class="d-none">{{ form.winner }}</div>
+                        <div class="row g-2" role="group" aria-label="Match Outcome">
+                            <div class="col-6">
+                                <input type="radio" class="btn-check" name="btnradio_result" id="btnradio_won" autocomplete="off">
+                                <label class="btn btn-outline-success w-100 py-2 fw-bold" for="btnradio_won">
+                                    &#127942; I Won (9)
+                                </label>
+                            </div>
+                            <div class="col-6">
+                                <input type="radio" class="btn-check" name="btnradio_result" id="btnradio_lost" autocomplete="off">
+                                <label class="btn btn-outline-danger w-100 py-2 fw-bold" for="btnradio_lost">
+                                    I Lost
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 3: Losing Score (0 to 8 Tap Grid) -->
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <label class="form-label fw-bold mb-0" id="losingScoreLabel" for="{{ form.result.id_for_label }}">
+                                3. Loser's Score (Games Won)
+                            </label>
+                            <small class="text-muted" id="losingScoreHint">Select 0–8</small>
+                        </div>
+
+                        <!-- Hidden underlying Django number input kept in sync -->
+                        <div class="d-none">{{ form.result }}</div>
+
+                        <div class="score-picker-grid" id="scorePickerGrid" role="radiogroup" aria-labelledby="losingScoreLabel">
+                            {% for s in "012345678" %}
+                                <button type="button"
+                                        class="score-btn"
+                                        data-score="{{ forloop.counter0 }}"
+                                        aria-label="{{ forloop.counter0 }} games">
+                                    {{ forloop.counter0 }}
+                                </button>
+                            {% endfor %}
+                        </div>
+                        {% if form.result.errors %}
+                            <div class="invalid-feedback d-block mt-1">
+                                {% for err in form.result.errors %}{{ err }}{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Live Scoreboard Summary -->
+                    <div class="scoreboard-preview mb-3" id="scoreboardPreview">
+                        <div id="scoreboardEmpty" class="text-center text-muted small py-1">
+                            Select an opponent and outcome above to preview your match score.
+                        </div>
+                        <div id="scoreboardActive" class="d-none">
+                            <div class="d-flex justify-content-between align-items-center text-center">
+                                <div class="text-start" style="flex: 1; min-width: 0;">
+                                    <div class="text-muted text-uppercase fw-semibold" style="font-size: 0.7rem;">You</div>
+                                    <div class="fw-bold text-truncate">{{ me.first_name }} {{ me.last_name }}</div>
+                                </div>
+                                <div class="px-3 flex-shrink-0 text-center">
+                                    <div class="scoreboard-digits">
+                                        <span id="previewMyScore">9</span>
+                                        <span class="text-muted fw-normal mx-1">&ndash;</span>
+                                        <span id="previewOppScore">4</span>
+                                    </div>
+                                    <div id="previewOutcomeBadge" class="badge bg-success-subtle text-success border border-success-subtle mt-1">
+                                        You Won
+                                    </div>
+                                </div>
+                                <div class="text-end" style="flex: 1; min-width: 0;">
+                                    <div class="text-muted text-uppercase fw-semibold" style="font-size: 0.7rem;">Opponent</div>
+                                    <div class="fw-bold text-truncate" id="previewOppName">Select Opponent</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" id="submitResultBtn" class="btn btn-primary btn-lg fw-semibold">
+                            Add Result
+                        </button>
+                    </div>
+                </form>
+
+                {% else %}
+                <div class="text-center py-3">
+                    <div class="fs-4 mb-1">&#127934;</div>
+                    <div class="fw-bold">Nice! You’ve played all your matches in this division.</div>
+                    <div class="text-muted small mt-1">
+                         You can review or edit any of your recorded scores below.
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </section>
+
+    <!-- Played Matches Card -->
+    <section class="mt-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-light py-3 d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 fw-bold">Played Matches</h5>
+                {% if entered %}
+                    <span class="badge bg-light text-secondary border">{{ entered|length }} recorded</span>
+                {% endif %}
+            </div>
+            <div class="card-body p-0">
+                {% if entered %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-3">Matchup</th>
+                                <th class="text-center">Score</th>
+                                <th class="d-none d-sm-table-cell">Date</th>
+                                <th class="d-none d-md-table-cell">Entered By</th>
+                                <th class="text-end pe-3"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for r in entered %}
+                            <tr>
+                                <td class="ps-3 py-2">
+                                    {% if r.winner.id == me.id %}
+                                        {% url 'head_to_head' me.id r.loser.id as played_h2h_url %}
+                                        <div class="d-flex align-items-center flex-wrap gap-1">
+                                            <span class="badge bg-success-subtle text-success border border-success-subtle">W</span>
+                                            <span class="text-muted small">vs</span>
+                                            <a href="{% url 'player_history' r.loser.id %}" class="fw-bold text-dark text-decoration-none">
+                                                {{ r.loser.first_name }} {{ r.loser.last_name }}
+                                            </a>
+                                            <a href="{{ played_h2h_url }}"
+                                               data-h2h-url="{{ played_h2h_url }}"
+                                               data-h2h-title="{{ me.first_name }} {{ me.last_name }} vs {{ r.loser.first_name }} {{ r.loser.last_name }}"
+                                               class="badge bg-light text-secondary border text-decoration-none ms-1">
+                                                H2H
+                                            </a>
+                                        </div>
+                                    {% else %}
+                                        {% url 'head_to_head' me.id r.winner.id as played_h2h_url %}
+                                        <div class="d-flex align-items-center flex-wrap gap-1">
+                                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle">L</span>
+                                            <span class="text-muted small">vs</span>
+                                            <a href="{% url 'player_history' r.winner.id %}" class="fw-bold text-dark text-decoration-none">
+                                                {{ r.winner.first_name }} {{ r.winner.last_name }}
+                                            </a>
+                                            <a href="{{ played_h2h_url }}"
+                                               data-h2h-url="{{ played_h2h_url }}"
+                                               data-h2h-title="{{ me.first_name }} {{ me.last_name }} vs {{ r.winner.first_name }} {{ r.winner.last_name }}"
+                                               class="badge bg-light text-secondary border text-decoration-none ms-1">
+                                                H2H
+                                            </a>
+                                        </div>
+                                    {% endif %}
+                                    <div class="d-sm-none text-muted" style="font-size: 0.75rem;">
+                                        {{ r.date_added|date:"M j" }}{% if r.entered_by %} &middot; by {{ r.entered_by.first_name }}{% endif %}
+                                    </div>
+                                </td>
+                                <td class="text-center text-nowrap fw-bold">
+                                    {% if r.winner.id == me.id %}
+                                        9&ndash;{{ r.losing_score }}
+                                    {% else %}
+                                        {{ r.losing_score }}&ndash;9
+                                    {% endif %}
+                                </td>
+                                <td class="d-none d-sm-table-cell text-muted small text-nowrap">
+                                    {{ r.date_added|date:"M j, Y" }}
+                                </td>
+                                <td class="d-none d-md-table-cell text-muted small">
+                                    {% if r.entered_by %}{{ r.entered_by.first_name }}{% else %}<em>&mdash;</em>{% endif %}
+                                </td>
+                                <td class="text-end pe-3">
+                                    <a class="btn btn-outline-secondary btn-sm"
+                                       href="{% url 'result_entry_edit' r.pair_key %}">Edit</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted p-4 mb-0">No results recorded for this round yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </section>
+
+    {% include 'ladder/head_to_head/_lightbox_modal.html' %}
+
+    <script>
+        (function () {
+            const numberInput = document.getElementById('id_result');
+            const winnerCheckbox = document.getElementById('id_winner');
+            const opponentSelect = document.getElementById('id_opponent');
+            const btnRadioWon = document.getElementById('btnradio_won');
+            const btnRadioLost = document.getElementById('btnradio_lost');
+            const oppCards = Array.prototype.slice.call(document.querySelectorAll('.opponent-option'));
+            const scoreBtns = Array.prototype.slice.call(document.querySelectorAll('.score-btn'));
+            const losingScoreLabel = document.getElementById('losingScoreLabel');
+            const losingScoreHint = document.getElementById('losingScoreHint');
+
+            const scoreboardPreview = document.getElementById('scoreboardPreview');
+            const scoreboardEmpty = document.getElementById('scoreboardEmpty');
+            const scoreboardActive = document.getElementById('scoreboardActive');
+            const previewMyScore = document.getElementById('previewMyScore');
+            const previewOppScore = document.getElementById('previewOppScore');
+            const previewOppName = document.getElementById('previewOppName');
+            const previewOutcomeBadge = document.getElementById('previewOutcomeBadge');
+            const submitBtn = document.getElementById('submitResultBtn');
+
+            if (!numberInput || !opponentSelect || !winnerCheckbox) return;
+
+            let outcomeChosen = false;
+
+            function getSelectedOpponentName() {
+                const val = opponentSelect.value;
+                if (!val) return '';
+                const activeCard = oppCards.find(c => c.getAttribute('data-opp-id') === String(val));
+                if (activeCard) return activeCard.getAttribute('data-opp-name') || '';
+                const opt = opponentSelect.options[opponentSelect.selectedIndex];
+                return opt ? opt.text : '';
+            }
+
+            function selectOpponent(oppId) {
+                opponentSelect.value = String(oppId);
+                oppCards.forEach(function (card) {
+                    const isMatch = card.getAttribute('data-opp-id') === String(oppId);
+                    card.classList.toggle('active', isMatch);
+                    card.setAttribute('aria-checked', isMatch ? 'true' : 'false');
+                });
+                updatePreview();
+            }
+
+            function selectScore(scoreVal) {
+                let v = parseInt(scoreVal, 10);
+                if (isNaN(v) || v < 0) v = 0;
+                if (v > 8) v = 8;
+                numberInput.value = v;
+                scoreBtns.forEach(function (btn) {
+                    const isMatch = parseInt(btn.getAttribute('data-score'), 10) === v;
+                    btn.classList.toggle('active', isMatch);
+                });
+                updatePreview();
+            }
+
+            function updatePreview() {
+                const oppId = opponentSelect.value;
+                const oppName = getSelectedOpponentName();
+                const loseScore = parseInt(numberInput.value || '0', 10);
+                const youWin = btnRadioWon && btnRadioWon.checked;
+
+                if (outcomeChosen) {
+                    if (youWin) {
+                        losingScoreLabel.textContent = oppName
+                            ? `3. ${oppName.split(' ')[0]}'s Score (Games Won)`
+                            : "3. Opponent's Score (Games Won)";
+                        losingScoreHint.textContent = 'You scored 9';
+                    } else {
+                        losingScoreLabel.textContent = '3. Your Score (Games Won)';
+                        losingScoreHint.textContent = (oppName ? oppName.split(' ')[0] : 'Opponent') + ' scored 9';
+                    }
+                }
+
+                if (!oppId || !outcomeChosen) {
+                    scoreboardPreview.className = 'scoreboard-preview mb-3';
+                    scoreboardEmpty.classList.remove('d-none');
+                    scoreboardActive.classList.add('d-none');
+                    if (submitBtn) submitBtn.disabled = true;
+                    return;
+                }
+
+                if (submitBtn) submitBtn.disabled = false;
+                scoreboardEmpty.classList.add('d-none');
+                scoreboardActive.classList.remove('d-none');
+                previewOppName.textContent = oppName || 'Opponent';
+
+                if (youWin) {
+                    scoreboardPreview.className = 'scoreboard-preview state-won mb-3';
+                    previewMyScore.textContent = '9';
+                    previewOppScore.textContent = String(loseScore);
+                    previewOutcomeBadge.className = 'badge bg-success-subtle text-success border border-success-subtle mt-1';
+                    previewOutcomeBadge.textContent = `You Won 9–${loseScore}`;
+                } else {
+                    scoreboardPreview.className = 'scoreboard-preview state-lost mb-3';
+                    previewMyScore.textContent = String(loseScore);
+                    previewOppScore.textContent = '9';
+                    previewOutcomeBadge.className = 'badge bg-danger-subtle text-danger border border-danger-subtle mt-1';
+                    previewOutcomeBadge.textContent = `You Lost ${loseScore}–9`;
+                }
+            }
+
+            // Wire up opponent cards
+            oppCards.forEach(function (card) {
+                card.addEventListener('click', function (e) {
+                    if (e.target.closest('.opp-action-link')) {
+                        return; // allow Profile or H2H link click without hijacking
+                    }
+                    selectOpponent(card.getAttribute('data-opp-id'));
+                });
+                card.addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        if (e.target.closest('.opp-action-link')) return;
+                        e.preventDefault();
+                        selectOpponent(card.getAttribute('data-opp-id'));
+                    }
+                });
             });
-            btnRadioLost.addEventListener('change', function () {
-                winner.checked = false;
-                update();
+
+            // Wire up outcome radios
+            if (btnRadioWon && btnRadioLost) {
+                btnRadioWon.addEventListener('change', function () {
+                    if (btnRadioWon.checked) {
+                        outcomeChosen = true;
+                        winnerCheckbox.checked = true;
+                        updatePreview();
+                    }
+                });
+                btnRadioLost.addEventListener('change', function () {
+                    if (btnRadioLost.checked) {
+                        outcomeChosen = true;
+                        winnerCheckbox.checked = false;
+                        updatePreview();
+                    }
+                });
+            }
+
+            // Wire up 0-8 score buttons
+            scoreBtns.forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    selectScore(btn.getAttribute('data-score'));
+                });
             });
-        }
 
-        function syncFromRange() {
-            number.value = range.value;
-            update();
-        }
+            // Initialize state (if only 1 opponent left, auto-select them; default losing score to 4)
+            if (opponentSelect.value) {
+                selectOpponent(opponentSelect.value);
+            } else if (oppCards.length === 1) {
+                selectOpponent(oppCards[0].getAttribute('data-opp-id'));
+            }
 
-        function syncFromNumber() {
-            let v = parseInt(number.value || 0, 10);
-            if (isNaN(v) || v < 0) v = 0;
-            if (v > 8) v = 8;
-            number.value = v;
-            range.value = v;
-            update();
-        }
-
-        function update() {
-            const lose = parseInt(range.value, 10);
-            const youWin = winner && winner.checked;
-            preview.textContent = youWin
-                ? `Your score: 9 | Opponent: ${lose}`
-                : `Your score: ${lose} | Opponent: 9`;
-        }
-
-        range.addEventListener('input', syncFromRange);
-        number.addEventListener('input', syncFromNumber);
-        if (winner) winner.addEventListener('change', update);
-        range.value = number.value || 0;
-        update();
-    })();
-</script>
-
-
-{% endif %}
+            const initialScore = (numberInput.value !== '' && numberInput.value !== '0')
+                ? parseInt(numberInput.value, 10)
+                : 4;
+            selectScore(initialScore);
+            updatePreview();
+        })();
+    </script>
+    {% endif %}
+</div>
 {% endblock %}

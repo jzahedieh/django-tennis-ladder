@@ -477,10 +477,12 @@ def result_entry(request):
 
     return render(request, 'ladder/result/entry.html', {
         'user': user,
+        'me': me,
         'ladder': ladder,
         'form': form,
         'unplayed': unplayed,
         'entered': entered,
+        'total_opponents': len(unplayed) + len(entered),
         'is_closed': ladder.is_closed(),
     })
 
@@ -492,14 +494,21 @@ def result_entry_add(request):
               .filter(league__player__user=user, season__is_draft=False)
               .order_by('-id')[0])
 
+    me = Player.objects.get(user=user)
     result = Result(ladder=ladder, date_added=datetime.datetime.now(), inaccurate_flag=0)
     form = AddEntryForm(ladder, user, request.POST, instance=result)
 
     if not form.is_valid():
+        unplayed = _unplayed_opponents_for(me, ladder)
         return render(request, 'ladder/result/entry.html', {
-            'user': user, 'ladder': ladder, 'form': form,
-            'unplayed': _unplayed_opponents_for(Player.objects.get(user=user), ladder),
-            'entered': [],  # keep it simple on error; can repopulate if you prefer
+            'user': user,
+            'me': me,
+            'ladder': ladder,
+            'form': form,
+            'unplayed': unplayed,
+            'entered': [],
+            'total_opponents': len(unplayed),
+            'is_closed': ladder.is_closed(),
         })
 
     user_result = form.save(commit=False)
@@ -620,12 +629,17 @@ def result_entry_edit(request, pair_key):
 
 @login_required
 def result_entry_delete(request, pair_key):
-    a_id, b_id = map(int, pair_key.split('-'))
+    try:
+        a_id, b_id = map(int, pair_key.split('-'))
+    except ValueError:
+        raise Http404
+
     ladder = (Ladder.objects
               .filter(league__player__user=request.user, season__is_draft=False)
               .order_by('-id')[0])
     if not _can_edit(request.user, ladder, a_id, b_id):
         return HttpResponseForbidden()
+
     if request.method == 'POST':
         Result.objects.filter(ladder=ladder, player_id=a_id, opponent_id=b_id).delete()
         Result.objects.filter(ladder=ladder, player_id=b_id, opponent_id=a_id).delete()
@@ -635,7 +649,27 @@ def result_entry_delete(request, pair_key):
             'season_round': ladder.season.season_round,
             'division_id': ladder.division,
         }))
-    return render(request, 'ladder/result/delete_confirm.html', {'pair_key': pair_key, 'ladder': ladder})
+
+    winner = None
+    loser = None
+    losing_score = None
+    try:
+        r_ab = Result.objects.select_related('player').get(ladder=ladder, player_id=a_id, opponent_id=b_id)
+        r_ba = Result.objects.select_related('player').get(ladder=ladder, player_id=b_id, opponent_id=a_id)
+        if r_ab.result == 9:
+            winner, loser, losing_score = r_ab.player, r_ba.player, r_ba.result
+        else:
+            winner, loser, losing_score = r_ba.player, r_ab.player, r_ab.result
+    except Result.DoesNotExist:
+        pass
+
+    return render(request, 'ladder/result/delete_confirm.html', {
+        'pair_key': pair_key,
+        'ladder': ladder,
+        'winner': winner,
+        'loser': loser,
+        'losing_score': losing_score,
+    })
 
 @csrf_exempt
 def unsubscribe_token(request, token):
