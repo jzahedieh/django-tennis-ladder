@@ -426,3 +426,40 @@ a:focus {
     font-size: 1rem;
   }
 }
+
+/* ==========================================================================
+   Homepage Season Progress Chart (C3 Customizations)
+   ========================================================================== */
+
+#chart .c3-area-played {
+  opacity: 0.12 !important;
+}
+
+#chart .c3-line-played {
+  stroke-width: 2.5px;
+}
+
+#chart .c3-line-total {
+  stroke-dasharray: 4, 4;
+  stroke-width: 1.5px;
+}
+
+#chart .c3-bar-daily {
+  opacity: 0.65;
+}
+
+#chart .c3-bar-daily:hover {
+  opacity: 0.95;
+}
+
+#chart .c3-xgrid-line.chart-today-line line {
+  stroke: #64748b;
+  stroke-dasharray: 3, 3;
+  stroke-width: 1px;
+}
+
+#chart .c3-xgrid-line.chart-today-line text {
+  fill: #64748b;
+  font-weight: 500;
+  font-size: 11px;
+}

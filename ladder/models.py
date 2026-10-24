@@ -100,7 +100,6 @@ class Season(models.Model):
         played_days = []
         played_cumulative = []
         played_cumulative_count = 0
-        latest_result = None
 
         for r in daily_results:
             date_added = r['date_only']
@@ -114,7 +113,6 @@ class Season(models.Model):
 
             played_cumulative_count += matches_today
             played_cumulative.append(int(played_cumulative_count))
-            latest_result = date_added
 
         # Total possible matches across ladders: nC2 per ladder
         total_matches = sum(
@@ -133,10 +131,97 @@ class Season(models.Model):
             "played_days": played_days,
             "played": played,
             "played_cumulative": played_cumulative,
-            "latest_result": latest_result.strftime("%B %d, %Y") if latest_result else "-",
             "season_start": self.start_date.isoformat(),  # "YYYY-MM-DD"
             "today_day": today_idx,
         }
+
+    def get_recent_results(self, user=None, limit: int = 50):
+        """
+        Returns up to `limit` completed matches in this season, newest first.
+        Normalizes reciprocal Result rows into a single match item with winner first,
+        precomputes URLs, relative dates, and H2H modal attributes.
+        """
+        authenticated = getattr(user, 'is_authenticated', False)
+        today = now().date()
+
+        raw_results = (
+            Result.objects
+            .filter(ladder__season=self)
+            .select_related('player', 'opponent', 'ladder', 'ladder__season')
+            .order_by('-date_added', '-id')
+        )[:limit * 3]
+
+        pairs = {}
+        for r in raw_results:
+            pair_key = (r.ladder_id, min(r.player_id, r.opponent_id), max(r.player_id, r.opponent_id))
+            if pair_key not in pairs:
+                pairs[pair_key] = []
+            if len(pairs[pair_key]) < 2:
+                pairs[pair_key].append(r)
+
+        matches = []
+        for pair_key, rows in pairs.items():
+            if len(rows) < 2:
+                continue
+            r1, r2 = rows[0], rows[1]
+            if r1.result == 9:
+                winner, loser = r1.player, r2.player
+                winner_score, loser_score = r1.result, r2.result
+            elif r2.result == 9:
+                winner, loser = r2.player, r1.player
+                winner_score, loser_score = r2.result, r1.result
+            else:
+                continue
+
+            ladder = r1.ladder
+            date_added = r1.date_added
+
+            # Relative date calculation
+            if date_added == today:
+                date_display = "Today"
+            elif date_added == today - datetime.timedelta(days=1):
+                date_display = "Yesterday"
+            elif date_added.year == today.year:
+                date_display = f"{date_added.strftime('%a')} {date_added.day} {date_added.strftime('%b')}"
+            else:
+                date_display = f"{date_added.day} {date_added.strftime('%b %Y')}"
+
+            date_full = f"{date_added.strftime('%A')}, {date_added.day} {date_added.strftime('%B %Y')}"
+
+            winner_name = winner.full_name(authenticated=authenticated)
+            loser_name = loser.full_name(authenticated=authenticated)
+
+            h2h_url = reverse('head_to_head', kwargs={'player_id': winner.id, 'opponent_id': loser.id})
+            division_url = reverse('ladder', kwargs={
+                'year': ladder.season.start_date.year,
+                'season_round': ladder.season.season_round,
+                'division_id': ladder.division,
+            })
+
+            max_id = max(r1.id, r2.id)
+
+            matches.append({
+                'winner': winner,
+                'winner_id': winner.id,
+                'winner_name': winner_name,
+                'loser': loser,
+                'loser_id': loser.id,
+                'loser_name': loser_name,
+                'winner_score': winner_score,
+                'loser_score': loser_score,
+                'score_display': f"{winner_score} – {loser_score}",
+                'division': ladder.division,
+                'division_url': division_url,
+                'date_added': date_added,
+                'date_display': date_display,
+                'date_full': date_full,
+                'h2h_url': h2h_url,
+                'h2h_title': f"{winner_name} vs {loser_name}",
+                '_sort_key': (date_added, max_id),
+            })
+
+        matches.sort(key=lambda m: m['_sort_key'], reverse=True)
+        return matches[:limit]
 
 
 class Player(models.Model):

@@ -7,12 +7,32 @@
     <script type="text/javascript" src="{% static "js/vendor/d3.min.js" %}"></script>
     <script type="text/javascript" src="{% static "js/vendor/c3.min.js" %}"></script>
 
-    <!-- Main hero unit for a primary marketing message or call to action -->
-    <div class="card bg-light p-4 mb-4">
-        <h2>Progress Graph</h2>
 
-        <div id="chart"></div>
-        <p class="mb-0 mt-3">Results updated on <span id="progress_date" class="fw-bold">{{ progress_data.latest_result }}</span></p>
+    <!-- Season Progress Hero Card -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white py-3 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
+            <div>
+                <h5 class="mb-0 fw-bold">{{ current_season }} Progress</h5>
+                <small class="text-muted">{{ current_season.start_date|date:"j M Y" }} &ndash; {{ current_season.end_date|date:"j M Y" }}</small>
+            </div>
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                <span class="badge bg-light text-secondary border">
+                    <span id="total_divs" class="fw-semibold text-dark">{{ season_stats.divisions }}</span> Divisions
+                </span>
+                <span class="badge bg-light text-secondary border">
+                    <span id="total_players" class="fw-semibold text-dark">{{ season_stats.player_count }}</span> Players
+                </span>
+                <span class="badge bg-light text-secondary border">
+                    <span id="total_played" class="fw-semibold text-dark">{{ season_stats.results_count|floatformat:"0" }}</span> / <span id="total_matches">{{ season_stats.total_games_count|floatformat:"0" }}</span> matches (<span id="perc_played">{{ season_stats.percentage_played }}%</span>)
+                </span>
+                <a href="{% url 'stats' %}?season={{ current_season.id }}" class="badge bg-primary-subtle text-primary border border-primary-subtle text-decoration-none">
+                    Round Stats &rarr;
+                </a>
+            </div>
+        </div>
+        <div class="card-body p-3 p-md-4">
+            <div id="chart"></div>
+        </div>
     </div>
     <script type="text/javascript">
         $(document).ready(function () {
@@ -21,6 +41,7 @@
             var season_days = ['x1'];
             var played_days = ['x2'];
             var played_cumulative = ['played'];
+            var daily_matches = ['daily'];
             var season_total_matches = ['total'];
 
             $.each(data.season_days, function (_, v) {
@@ -31,6 +52,9 @@
             });
             $.each(data.played_cumulative, function (_, v) {
                 played_cumulative.push(v);
+            });
+            $.each(data.played, function (_, v) {
+                daily_matches.push(v);
             });
             $.each(data.season_total_matches, function (_, v) {
                 season_total_matches.push(v);
@@ -54,12 +78,13 @@
                 var todayIdx = Math.floor((new Date(now.getFullYear(), now.getMonth(), now.getDate()) - start) / 86400000);
                 if (!isNaN(todayIdx)) {
                     var clamped = Math.max(0, Math.min(todayIdx, maxDay));
-                    todayLine = [{value: clamped, text: 'Today'}];
+                    todayLine = [{value: clamped, text: 'Today', position: 'start', class: 'chart-today-line'}];
                 }
             }
 
-            // Tooltip date formatters
+            // Date formatters
             var weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
             function formatWeekdayDDMM(date) {
                 var d = date.getDate(), m = date.getMonth() + 1;
@@ -67,6 +92,10 @@
                 return dayName + ' ' +
                     (d < 10 ? '0' + d : d) + '/' +
                     (m < 10 ? '0' + m : m);
+            }
+
+            function formatShortDate(date) {
+                return date.getDate() + ' ' + months[date.getMonth()];
             }
 
             function getDateFromX(x) {
@@ -77,33 +106,99 @@
                 return dt;
             }
 
+            // Calculate evenly-spaced tick values across 0..maxDay
+            var tickValues = [];
+            if (maxDay > 0) {
+                var targetTicks = maxDay > 70 ? 7 : (maxDay > 30 ? 5 : 4);
+                var step = Math.max(7, Math.round(maxDay / targetTicks));
+                for (var d = 0; d < maxDay; d += step) {
+                    tickValues.push(d);
+                }
+                if (tickValues.indexOf(maxDay) === -1) {
+                    if (maxDay - tickValues[tickValues.length - 1] < step * 0.4 && tickValues.length > 1) {
+                        tickValues[tickValues.length - 1] = maxDay;
+                    } else {
+                        tickValues.push(maxDay);
+                    }
+                }
+            } else {
+                tickValues = [0];
+            }
+
             var chart = c3.generate({
                 bindto: '#chart',
                 data: {
-                    xs: {total: 'x1', played: 'x2'},
-                    columns: [season_days, played_days, played_cumulative, season_total_matches],
-                    types: {played: 'line', total: 'line'},
-                    colors: {played: '#1f77b4', total: '#bdbdbd'},
-                    names: {played: 'played', total: 'total'}
+                    xs: {
+                        total: 'x1',
+                        played: 'x2',
+                        daily: 'x2'
+                    },
+                    columns: [
+                        season_days,
+                        played_days,
+                        played_cumulative,
+                        daily_matches,
+                        season_total_matches
+                    ],
+                    types: {
+                        played: 'area',
+                        total: 'line',
+                        daily: 'bar'
+                    },
+                    axes: {
+                        played: 'y',
+                        total: 'y',
+                        daily: 'y2'
+                    },
+                    colors: {
+                        played: '#0d6efd',
+                        total: '#94a3b8',
+                        daily: '#cbd5e1'
+                    },
+                    names: {
+                        played: 'Matches Played',
+                        total: 'Target Pace',
+                        daily: 'Daily Matches'
+                    }
+                },
+                bar: {
+                    width: {
+                        ratio: 0.5
+                    }
                 },
                 point: {show: false},
                 axis: {
                     x: {
-                        label: 'Days',
                         min: 0,
                         max: maxDay,
                         padding: {left: 0, right: 0},
-                        tick: {culling: true}
+                        tick: {
+                            values: tickValues,
+                            multiline: false,
+                            format: function (x) {
+                                var dt = getDateFromX(x);
+                                return dt ? formatShortDate(dt) : ('Day ' + Math.round(x));
+                            }
+                        }
                     },
                     y: {
-                        label: 'Matches',
+                        label: 'Matches Played',
                         min: 0,
                         padding: {bottom: 0},
+                        tick: {format: d3.format('d')}
+                    },
+                    y2: {
+                        show: true,
+                        label: 'Daily Matches',
+                        min: 0,
+                        padding: {top: 15, bottom: 0},
                         tick: {format: d3.format('d')}
                     }
                 },
                 grid: {
-                    y: {lines: [{value: 0}]},
+                    y: {
+                        lines: [{value: 0}]
+                    },
                     x: {lines: todayLine}
                 },
                 tooltip: {
@@ -111,25 +206,22 @@
                     contents: function (points, titleFmt, valFmt, color) {
                         var p = points[0];
                         var date = getDateFromX(p.x);
-                        var heading = date ? formatWeekdayDDMM(date) : ('Day ' + p.x);
+                        var heading = date ? (formatWeekdayDDMM(date) + ' (Day ' + Math.round(p.x) + ')') : ('Day ' + Math.round(p.x));
 
-                        // number of matches completed that day
                         var idx = data.played_days.indexOf(p.x);
                         var matchesToday = (idx !== -1 && data.played[idx] != null) ? data.played[idx] : 0;
+                        var cumulativePlayed = (idx !== -1 && data.played_cumulative[idx] != null) ? data.played_cumulative[idx] : null;
 
-                        // Build rows: Matches today, then the "played" series only (hide total)
                         var rows = '';
+                        if (cumulativePlayed !== null) {
+                            rows += '<tr><td><span style="background-color:#0d6efd"></span>Matches Played</td><td class="value fw-bold">' + cumulativePlayed + '</td></tr>';
+                        }
+                        rows += '<tr><td><span style="background-color:#94a3b8"></span>Daily Matches</td><td class="value">' + matchesToday + '</td></tr>';
 
-                        points
-                            .filter(function (pt) {
-                                return pt.name !== 'total';
-                            })
-                            .forEach(function (pt) {
-                                rows += '<tr><td><span style="background:' + color(pt) + '"></span>' +
-                                    pt.name + '</td><td class="value">' + valFmt(pt.value) + '</td></tr>';
-                            });
-
-                        rows += '<tr><td>today</td><td class="value">' + valFmt(matchesToday) + '</td></tr>';
+                        var totalPt = points.find(function (pt) { return pt.id === 'total'; });
+                        if (totalPt) {
+                            rows += '<tr><td><span style="background-color:#adb5bd"></span>Target Pace</td><td class="value text-muted">' + Math.round(totalPt.value) + '</td></tr>';
+                        }
 
                         return '<table class="c3-tooltip">' +
                             '<tr><th colspan="2">' + heading + '</th></tr>' +
@@ -146,78 +238,167 @@
 
 
 
-    <!-- Example row of columns -->
-    <div class="row">
-        <div class="col-md-6 mb-5">
-            <h2 class="mb-4">{{ current_season }} Stats</h2>
-            <ul class="list-group list-group-flush mb-4" style="max-width: 550px;">
-                <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
-                    <span>Total Divisions</span>
-                    <span id="total_divs" class="fw-bold fs-5">{{ season_stats.divisions }}</span>
-                </li>
-                <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
-                    <span>Total Players</span>
-                    <span id="total_players" class="fw-bold fs-5">{{ season_stats.player_count }}</span>
-                </li>
-                <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
-                    <span>Total Matches in Ladder</span>
-                    <span id="total_matches" class="fw-bold fs-5">{{ season_stats.total_games_count|floatformat:"0" }}</span>
-                </li>
-                <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
-                    <span>Total Matches Played</span>
-                    <span id="total_played" class="fw-bold fs-5">{{ season_stats.results_count|floatformat:"0" }}</span>
-                </li>
-                <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
-                    <span>Percentage Matches Played</span>
-                    <span id="perc_played" class="fw-bold fs-5">{{ season_stats.percentage_played }}%</span>
-                </li>
-            </ul>
-
-            <div class="d-flex justify-content-between align-items-center mt-5 mb-4" style="max-width: 550px;">
-                <h2 class="mb-0">System Stats</h2>
-                <a href="{% url 'stats' %}" class="btn btn-outline-primary btn-sm">More Stats &rarr;</a>
-            </div>
-            <ul class="list-group list-group-flush" style="max-width: 550px;">
-                <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
-                    <span>Total Years</span>
-                    <span>{{ at_years }} <i class="text-muted small">{{ at_years_str }}</i></span>
-                </li>
-                <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
-                    <span>Total Ladders</span>
-                    <span class="fw-bold">{{ at_ladders }}</span>
-                </li>
-                <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
-                    <span>Total Divisions</span>
-                    <span class="fw-bold">{{ at_divisions }}</span>
-                </li>
-                <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
-                    <span>Complete Matches</span>
-                    <span class="fw-bold">{{ at_results }}</span>
-                </li>
-                <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
-                    <span>Unique Players</span>
-                    <span class="fw-bold fs-5 text-dark">{{ at_players }}</span>
-                </li>
-            </ul>
-            <div class="mt-3" style="max-width: 550px;">
-                <a href="{% url 'stats' %}" class="text-decoration-none small fw-semibold">View Club Leaderboards &amp; Historical Records &rarr;</a>
+    <!-- Main content columns -->
+    <div class="row g-4">
+        <!-- Left Column: Recent Results -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow-sm h-100 recent-results-card" data-page-size="{{ results_page_size }}">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center gap-2">
+                    <h5 class="mb-0 fw-bold">Recent Results</h5>
+                    <span class="badge bg-light text-secondary border flex-shrink-0">
+                        {% if recent_results %}
+                            Last {{ recent_results|length }} match{{ recent_results|length|pluralize:"es" }}
+                        {% else %}
+                            0 matches
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush mb-0">
+                        {% for match in recent_results %}
+                            <li class="list-group-item px-3 py-2 d-flex justify-content-between align-items-center recent-result-row {% if forloop.counter0 >= results_page_size %}d-none{% endif %}" data-index="{{ forloop.counter0 }}">
+                                <div class="me-2 text-truncate">
+                                    <div class="d-flex align-items-center gap-2 mb-1">
+                                        <a href="{{ match.division_url }}" class="badge bg-secondary-subtle text-secondary-emphasis text-decoration-none border flex-shrink-0" title="View Division {{ match.division }} Ladder">
+                                            Div {{ match.division }}
+                                        </a>
+                                        <span class="text-truncate">
+                                            <a href="{% url 'player_history' match.winner_id %}" class="fw-bold text-decoration-none text-dark">{{ match.winner_name }}</a>
+                                            <span class="text-muted small mx-1">def.</span>
+                                            <a href="{% url 'player_history' match.loser_id %}" class="text-decoration-none text-muted">{{ match.loser_name }}</a>
+                                        </span>
+                                    </div>
+                                    <div class="small text-muted" title="{{ match.date_full }}">
+                                        {{ match.date_display }}
+                                    </div>
+                                </div>
+                                <div class="flex-shrink-0">
+                                    <a href="{{ match.h2h_url }}"
+                                       data-h2h-url="{{ match.h2h_url }}"
+                                       data-h2h-title="{{ match.h2h_title }}"
+                                       class="badge bg-primary-subtle text-primary border border-primary-subtle text-decoration-none fs-6 px-2 py-1"
+                                       title="View Head-to-Head match history">
+                                        {{ match.score_display }}
+                                    </a>
+                                </div>
+                            </li>
+                        {% empty %}
+                            <li class="list-group-item px-3 py-4 text-center text-muted">
+                                No matches recorded yet for this round.
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% if recent_results|length > results_page_size %}
+                <div class="card-footer bg-white py-2 mt-auto d-flex justify-content-between align-items-center">
+                    <small class="text-muted page-status"></small>
+                    <div class="btn-group btn-group-sm">
+                        <button type="button" class="btn btn-outline-secondary btn-prev" disabled>&laquo; Prev {{ results_page_size }}</button>
+                        <button type="button" class="btn btn-outline-secondary btn-next">Next {{ results_page_size }} &raquo;</button>
+                    </div>
+                </div>
+                {% endif %}
             </div>
         </div>
-        <div class="col-md-6 mb-5">
-            <h2 class="mb-4">Division Stats</h2>
-            <div id="leader_list" class="list-group list-group-flush" style="max-width: 550px;">
-                {% for item in current_leaders %}
-                    <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
-                        <div>
-                            <div class="fw-bold text-nowrap"><a href="{{ item.url }}">Division {{ item.division }}</a></div>
-                            <div class="small text-muted">Leader: {% if item.player_id %}<a href="{% url 'player_history' item.player_id %}">{{ item.player }}</a>{% else %}<span>{{ item.player }}</span>{% endif %}{% if item.total != '-' %} ({{ item.total }} pts){% endif %}</div>
-                        </div>
-                        <div class="badge bg-light text-secondary border rounded-pill fs-6 ms-3">{{ item.played }}%</div>
+
+        <!-- Right Column: Division Stats -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center gap-2">
+                    <h5 class="mb-0 fw-bold">Division Stats</h5>
+                    <span class="badge bg-light text-secondary border flex-shrink-0">{{ current_leaders|length }} Division{{ current_leaders|length|pluralize }}</span>
+                </div>
+                <div class="card-body p-0">
+                    <div id="leader_list" class="list-group list-group-flush mb-0">
+                        {% for item in current_leaders %}
+                            <div class="list-group-item px-3 py-2">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <div>
+                                        <div class="fw-bold text-nowrap">
+                                            <a href="{{ item.url }}" class="text-decoration-none">Division {{ item.division }}</a>
+                                        </div>
+                                        <div class="small text-muted">
+                                            Leader: {% if item.player_id %}<a href="{% url 'player_history' item.player_id %}" class="text-decoration-none">{{ item.player }}</a>{% else %}<span>{{ item.player }}</span>{% endif %}{% if item.total != '-' %} <span class="text-secondary fw-semibold">({{ item.total }} pts)</span>{% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="badge bg-light text-secondary border rounded-pill fs-6 ms-3">
+                                        {{ item.played }}%
+                                    </div>
+                                </div>
+                                <div class="progress" style="height: 4px;" role="progressbar" aria-valuenow="{{ item.played }}" aria-valuemin="0" aria-valuemax="100">
+                                    <div class="progress-bar bg-primary" style="width: {{ item.played }}%;"></div>
+                                </div>
+                            </div>
+                        {% empty %}
+                            <div class="list-group-item px-3 py-4 text-center text-muted">No divisions available.</div>
+                        {% endfor %}
                     </div>
-                {% empty %}
-                    <div class="text-muted small">No divisions available.</div>
-                {% endfor %}
+                </div>
             </div>
         </div>
     </div>
+
+    {% include 'ladder/head_to_head/_lightbox_modal.html' %}
+
+    <!-- Client-side pagination for Recent Results -->
+    <script type="text/javascript">
+        (function () {
+            var card = document.querySelector('.recent-results-card');
+            if (!card) return;
+
+            var pageSize = parseInt(card.getAttribute('data-page-size') || '10', 10);
+            var rows = Array.prototype.slice.call(card.querySelectorAll('.recent-result-row'));
+            var total = rows.length;
+            if (total <= pageSize) return;
+
+            var currentPage = 0;
+            var maxPage = Math.ceil(total / pageSize) - 1;
+            var prevBtn = card.querySelector('.btn-prev');
+            var nextBtn = card.querySelector('.btn-next');
+            var statusEl = card.querySelector('.page-status');
+
+            function renderPage() {
+                var start = currentPage * pageSize;
+                var end = Math.min(start + pageSize, total);
+
+                rows.forEach(function (row, idx) {
+                    if (idx >= start && idx < end) {
+                        row.classList.remove('d-none');
+                    } else {
+                        row.classList.add('d-none');
+                    }
+                });
+
+                if (statusEl) {
+                    statusEl.textContent = 'Showing ' + (start + 1) + '–' + end + ' of ' + total;
+                }
+                if (prevBtn) {
+                    prevBtn.disabled = (currentPage === 0);
+                }
+                if (nextBtn) {
+                    nextBtn.disabled = (currentPage >= maxPage);
+                }
+            }
+
+            if (prevBtn) {
+                prevBtn.addEventListener('click', function () {
+                    if (currentPage > 0) {
+                        currentPage--;
+                        renderPage();
+                    }
+                });
+            }
+            if (nextBtn) {
+                nextBtn.addEventListener('click', function () {
+                    if (currentPage < maxPage) {
+                        currentPage++;
+                        renderPage();
+                    }
+                });
+            }
+
+            renderPage();
+        })();
+    </script>
 {% endblock %}
+
