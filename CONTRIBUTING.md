@@ -1,28 +1,39 @@
 # Contribution Guidelines
 
-Welcome hackers it is really **awesome** have you here! This is an old project and as such the frontend is fairly outdated,
-feel free to get in contact about anything and look forward to reviewing your pull request :)
+Welcome! It is **awesome** to have you here. Feel free to get in touch about anything or open an issue—we look forward to reviewing your pull request!
 
-## Getting a development environment
+## Getting a Development Environment
 
-[Docker Compose](https://docs.docker.com/compose/) is used for both local development and live environments
+[Docker Compose](https://docs.docker.com/compose/) is used for both local development and production environments:
 
-* `docker-composer up -d` will start the development environment with the environment variables defined in `.env.dev`
-    * django / web will be available @ http://127.0.0.1:8000/
-    * adminer for viewing the MySQL database is available @ http://127.0.0.1:8001/ _(see `.env.dev` for login details)_
-    * mailhog for viewing sent emails is available @ http://127.0.0.1:8002/
-* Run `docker-compose exec web python manage.py migrate` to install with seeded data
-* Run `docker-compose exec web python manage.py createsuperuser` to create an admin user
+* `docker compose up -d` will start the development environment with the environment variables defined in `.env.dev`:
+  * **Django web app:** [http://127.0.0.1:8000/](http://127.0.0.1:8000/)
+  * **Adminer (MySQL database UI):** [http://127.0.0.1:8001/](http://127.0.0.1:8001/) *(see `.env.dev` for login details)*
+  * **MailHog (captured emails):** [http://127.0.0.1:8002/](http://127.0.0.1:8002/)
+* Run `docker compose exec web python manage.py migrate` to apply migrations and seed initial data.
+* Run `docker compose exec web python manage.py createsuperuser` to create an admin user.
 
-## Submitting a pull request
+## Running the Test Suite
 
-1. [Fork](https://github.com/jzahedieh/django-tennis-ladder/fork) and clone the repository
-1. Create a new branch: `git checkout -b my-branch-name`
-1. Push to your fork and [submit a pull request](https://github.com/jzahedieh/django-tennis-ladder/compare)
-1. Pat your self on the back and wait for your pull request to be reviewed and merged.
+Before submitting a pull request, make sure the test suite and Django checks pass:
+
+```bash
+docker compose exec web python manage.py check
+docker compose exec web python manage.py test ladder
+```
+
+*(Or if running with a local virtual environment: `./venv/bin/python manage.py test ladder`)*
+
+## Submitting a Pull Request
+
+1. [Fork](https://github.com/jzahedieh/django-tennis-ladder/fork) and clone the repository.
+2. Create a new branch: `git checkout -b my-branch-name`
+3. Make your changes and verify tests pass.
+4. Push to your fork and [submit a pull request](https://github.com/jzahedieh/django-tennis-ladder/compare).
+5. Pat yourself on the back and wait for your pull request to be reviewed and merged!
 
 ## Resources
 
 - [How to Contribute to Open Source](https://opensource.guide/how-to-contribute/)
-- [Using Pull Requests](https://help.github.com/articles/about-pull-requests/)
-- [GitHub Help](https://help.github.com)
+- [About Pull Requests](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-pull-requests)
+- [GitHub Docs](https://docs.github.com/)
