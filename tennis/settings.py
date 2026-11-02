@@ -1,6 +1,5 @@
 # Django settings for tennis project.
 import os
-from distutils.util import strtobool
 from dotenv import load_dotenv
 
 # Load local environment variables from .env.local file
@@ -221,7 +220,7 @@ EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = os.environ.get('EMAIL_DEFAULT_FROM')
 SERVER_EMAIL = os.environ.get('EMAIL_SERVER_FROM')
 SUBSCRIPTION_EMAIL = os.environ.get('SUBSCRIPTION_EMAIL')
-EMAIL_USE_TLS = bool(strtobool(os.environ['EMAIL_USE_TLS']))
+EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'False').lower() in ('true', '1', 't', 'yes', 'y')
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 UMAMI_WEBSITE_ID = os.environ.get('UMAMI_WEBSITE_ID', '')
 
