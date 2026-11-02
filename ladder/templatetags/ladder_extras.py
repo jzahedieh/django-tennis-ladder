@@ -42,13 +42,6 @@ def getaverage(value, arg):
             return "%.2f" % (total / count)
         return 0
 
-@register.filter(name='unplayed')
-def unplayed(value, arg):
-    try:
-        return [player for player in value if player.id != arg]
-    except (TypeError, AttributeError):
-        return []
-
 
 @register.simple_tag
 def get_player_name(player, user):
