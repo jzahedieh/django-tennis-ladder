@@ -66,5 +66,8 @@ jobs:
       - name: Check for missing migrations
         run: python manage.py makemigrations --check --dry-run
 
+      - name: Collect static files
+        run: python manage.py collectstatic --noinput
+
       - name: Run test suite
         run: python manage.py test ladder
