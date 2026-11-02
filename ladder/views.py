@@ -1,9 +1,11 @@
 import datetime
 import json
 
+from django.conf import settings
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import PasswordChangeForm
+from django.core.mail import send_mail
 from django.db.models import Count, Q
 from django.http import HttpResponseRedirect, Http404, HttpResponse, HttpResponseForbidden, JsonResponse, \
     HttpResponseBadRequest
@@ -13,7 +15,7 @@ from django.views.decorators.cache import never_cache
 from django.contrib import messages
 from django.views.decorators.csrf import csrf_exempt
 
-from ladder.forms import AddResultForm, AddEntryForm
+from ladder.forms import AddResultForm, AddEntryForm, EmailChangeForm
 from ladder.models import Ladder, League, Player, Result, Season, LadderSubscription
 from ladder.services.player import PlayerStatsService
 from ladder.services.stats import ClubStatsService
@@ -710,27 +712,58 @@ def account(request):
             .first()
         )
 
-    if request.method == 'POST':
-        password_form = PasswordChangeForm(user=user, data=request.POST)
-        if password_form.is_valid():
-            updated_user = password_form.save()
-            update_session_auth_hash(request, updated_user)
-            messages.success(request, 'Your password has been updated successfully.')
-            return HttpResponseRedirect(reverse('account'))
-    else:
-        password_form = PasswordChangeForm(user=user)
+    email_form = EmailChangeForm(user=user)
+    password_form = PasswordChangeForm(user=user)
 
-    for name, field in password_form.fields.items():
-        css_class = 'form-control'
-        if password_form.is_bound and password_form[name].errors:
-            css_class += ' is-invalid'
-        field.widget.attrs['class'] = css_class
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'update_email' or ('email' in request.POST and 'old_password' not in request.POST):
+            old_email = (user.email or user.username or '').strip()
+            email_form = EmailChangeForm(user=user, data=request.POST)
+            if email_form.is_valid():
+                new_email = email_form.cleaned_data['email']
+                email_changed = old_email.lower() != new_email.lower()
+                email_form.save()
+                if email_changed:
+                    recipients = [addr for addr in dict.fromkeys([old_email, new_email]) if '@' in addr]
+                    if recipients:
+                        player_name = f"{player.first_name} {player.last_name}".strip() if player else (user.get_full_name() or new_email)
+                        send_mail(
+                            subject='Highgate Ladder - Email Address Updated',
+                            message=(
+                                f"Hi {player_name},\n\n"
+                                f"The email address for your Highgate Ladder account has been changed from {old_email} to {new_email}.\n\n"
+                                f"You can now use {new_email} to log in and receive division notifications.\n\n"
+                                f"If you did not request this change, please contact feedback@highgate-ladder.co.uk."
+                            ),
+                            from_email=settings.DEFAULT_FROM_EMAIL or settings.SUBSCRIPTION_EMAIL,
+                            recipient_list=recipients,
+                            fail_silently=True,
+                        )
+                messages.success(request, 'Your email address has been updated successfully.')
+                return HttpResponseRedirect(reverse('account'))
+        else:
+            password_form = PasswordChangeForm(user=user, data=request.POST)
+            if password_form.is_valid():
+                updated_user = password_form.save()
+                update_session_auth_hash(request, updated_user)
+                messages.success(request, 'Your password has been updated successfully.')
+                return HttpResponseRedirect(reverse('account'))
+
+    for form in (email_form, password_form):
+        for name, field in form.fields.items():
+            css_class = 'form-control'
+            if form.is_bound and form[name].errors:
+                css_class += ' is-invalid'
+            field.widget.attrs['class'] = css_class
+            field.widget.attrs.pop('autofocus', None)
 
     return render(request, 'ladder/account/index.html', {
         'player': player,
         'current_season': current_season,
         'current_league': current_league,
         'latest_league': latest_league,
+        'email_form': email_form,
         'password_form': password_form,
     })
 

@@ -1,5 +1,40 @@
 from django import forms
+from django.contrib.auth.models import User
+from django.db.models import Q
 from ladder.models import Result, Player
+
+
+class EmailChangeForm(forms.Form):
+    email = forms.EmailField(
+        label='Email / Login',
+        max_length=150,
+        widget=forms.EmailInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'you@example.com',
+            'autocomplete': 'email',
+        }),
+    )
+
+    def __init__(self, user, *args, **kwargs):
+        self.user = user
+        if 'initial' not in kwargs:
+            kwargs['initial'] = {'email': user.email or user.username}
+        super().__init__(*args, **kwargs)
+
+    def clean_email(self):
+        new_email = self.cleaned_data['email'].strip().lower()
+        if User.objects.exclude(pk=self.user.pk).filter(
+            Q(email__iexact=new_email) | Q(username__iexact=new_email)
+        ).exists():
+            raise forms.ValidationError("This email address is already in use by another account.")
+        return new_email
+
+    def save(self):
+        new_email = self.cleaned_data['email']
+        self.user.email = new_email
+        self.user.username = new_email
+        self.user.save(update_fields=['email', 'username'])
+        return self.user
 
 
 class AddResultForm(forms.ModelForm):

@@ -1,5 +1,6 @@
 import datetime
 from django.contrib.auth.models import User
+from django.core import mail
 from django.test import TestCase
 from django.urls import reverse
 
@@ -52,6 +53,58 @@ class AccountViewTests(TestCase):
         self.assertContains(response, 'roger@example.com')
         self.assertContains(response, 'Division 1')
         self.assertContains(response, reverse('player_history', args=[self.player.id]))
+        self.assertNotContains(response, 'autofocus')
+
+    def test_account_email_change_success(self):
+        self.client.login(username='roger@example.com', password='oldpassword123')
+        response = self.client.post(reverse('account'), {
+            'action': 'update_email',
+            'email': '  Roger.New@Example.com  ',
+        }, follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Your email address has been updated successfully.')
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.email, 'roger.new@example.com')
+        self.assertEqual(self.user.username, 'roger.new@example.com')
+
+        # Verify notification email sent to both old and new addresses
+        self.assertEqual(len(mail.outbox), 1)
+        sent_email = mail.outbox[0]
+        self.assertEqual(sent_email.to, ['roger@example.com', 'roger.new@example.com'])
+        self.assertIn('roger@example.com', sent_email.body)
+        self.assertIn('roger.new@example.com', sent_email.body)
+        self.assertIn('feedback@highgate-ladder.co.uk', sent_email.body)
+
+        # Verify user can log in with the new email address
+        self.client.logout()
+        self.assertTrue(self.client.login(username='roger.new@example.com', password='oldpassword123'))
+
+    def test_account_email_change_rejects_duplicate_and_invalid_email(self):
+        User.objects.create_user(
+            username='rafa@example.com',
+            email='rafa@example.com',
+            password='password123',
+        )
+        self.client.login(username='roger@example.com', password='oldpassword123')
+
+        dup_resp = self.client.post(reverse('account'), {
+            'action': 'update_email',
+            'email': 'RAFA@example.com',
+        })
+        self.assertEqual(dup_resp.status_code, 200)
+        self.assertContains(dup_resp, 'This email address is already in use by another account.')
+        self.assertContains(dup_resp, 'is-invalid')
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.email, 'roger@example.com')
+
+        invalid_resp = self.client.post(reverse('account'), {
+            'action': 'update_email',
+            'email': 'not-an-email',
+        })
+        self.assertEqual(invalid_resp.status_code, 200)
+        self.assertContains(invalid_resp, 'is-invalid')
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.email, 'roger@example.com')
 
     def test_navbar_shows_login_when_anonymous_and_full_name_dropdown_when_authenticated(self):
         anon_resp = self.client.get(reverse('index'))
