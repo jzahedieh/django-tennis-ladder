@@ -119,51 +119,256 @@ document.addEventListener('DOMContentLoaded', function () {
         </table>
     </div>
 
-    <div class="row mt-4">
-        <div class="col-md-6 mb-4">
-            <h2 class="mb-4 text-nowrap">{{ ladder.season }} Stats</h2>
-            <ul class="list-group list-group-flush" style="max-width: 550px;">
-                <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
-                    <span>Total Matches in Division</span>
-                    <span class="fw-bold fs-5">{{ ladder.get_stats.total_matches }}</span>
-                </li>
-                <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
-                    <span>Total Matches Played</span>
-                    <span class="fw-bold fs-5">{{ ladder.get_stats.total_matches_played|floatformat:"0" }}</span>
-                </li>
-                <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
-                    <span>Percentage Matches Played</span>
-                    <span class="badge bg-light text-secondary border rounded-pill fs-6">
-                        {{ ladder.get_stats.perc_matches_played|floatformat:"2" }}%
-                    </span>
-                </li>
-            </ul>
+    <div class="row g-4 mt-2">
+        <!-- Left Column: Division Stats -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center gap-2">
+                    <h5 class="mb-0 fw-bold">Division {{ ladder.division }} Stats</h5>
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                        <span class="badge bg-light text-secondary border flex-shrink-0">
+                            {{ division_stats.players_count }} Player{{ division_stats.players_count|pluralize }}
+                        </span>
+                        <a href="{% url 'stats' %}?season={{ ladder.season.id }}" class="badge bg-primary-subtle text-primary border border-primary-subtle text-decoration-none">
+                            Round Stats &rarr;
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush mb-0">
+                        <li class="list-group-item px-3 py-3">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div>
+                                    <div class="fw-bold">Matches Played</div>
+                                    <div class="small text-muted">
+                                        {{ division_stats.total_matches_played }} of {{ division_stats.total_matches }} scheduled matches ({{ division_stats.matches_remaining }} remaining)
+                                    </div>
+                                </div>
+                                <span class="badge bg-light text-secondary border rounded-pill fs-6 ms-3">
+                                    {{ division_stats.perc_matches_played|floatformat:"2" }}%
+                                </span>
+                            </div>
+                            <div class="progress" style="height: 6px;" role="progressbar" aria-valuenow="{{ division_stats.perc_matches_played|floatformat:'0' }}" aria-valuemin="0" aria-valuemax="100">
+                                <div class="progress-bar bg-primary" style="width: {{ division_stats.perc_matches_played|floatformat:'2' }}%;"></div>
+                            </div>
+                        </li>
+
+                        <li class="list-group-item px-3 py-2 d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="small text-muted text-uppercase fw-semibold" style="font-size: 0.72rem; letter-spacing: 0.03em;">Current Leader</div>
+                                {% if division_stats.leader %}
+                                    <div class="fw-bold">
+                                        <a href="{% url 'player_history' division_stats.leader.player_id %}" class="text-decoration-none text-dark">{{ division_stats.leader.player_name }}</a>
+                                        <span class="text-muted fw-normal small ms-1">({{ division_stats.leader.won }}W &ndash; {{ division_stats.leader.lost }}L)</span>
+                                    </div>
+                                {% else %}
+                                    <div class="text-muted">No matches played yet</div>
+                                {% endif %}
+                            </div>
+                            {% if division_stats.leader %}
+                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill fs-6 ms-3">
+                                    {{ division_stats.leader.total }} pts
+                                </span>
+                            {% endif %}
+                        </li>
+
+                        {% if division_stats.highest_average %}
+                        <li class="list-group-item px-3 py-2 d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="small text-muted text-uppercase fw-semibold" style="font-size: 0.72rem; letter-spacing: 0.03em;">Highest Average</div>
+                                <div class="fw-bold">
+                                    <a href="{% url 'player_history' division_stats.highest_average.player_id %}" class="text-decoration-none text-dark">{{ division_stats.highest_average.player_name }}</a>
+                                    <span class="text-muted fw-normal small ms-1">({{ division_stats.highest_average.played }} played)</span>
+                                </div>
+                            </div>
+                            <span class="badge bg-light text-secondary border rounded-pill fs-6 ms-3">
+                                {{ division_stats.highest_average.avg }} avg
+                            </span>
+                        </li>
+                        {% endif %}
+
+                        {% if division_stats.most_active %}
+                        <li class="list-group-item px-3 py-2 d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="small text-muted text-uppercase fw-semibold" style="font-size: 0.72rem; letter-spacing: 0.03em;">Most Matches Played</div>
+                                <div class="fw-bold">
+                                    <a href="{% url 'player_history' division_stats.most_active.player_id %}" class="text-decoration-none text-dark">{{ division_stats.most_active.player_name }}</a>
+                                    <span class="text-muted fw-normal small ms-1">({{ division_stats.most_active.total }} pts)</span>
+                                </div>
+                            </div>
+                            <span class="badge bg-light text-secondary border rounded-pill fs-6 ms-3">
+                                {{ division_stats.most_active.played }} / {{ division_stats.most_active.max_possible }}
+                            </span>
+                        </li>
+                        {% endif %}
+
+                        {% if division_stats.closest_match %}
+                        <li class="list-group-item px-3 py-2 d-flex justify-content-between align-items-center">
+                            <div class="me-2 text-truncate">
+                                <div class="small text-muted text-uppercase fw-semibold" style="font-size: 0.72rem; letter-spacing: 0.03em;">Closest Match</div>
+                                <div class="text-truncate">
+                                    <a href="{% url 'player_history' division_stats.closest_match.winner_id %}" class="fw-bold text-decoration-none text-dark">{{ division_stats.closest_match.winner_name }}</a>
+                                    <span class="text-muted small mx-1">def.</span>
+                                    <a href="{% url 'player_history' division_stats.closest_match.loser_id %}" class="text-decoration-none text-muted">{{ division_stats.closest_match.loser_name }}</a>
+                                </div>
+                            </div>
+                            <div class="flex-shrink-0">
+                                <a href="{{ division_stats.closest_match.h2h_url }}"
+                                   data-h2h-url="{{ division_stats.closest_match.h2h_url }}"
+                                   data-h2h-title="{{ division_stats.closest_match.h2h_title }}"
+                                   class="badge bg-primary-subtle text-primary border border-primary-subtle text-decoration-none fs-6 px-2 py-1"
+                                   title="View Head-to-Head match history">
+                                    {{ division_stats.closest_match.score_display }}
+                                </a>
+                            </div>
+                        </li>
+                        {% endif %}
+
+                        {% if division_stats.biggest_win %}
+                        <li class="list-group-item px-3 py-2 d-flex justify-content-between align-items-center">
+                            <div class="me-2 text-truncate">
+                                <div class="small text-muted text-uppercase fw-semibold" style="font-size: 0.72rem; letter-spacing: 0.03em;">Biggest Win</div>
+                                <div class="text-truncate">
+                                    <a href="{% url 'player_history' division_stats.biggest_win.winner_id %}" class="fw-bold text-decoration-none text-dark">{{ division_stats.biggest_win.winner_name }}</a>
+                                    <span class="text-muted small mx-1">def.</span>
+                                    <a href="{% url 'player_history' division_stats.biggest_win.loser_id %}" class="text-decoration-none text-muted">{{ division_stats.biggest_win.loser_name }}</a>
+                                </div>
+                            </div>
+                            <div class="flex-shrink-0">
+                                <a href="{{ division_stats.biggest_win.h2h_url }}"
+                                   data-h2h-url="{{ division_stats.biggest_win.h2h_url }}"
+                                   data-h2h-title="{{ division_stats.biggest_win.h2h_title }}"
+                                   class="badge bg-primary-subtle text-primary border border-primary-subtle text-decoration-none fs-6 px-2 py-1"
+                                   title="View Head-to-Head match history">
+                                    {{ division_stats.biggest_win.score_display }}
+                                </a>
+                            </div>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
         </div>
-        <div class="col-md-6">
-            <h2>Latest Results</h2>
-            <ul class="list-group list-group-flush">
-                {% for key, value in ladder.get_latest_results %}
-                <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
-                    <div>
-                        <div class="fw-bold text-wrap">
-                            {% get_player_name value.player user %} 
-                            <span class="text-muted fw-normal small mx-1">vs</span> 
-                            {% get_player_name value.opponent user %}
-                        </div>
-                        <div class="small text-muted">{{ value.date_added }}</div>
+
+        <!-- Right Column: Latest Results -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow-sm h-100 recent-results-card" data-page-size="{{ results_page_size }}">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center gap-2">
+                    <h5 class="mb-0 fw-bold">Latest Results</h5>
+                    <span class="badge bg-light text-secondary border flex-shrink-0">
+                        {% if recent_results %}
+                            {{ recent_results|length }} match{{ recent_results|length|pluralize:"es" }}
+                        {% else %}
+                            0 matches
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush mb-0">
+                        {% for match in recent_results %}
+                            <li class="list-group-item px-3 py-2 d-flex justify-content-between align-items-center recent-result-row {% if forloop.counter0 >= results_page_size %}d-none{% endif %}" data-index="{{ forloop.counter0 }}">
+                                <div class="me-2 text-truncate">
+                                    <div class="text-truncate mb-1">
+                                        <a href="{% url 'player_history' match.winner_id %}" class="fw-bold text-decoration-none text-dark">{{ match.winner_name }}</a>
+                                        <span class="text-muted small mx-1">def.</span>
+                                        <a href="{% url 'player_history' match.loser_id %}" class="text-decoration-none text-muted">{{ match.loser_name }}</a>
+                                    </div>
+                                    <div class="small text-muted" title="{{ match.date_full }}">
+                                        {{ match.date_display }}
+                                    </div>
+                                </div>
+                                <div class="flex-shrink-0">
+                                    <a href="{{ match.h2h_url }}"
+                                       data-h2h-url="{{ match.h2h_url }}"
+                                       data-h2h-title="{{ match.h2h_title }}"
+                                       class="badge bg-primary-subtle text-primary border border-primary-subtle text-decoration-none fs-6 px-2 py-1"
+                                       title="View Head-to-Head match history">
+                                        {{ match.score_display }}
+                                    </a>
+                                </div>
+                            </li>
+                        {% empty %}
+                            <li class="list-group-item px-3 py-4 text-center text-muted">
+                                No matches recorded yet for this division.
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% if recent_results|length > results_page_size %}
+                <div class="card-footer bg-white py-2 mt-auto d-flex justify-content-between align-items-center">
+                    <small class="text-muted page-status"></small>
+                    <div class="btn-group btn-group-sm">
+                        <button type="button" class="btn btn-outline-secondary btn-prev" disabled>&laquo; Prev {{ results_page_size }}</button>
+                        <button type="button" class="btn btn-outline-secondary btn-next">Next {{ results_page_size }} &raquo;</button>
                     </div>
-                    <div class="badge bg-light text-secondary border rounded-pill fs-6 ms-3">
-                        {{ value.player_result }} – {{ value.opponent_result }}
-                    </div>
-                </li>
-                {% empty %}
-                <li class="list-group-item px-0 text-muted">No results yet.</li>
-                {% endfor %}
-            </ul>
+                </div>
+                {% endif %}
+            </div>
         </div>
     </div>
 
     {% include 'ladder/head_to_head/_lightbox_modal.html' %}
+
+    <!-- Client-side pagination for Latest Results -->
+    <script type="text/javascript">
+        (function () {
+            var card = document.querySelector('.recent-results-card');
+            if (!card) return;
+
+            var pageSize = parseInt(card.getAttribute('data-page-size') || '6', 10);
+            var rows = Array.prototype.slice.call(card.querySelectorAll('.recent-result-row'));
+            var total = rows.length;
+            if (total <= pageSize) return;
+
+            var currentPage = 0;
+            var maxPage = Math.ceil(total / pageSize) - 1;
+            var prevBtn = card.querySelector('.btn-prev');
+            var nextBtn = card.querySelector('.btn-next');
+            var statusEl = card.querySelector('.page-status');
+
+            function renderPage() {
+                var start = currentPage * pageSize;
+                var end = Math.min(start + pageSize, total);
+
+                rows.forEach(function (row, idx) {
+                    if (idx >= start && idx < end) {
+                        row.classList.remove('d-none');
+                    } else {
+                        row.classList.add('d-none');
+                    }
+                });
+
+                if (statusEl) {
+                    statusEl.textContent = 'Showing ' + (start + 1) + '–' + end + ' of ' + total;
+                }
+                if (prevBtn) {
+                    prevBtn.disabled = (currentPage === 0);
+                }
+                if (nextBtn) {
+                    nextBtn.disabled = (currentPage >= maxPage);
+                }
+            }
+
+            if (prevBtn) {
+                prevBtn.addEventListener('click', function () {
+                    if (currentPage > 0) {
+                        currentPage--;
+                        renderPage();
+                    }
+                });
+            }
+            if (nextBtn) {
+                nextBtn.addEventListener('click', function () {
+                    if (currentPage < maxPage) {
+                        currentPage++;
+                        renderPage();
+                    }
+                });
+            }
+
+            renderPage();
+        })();
+    </script>
 
     <script type="text/javascript">
         $(document).ready(function () {
