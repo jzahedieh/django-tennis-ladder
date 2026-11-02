@@ -10,87 +10,6 @@ from django.dispatch import receiver
 from django.utils.timezone import now
 
 
-def _build_recent_results(raw_results, user=None, limit: int = 50):
-    """
-    Normalizes reciprocal Result rows into single match dicts with winner first,
-    precomputed URLs, relative dates, and H2H modal attributes.
-    """
-    authenticated = getattr(user, 'is_authenticated', False)
-    today = now().date()
-
-    pairs = {}
-    for r in raw_results:
-        pair_key = (r.ladder_id, min(r.player_id, r.opponent_id), max(r.player_id, r.opponent_id))
-        if pair_key not in pairs:
-            pairs[pair_key] = []
-        if len(pairs[pair_key]) < 2:
-            pairs[pair_key].append(r)
-
-    matches = []
-    for pair_key, rows in pairs.items():
-        if len(rows) < 2:
-            continue
-        r1, r2 = rows[0], rows[1]
-        if r1.result == 9:
-            winner, loser = r1.player, r2.player
-            winner_score, loser_score = r1.result, r2.result
-        elif r2.result == 9:
-            winner, loser = r2.player, r1.player
-            winner_score, loser_score = r2.result, r1.result
-        else:
-            continue
-
-        ladder = r1.ladder
-        date_added = r1.date_added
-
-        # Relative date calculation
-        if date_added == today:
-            date_display = "Today"
-        elif date_added == today - datetime.timedelta(days=1):
-            date_display = "Yesterday"
-        elif date_added.year == today.year:
-            date_display = f"{date_added.strftime('%a')} {date_added.day} {date_added.strftime('%b')}"
-        else:
-            date_display = f"{date_added.day} {date_added.strftime('%b %Y')}"
-
-        date_full = f"{date_added.strftime('%A')}, {date_added.day} {date_added.strftime('%B %Y')}"
-
-        winner_name = winner.full_name(authenticated=authenticated)
-        loser_name = loser.full_name(authenticated=authenticated)
-
-        h2h_url = reverse('head_to_head', kwargs={'player_id': winner.id, 'opponent_id': loser.id})
-        division_url = reverse('ladder', kwargs={
-            'year': ladder.season.start_date.year,
-            'season_round': ladder.season.season_round,
-            'division_id': ladder.division,
-        })
-
-        max_id = max(r1.id, r2.id)
-
-        matches.append({
-            'winner': winner,
-            'winner_id': winner.id,
-            'winner_name': winner_name,
-            'loser': loser,
-            'loser_id': loser.id,
-            'loser_name': loser_name,
-            'winner_score': winner_score,
-            'loser_score': loser_score,
-            'score_display': f"{winner_score} – {loser_score}",
-            'division': ladder.division,
-            'division_url': division_url,
-            'date_added': date_added,
-            'date_display': date_display,
-            'date_full': date_full,
-            'h2h_url': h2h_url,
-            'h2h_title': f"{winner_name} vs {loser_name}",
-            '_sort_key': (date_added, max_id),
-        })
-
-    matches.sort(key=lambda m: m['_sort_key'], reverse=True)
-    return matches[:limit]
-
-
 class Season(models.Model):
     name = models.CharField(max_length=150)
     start_date = models.DateField('Start date')
@@ -219,17 +138,10 @@ class Season(models.Model):
     def get_recent_results(self, user=None, limit: int = 50):
         """
         Returns up to `limit` completed matches in this season, newest first.
-        Normalizes reciprocal Result rows into a single match item with winner first,
-        precomputes URLs, relative dates, and H2H modal attributes.
+        Delegates to MatchService.
         """
-        raw_results = (
-            Result.objects
-            .filter(ladder__season=self)
-            .select_related('player', 'opponent', 'ladder', 'ladder__season')
-            .order_by('-date_added', '-id')
-        )[:limit * 3]
-
-        return _build_recent_results(raw_results, user=user, limit=limit)
+        from ladder.services.match import MatchService
+        return MatchService.get_recent_results_for_season(self, user=user, limit=limit)
 
 
 class Player(models.Model):
@@ -298,7 +210,6 @@ class Player(models.Model):
         """
         from ladder.services.centile import CentileService
         return CentileService.get_player_centile_history(self)
-
 
 
 class Ladder(models.Model):
@@ -428,17 +339,10 @@ class Ladder(models.Model):
     def get_recent_results(self, user=None, limit: int = 50):
         """
         Returns up to `limit` completed matches in this division, newest first.
-        Normalizes reciprocal Result rows into a single match item with winner first,
-        precomputes URLs, relative dates, and H2H modal attributes.
+        Delegates to MatchService.
         """
-        raw_results = (
-            Result.objects
-            .filter(ladder=self)
-            .select_related('player', 'opponent', 'ladder', 'ladder__season')
-            .order_by('-date_added', '-id')
-        )[:limit * 3]
-
-        return _build_recent_results(raw_results, user=user, limit=limit)
+        from ladder.services.match import MatchService
+        return MatchService.get_recent_results_for_ladder(self, user=user, limit=limit)
 
     def get_stats(self, user=None, recent_results=None):
         """
@@ -540,6 +444,7 @@ class Ladder(models.Model):
             'close_matches_pct': close_matches_pct,
         }
 
+
 class LadderSubscription(models.Model):
     ladder = models.ForeignKey(Ladder, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -548,6 +453,7 @@ class LadderSubscription(models.Model):
 
     def __str__(self):
         return self.user.email
+
 
 class League(models.Model):
     ladder = models.ForeignKey(Ladder, on_delete=models.CASCADE)
@@ -606,7 +512,7 @@ class League(models.Model):
 
 class Result(models.Model):
     ladder = models.ForeignKey(Ladder, on_delete=models.CASCADE)
-    player = models.ForeignKey(Player,on_delete=models.CASCADE, related_name='result_player')
+    player = models.ForeignKey(Player, on_delete=models.CASCADE, related_name='result_player')
     opponent = models.ForeignKey(Player, on_delete=models.CASCADE, related_name='result_opponent')
     result = models.IntegerField()
     date_added = models.DateField('Date added')
@@ -616,6 +522,7 @@ class Result(models.Model):
     def __str__(self):
         return (self.player.first_name + ' ' + self.player.last_name) + ' vs ' + (
             self.opponent.first_name + ' ' + self.opponent.last_name) + (' score: ' + str(self.result))
+
 
 @receiver(post_save, sender=League)
 def auto_subscribe_on_league_create(sender, instance: League, created, **kwargs):
@@ -629,6 +536,7 @@ def auto_subscribe_on_league_create(sender, instance: League, created, **kwargs)
             user=player.user,
             defaults={'subscribed_at': datetime.date.today()}
         )
+
 
 class Prospect(models.Model):
     class Status(models.TextChoices):
@@ -654,6 +562,7 @@ class Prospect(models.Model):
     def __str__(self):
         return f"{self.last_name}, {self.first_name} <{self.email}>"
 
+
 class DraftRemoval(models.Model):
     season        = models.ForeignKey("Season", on_delete=models.CASCADE, related_name="draft_removals")
     player        = models.ForeignKey("Player", on_delete=models.CASCADE)
@@ -667,4 +576,5 @@ class DraftRemoval(models.Model):
 
     def __str__(self):
         return f"{self.player} from {self.season.name} division {self.from_division}"
+
 
