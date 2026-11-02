@@ -499,34 +499,31 @@ class Ladder(models.Model):
             p_stat['max_possible'] = max_possible_per_player
 
         leader = None
-        highest_average = None
-        most_active = None
-        closest_match = None
-        biggest_win = None
+        leaders = []
+        avg_match_score = None
+        avg_games_per_match = None
+        total_games_played = 0
+        close_matches_count = 0
+        close_matches_pct = 0.0
 
         if player_stats_map:
-            leader = max(
+            sorted_players = sorted(
                 player_stats_map.values(),
                 key=lambda s: (s['total'], s['avg_val'], s['won'], s['played']),
+                reverse=True,
             )
-            highest_average = max(
-                player_stats_map.values(),
-                key=lambda s: (s['avg_val'], s['total'], s['won'], s['played']),
-            )
-            most_active = max(
-                player_stats_map.values(),
-                key=lambda s: (s['played'], s['total'], s['won']),
-            )
+            leader = sorted_players[0]
+            top_total = leader['total']
+            leaders = [p for p in sorted_players if p['total'] == top_total]
 
         if matches:
-            closest_match = max(
-                matches,
-                key=lambda m: (m['loser_score'], m['_sort_key']),
-            )
-            biggest_win = min(
-                matches,
-                key=lambda m: (m['loser_score'], (-m['_sort_key'][0].toordinal(), -m['_sort_key'][1])),
-            )
+            total_loser_games = sum(int(m['loser_score']) for m in matches)
+            total_games_played = sum(int(m['winner_score']) + int(m['loser_score']) for m in matches)
+            avg_loser_score = total_loser_games / total_matches_played
+            avg_match_score = f"9 – {avg_loser_score:.1f}"
+            avg_games_per_match = f"{(total_games_played / total_matches_played):.1f}"
+            close_matches_count = sum(1 for m in matches if int(m['loser_score']) >= 7)
+            close_matches_pct = (close_matches_count / total_matches_played) * 100.0
 
         return {
             'players_count': league_count,
@@ -535,10 +532,12 @@ class Ladder(models.Model):
             'matches_remaining': int(matches_remaining),
             'perc_matches_played': perc_matches_played,
             'leader': leader,
-            'highest_average': highest_average,
-            'most_active': most_active,
-            'closest_match': closest_match,
-            'biggest_win': biggest_win,
+            'leaders': leaders,
+            'avg_match_score': avg_match_score,
+            'avg_games_per_match': avg_games_per_match,
+            'total_games_played': int(total_games_played),
+            'close_matches_count': int(close_matches_count),
+            'close_matches_pct': close_matches_pct,
         }
 
 class LadderSubscription(models.Model):
