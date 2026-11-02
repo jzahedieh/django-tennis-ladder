@@ -8,5 +8,8 @@ chmod +x /root/.env.sh
 # Start cron in background
 cron
 
-# Start the Django app
-exec ./docker/web/start.sh
+if [ $# -eq 0 ]; then
+    exec ./docker/web/start.sh
+else
+    exec "$@"
+fi

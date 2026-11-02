@@ -15,7 +15,8 @@ services:
       - ./static:/var/www/static
     env_file:
       - ./.env.prod
-    command: /bin/sh -c "envsubst '\$$NGINX_HOST' < /etc/nginx/conf.d/app.conf.template > /etc/nginx/conf.d/app.conf
+    command: /bin/sh -c "export ADMINER_PATH=$${ADMINER_PATH:-db-admin}
+      && envsubst '\$$NGINX_HOST \$$ADMINER_PATH' < /etc/nginx/conf.d/app.conf.template > /etc/nginx/conf.d/app.conf
       && htpasswd -nb $$ADMINER_USER $$ADMINER_PASSWORD > /etc/nginx/conf.d/.adminer.htpasswd
       && while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g 'daemon off;'"
     depends_on:
@@ -43,7 +44,7 @@ services:
     environment:
       TZ: Europe/London
   adminer:
-    image: adminer:5-fastcgi
+    image: adminer:6-fastcgi
     restart: unless-stopped
   web:
     build:
