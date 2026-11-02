@@ -236,3 +236,94 @@ class SeasonAndLadderViewsTest(TestCase):
         self.assertEqual(ajax_stats_resp.status_code, 404)
         ajax_progress_resp = self.client.get('/season/ajax/progress/?id=1')
         self.assertEqual(ajax_progress_resp.status_code, 404)
+
+    def test_ladder_view_revamped_stats_and_latest_results_cards(self):
+        # Add a second match in Div 1: Charlie beats Bob 9-8 today
+        today = datetime.date.today()
+        Result.objects.create(
+            ladder=self.ladder_c_div1,
+            player=self.player3,
+            opponent=self.player2,
+            result=9,
+            date_added=today,
+            inaccurate_flag=False,
+        )
+        Result.objects.create(
+            ladder=self.ladder_c_div1,
+            player=self.player2,
+            opponent=self.player3,
+            result=8,
+            date_added=today,
+            inaccurate_flag=False,
+        )
+
+        url = reverse(
+            'ladder',
+            args=(self.season_current.start_date.year, self.season_current.season_round, 1),
+        )
+
+        # 1. Anonymous user request (abbreviated surnames)
+        anon_resp = self.client.get(url)
+        self.assertEqual(anon_resp.status_code, 200)
+        self.assertIn('division_stats', anon_resp.context)
+        self.assertIn('recent_results', anon_resp.context)
+
+        stats = anon_resp.context['division_stats']
+        self.assertEqual(stats['players_count'], 3)
+        self.assertEqual(stats['total_matches'], 3)
+        self.assertEqual(stats['total_matches_played'], 2)
+        self.assertEqual(stats['matches_remaining'], 1)
+        self.assertAlmostEqual(stats['perc_matches_played'], 66.6666, places=2)
+
+        # Bob has 2 matches (5+1=6 and 8+1=9 -> 15 pts), Alice has 12 pts, Charlie has 12 pts
+        self.assertEqual(stats['leader']['player_id'], self.player2.id)
+        self.assertEqual(stats['leader']['player_name'], 'Bob J.')
+        self.assertEqual(stats['leader']['total'], 15)
+        self.assertEqual(stats['most_active']['player_id'], self.player2.id)
+        self.assertEqual(stats['most_active']['played'], 2)
+        self.assertEqual(stats['closest_match']['score_display'], '9 – 8')
+        self.assertEqual(stats['biggest_win']['score_display'], '9 – 5')
+
+        # Check rendered HTML cards, profile links, H2H links, and progress bar
+        self.assertContains(anon_resp, 'Division 1 Stats')
+        self.assertContains(anon_resp, '3 Players')
+        self.assertContains(anon_resp, 'Round Stats &rarr;')
+        self.assertContains(anon_resp, '2 of 3 scheduled matches (1 remaining)')
+        self.assertContains(anon_resp, '66.67%')
+        self.assertContains(anon_resp, 'role="progressbar"')
+        self.assertContains(anon_resp, 'Current Leader')
+        self.assertContains(anon_resp, 'Highest Average')
+        self.assertContains(anon_resp, 'Most Matches Played')
+        self.assertContains(anon_resp, 'Closest Match')
+        self.assertContains(anon_resp, 'Biggest Win')
+        self.assertContains(anon_resp, 'Latest Results')
+        self.assertContains(anon_resp, '2 matches')
+        self.assertContains(anon_resp, '9 – 8')
+        self.assertContains(anon_resp, '9 – 5')
+        self.assertContains(anon_resp, 'Today')
+        self.assertContains(anon_resp, reverse('player_history', args=(self.player1.id,)))
+        self.assertContains(anon_resp, reverse('player_history', args=(self.player2.id,)))
+        self.assertContains(anon_resp, reverse('player_history', args=(self.player3.id,)))
+        self.assertContains(
+            anon_resp,
+            f'data-h2h-url="{reverse("head_to_head", args=(self.player3.id, self.player2.id))}"',
+        )
+
+        # 2. Authenticated user sees full names in stats and latest results
+        self.client.login(username='player1_user', password='password123')
+        auth_resp = self.client.get(url)
+        self.assertEqual(auth_resp.status_code, 200)
+        self.assertContains(auth_resp, 'Bob Jones')
+        self.assertContains(auth_resp, 'Charlie Brown')
+        self.assertContains(auth_resp, 'Alice Smith')
+
+        # 3. Division with no matches shows empty states cleanly
+        div2_url = reverse(
+            'ladder',
+            args=(self.season_current.start_date.year, self.season_current.season_round, 2),
+        )
+        div2_resp = self.client.get(div2_url)
+        self.assertEqual(div2_resp.status_code, 200)
+        self.assertContains(div2_resp, 'Division 2 Stats')
+        self.assertContains(div2_resp, 'No matches played yet')
+        self.assertContains(div2_resp, 'No matches recorded yet for this division.')

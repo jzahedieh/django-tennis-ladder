@@ -205,7 +205,9 @@ def season(request, year, season_round):
 
 def ladder(request, year, season_round, division_id):
     ladder_object = get_object_or_404(
-        Ladder.objects.filter(season__is_draft=False).prefetch_related('league_set__player__user'),
+        Ladder.objects.filter(season__is_draft=False)
+        .select_related('season')
+        .prefetch_related('league_set__player__user'),
         division=division_id,
         season__start_date__year=year,
         season__season_round=season_round
@@ -229,8 +231,18 @@ def ladder(request, year, season_round, division_id):
     for result in results:
         results_dict.setdefault(result.player.id, []).append(result)
 
-    return render(request, 'ladder/ladder/index.html',
-                  {'ladder': ladder_object, 'results_dict': results_dict, 'subscribed': subscribed})
+    recent_results = ladder_object.get_recent_results(user=request.user, limit=100)
+    division_stats = ladder_object.get_stats(user=request.user, recent_results=recent_results)
+    results_page_size = 6
+
+    return render(request, 'ladder/ladder/index.html', {
+        'ladder': ladder_object,
+        'results_dict': results_dict,
+        'subscribed': subscribed,
+        'division_stats': division_stats,
+        'recent_results': recent_results,
+        'results_page_size': results_page_size,
+    })
 
 @login_required
 @never_cache
