@@ -12,7 +12,7 @@ services:
       - ./data/db:/var/lib/mysql
       - ./data/db-backup:/backup
   adminer:
-    image: adminer
+    image: adminer:6
     restart: unless-stopped
     ports:
       - 8001:8080

@@ -39,8 +39,6 @@ TEMPLATES = [
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
-                # Insert your TEMPLATE_CONTEXT_PROCESSORS here or use this
-                # list if you haven't customized them:
                 'django.contrib.auth.context_processors.auth',
                 'django.template.context_processors.debug',
                 'django.template.context_processors.i18n',
@@ -49,9 +47,7 @@ TEMPLATES = [
                 'django.template.context_processors.tz',
                 'django.template.context_processors.request',
                 'django.contrib.messages.context_processors.messages',
-                'django.contrib.auth.context_processors.auth',
                 'ladder.context_processors.navigation',
-                'ladder.context_processors.umami_context',
             ],
         },
     },
@@ -79,10 +75,6 @@ SITE_ID = 1
 # If you set this to False, Django will make some optimizations so as not
 # to load the internationalization machinery.
 USE_I18N = False
-
-# If you set this to False, Django will not format dates, numbers and
-# calendars according to the current locale.
-USE_L10N = False
 
 # If you set this to False, Django will not use timezone-aware datetimes.
 USE_TZ = False
@@ -132,14 +124,16 @@ STORAGES = {
 # Make this unique, and don't share it with anybody.
 SECRET_KEY = os.environ["SECRET_KEY"]
 
-MIDDLEWARE = (
+MIDDLEWARE = [
+    'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
-    'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
-)
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+]
 
 LOGIN_REDIRECT_URL = '/account/'
 LOGOUT_REDIRECT_URL = '/'
@@ -149,7 +143,7 @@ ROOT_URLCONF = 'tennis.urls'
 # Python dotted path to the WSGI application used by Django's runserver.
 WSGI_APPLICATION = 'tennis.wsgi.application'
 
-INSTALLED_APPS = (
+INSTALLED_APPS = [
     'ladder',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -158,11 +152,11 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.admin',
-)
+]
 
 if DEBUG:
-    INSTALLED_APPS = ('debug_toolbar',) + INSTALLED_APPS
-    MIDDLEWARE = ('debug_toolbar.middleware.DebugToolbarMiddleware',) + MIDDLEWARE
+    INSTALLED_APPS = ['debug_toolbar'] + INSTALLED_APPS
+    MIDDLEWARE = ['debug_toolbar.middleware.DebugToolbarMiddleware'] + MIDDLEWARE
     INTERNAL_IPS = ('127.0.0.1',)
 
 CACHES = {
@@ -211,7 +205,6 @@ SERVER_EMAIL = os.environ.get('EMAIL_SERVER_FROM')
 SUBSCRIPTION_EMAIL = os.environ.get('SUBSCRIPTION_EMAIL')
 EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'False').lower() in ('true', '1', 't', 'yes', 'y')
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-UMAMI_WEBSITE_ID = os.environ.get('UMAMI_WEBSITE_ID', '')
 
 INTERNAL_IPS = (
     '127.0.0.1',
@@ -238,3 +231,12 @@ if additional_domains:
             if not domain.startswith(('http://', 'https://')):
                 domain = f"https://{domain}"
             CSRF_TRUSTED_ORIGINS.append(domain)
+
+# Production security hardening
+if not DEBUG:
+    CSRF_COOKIE_SECURE = True
+    SESSION_COOKIE_SECURE = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS = 'DENY'
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+

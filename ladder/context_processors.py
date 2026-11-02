@@ -1,5 +1,4 @@
 from ladder.models import Season, Player
-from django.conf import settings
 
 
 def navigation(request):
@@ -22,8 +21,3 @@ def navigation(request):
         'nav_player': nav_player,
     }
 
-
-def umami_context(request):
-    return {
-        'umami_website_id': getattr(settings, 'UMAMI_WEBSITE_ID', ''),
-    }
