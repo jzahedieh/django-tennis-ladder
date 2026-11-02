@@ -6,10 +6,10 @@ from django.contrib import admin
 admin.autodiscover()
 
 urlpatterns = [
-                  path('', include('ladder.urls')),
-                  path('accounts/', include('django.contrib.auth.urls')),
-                  path('admin/', admin.site.urls),
-              ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+    path('', include('ladder.urls')),
+    path('accounts/', include('django.contrib.auth.urls')),
+    path('admin/', admin.site.urls),
+] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 
 if settings.DEBUG:
     import debug_toolbar

@@ -1,31 +1,24 @@
-from django.urls import re_path, path
+from django.urls import path
 
 from ladder import views
 
 urlpatterns = [
-    re_path(r'^$', views.index, name='index'),
+    path('', views.index, name='index'),
     path('stats/', views.stats, name='stats'),
-    re_path(r'^list/$', views.list_rounds, name='list'),
-    re_path(r'^current/$', views.current_season_redirect, name='current'),
-    # ex: /2013/round/1/
-    re_path(r'^(?P<year>\d+)/round/(?P<season_round>\d+)/$', views.season, name='season'),
-    # ex: /2013/round/1/division/1-n
-    re_path(r'^(?P<year>\d+)/round/(?P<season_round>\d+)/division/(?P<division_id>\w+)/$', views.ladder, name='ladder'),
-    # ex: /2013/round/1/division/1-n/add/
-    re_path(r'^(?P<year>\d+)/round/(?P<season_round>\d+)/division/(?P<division_id>\w+)/add/$', views.add, name='add'),
-    # ex: /2013/round/1/division/1-n/subscription/
-    re_path(r'^(?P<year>\d+)/round/(?P<season_round>\d+)/division/(?P<division_id>\w+)/subscription/$', views.ladder_subscription, name='ladder_subscription'),
-    # ex: /head_to_head/1/vs/2
-    re_path(r'^head_to_head/(?P<player_id>\d+)/vs/(?P<opponent_id>\w+)/$', views.head_to_head, name='head_to_head'),
-    # ex: /player/1/
-    re_path(r'^player/(?P<player_id>\d+)/$', views.player_history, name='player_history'),
-    # ex: /player/
-    re_path(r'^player/search/$', views.player_search, name='player_search'),
-    re_path(r'^player/results/$', views.player_result, name='player_result'),
+    path('list/', views.list_rounds, name='list'),
+    path('current/', views.current_season_redirect, name='current'),
+    path('<int:year>/round/<int:season_round>/', views.season, name='season'),
+    path('<int:year>/round/<int:season_round>/division/<int:division_id>/', views.ladder, name='ladder'),
+    path('<int:year>/round/<int:season_round>/division/<int:division_id>/add/', views.add, name='add'),
+    path('<int:year>/round/<int:season_round>/division/<int:division_id>/subscription/', views.ladder_subscription, name='ladder_subscription'),
+    path('head_to_head/<int:player_id>/vs/<int:opponent_id>/', views.head_to_head, name='head_to_head'),
+    path('player/<int:player_id>/', views.player_history, name='player_history'),
+    path('player/search/', views.player_search, name='player_search'),
+    path('player/results/', views.player_result, name='player_result'),
     path('account/', views.account, name='account'),
     path('result/entry/', views.result_entry, name='result_entry'),
     path('result/entry/add/', views.result_entry_add, name='result_entry_add'),
     path('result/entry/<str:pair_key>/edit/', views.result_entry_edit, name='result_entry_edit'),
     path('result/entry/<str:pair_key>/delete/', views.result_entry_delete, name='result_entry_delete'),
-    re_path(r'^unsubscribe/(?P<token>[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/$', views.unsubscribe_token, name='unsubscribe_token'),
+    path('unsubscribe/<uuid:token>/', views.unsubscribe_token, name='unsubscribe_token'),
 ]
