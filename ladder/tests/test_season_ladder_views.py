@@ -1,4 +1,5 @@
 import datetime
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.test import TestCase
 from django.urls import reverse
@@ -334,3 +335,14 @@ class SeasonAndLadderViewsTest(TestCase):
         self.assertContains(div2_resp, 'Division 2 Stats')
         self.assertContains(div2_resp, 'No matches played yet')
         self.assertContains(div2_resp, 'No matches recorded yet for this division.')
+
+    def test_admin_url_configurable_and_in_navbar(self):
+        admin_url = reverse('admin:index')
+        self.assertEqual(admin_url, f'/{settings.ADMIN_URL}/')
+
+        # When logged in as superuser, the navbar dropdown links to admin_url
+        self.client.login(username='admin_user', password='password123')
+        response = self.client.get(reverse('index'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, f'href="{admin_url}"')
+
