@@ -9,6 +9,8 @@ SETTINGS_DIR = os.path.abspath(os.path.dirname(__file__))
 
 DEBUG = os.environ.get("DJANGO_DEBUG", "False") == "True"
 
+ADMIN_URL = os.environ.get("DJANGO_ADMIN_URL", "admin").strip("/") or "admin"
+
 ADMINS = (
     ('Admin User', 'admin@highgate-ladder.co.uk'),
 )
