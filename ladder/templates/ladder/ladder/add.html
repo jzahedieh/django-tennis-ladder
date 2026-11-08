@@ -130,12 +130,7 @@ function updateForm() {
                                     data-opp="{{ opponent.player.id }}">
                                     {% for result in results_dict|getkey:league.player.id %}
                                         {% if league.player == result.player and opponent.player == result.opponent %}
-                                            {% if result.inaccurate_flag %}
-                                                <span style="color:red; font-weight: bold"> {{ result.result }} *</span>
-                                                <script type="text/javascript">$('.score_error').show();</script>
-                                            {% else %}
-                                                {{ result.result }}
-                                            {% endif %}
+                                            {{ result.result }}
                                         {% endif %}
                                     {% endfor %}
                                 </td>
@@ -168,13 +163,6 @@ function updateForm() {
                 {{ form.player }}
                 {{ form.opponent }}
                 {{ form.result }}
-            </div>
-
-            <div class="mb-3 form-check">
-                {{ form.inaccurate_flag }}
-                <label class="form-check-label" for="{{ form.inaccurate_flag.id_for_label }}">
-                    Inaccurate result
-                </label>
             </div>
 
             <div class="mb-4">

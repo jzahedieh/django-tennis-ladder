@@ -74,32 +74,32 @@ class StatsServiceTest(TestCase):
         # player1 beats player2: 9 - 4
         Result.objects.create(
             ladder=cls.ladder_div1, player=cls.player1, opponent=cls.player2,
-            result=9, date_added=cls.season_recent.start_date + datetime.timedelta(days=5), inaccurate_flag=False
+            result=9, date_added=cls.season_recent.start_date + datetime.timedelta(days=5)
         )
         Result.objects.create(
             ladder=cls.ladder_div1, player=cls.player2, opponent=cls.player1,
-            result=4, date_added=cls.season_recent.start_date + datetime.timedelta(days=5), inaccurate_flag=False
+            result=4, date_added=cls.season_recent.start_date + datetime.timedelta(days=5)
         )
 
         # player3 beats player4: 9 - 7
         Result.objects.create(
             ladder=cls.ladder_div2, player=cls.player3, opponent=cls.player4,
-            result=9, date_added=cls.season_recent.start_date + datetime.timedelta(days=6), inaccurate_flag=False
+            result=9, date_added=cls.season_recent.start_date + datetime.timedelta(days=6)
         )
         Result.objects.create(
             ladder=cls.ladder_div2, player=cls.player4, opponent=cls.player3,
-            result=7, date_added=cls.season_recent.start_date + datetime.timedelta(days=6), inaccurate_flag=False
+            result=7, date_added=cls.season_recent.start_date + datetime.timedelta(days=6)
         )
 
         # Matches in old season:
         # player2 beats player1: 9 - 6
         Result.objects.create(
             ladder=cls.ladder_old_div1, player=cls.player2, opponent=cls.player1,
-            result=9, date_added=cls.season_old.start_date + datetime.timedelta(days=10), inaccurate_flag=False
+            result=9, date_added=cls.season_old.start_date + datetime.timedelta(days=10)
         )
         Result.objects.create(
             ladder=cls.ladder_old_div1, player=cls.player1, opponent=cls.player2,
-            result=6, date_added=cls.season_old.start_date + datetime.timedelta(days=10), inaccurate_flag=False
+            result=6, date_added=cls.season_old.start_date + datetime.timedelta(days=10)
         )
 
     def test_resolve_filter_all_time(self):

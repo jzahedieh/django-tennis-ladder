@@ -25,9 +25,37 @@
             <form id="edit_result_form" method="post">
                 {% csrf_token %}
 
-                <!-- Winner Selection (2-button toggle synced to hidden select) -->
+                <!-- Match Status / Type Selection -->
                 <div class="mb-4">
-                    <label class="form-label fw-bold mb-2" for="winner_id">1. Match Winner</label>
+                    <label class="form-label fw-bold mb-2">1. Match Status</label>
+                    <input type="hidden" name="match_mode" id="match_mode" value="{{ match_mode|default:'completed' }}">
+                    <div class="row g-2" role="group" aria-label="Match Status">
+                        <div class="col-6 col-md-4">
+                            <input type="radio" class="btn-check" name="mode_radio" id="mode_completed" value="completed" {% if match_mode != 'time' and match_mode != 'injury' %}checked{% endif %} autocomplete="off">
+                            <label class="btn btn-outline-primary w-100 py-2 fw-semibold text-nowrap" for="mode_completed">
+                                &#127942; Completed (9)
+                            </label>
+                        </div>
+                        <div class="col-6 col-md-4">
+                            <input type="radio" class="btn-check" name="mode_radio" id="mode_injury" value="injury" {% if match_mode == 'injury' %}checked{% endif %} autocomplete="off">
+                            <label class="btn btn-outline-warning text-dark w-100 py-2 fw-semibold text-nowrap" for="mode_injury">
+                                &#129657; Injury (Ret.)
+                            </label>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <input type="radio" class="btn-check" name="mode_radio" id="mode_time" value="time" {% if match_mode == 'time' %}checked{% endif %} autocomplete="off">
+                            <label class="btn btn-outline-secondary w-100 py-2 fw-semibold text-nowrap" for="mode_time">
+                                &#8987; Time (Inc.)
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Winner Selection (shown for Completed & Injury) -->
+                <div class="mb-4 {% if match_mode == 'time' %}d-none{% endif %}" id="editWinnerSection">
+                    <label class="form-label fw-bold mb-2" id="editWinnerLabel" for="winner_id">
+                        {% if match_mode == 'injury' %}2. Match Winner (Uninjured Player){% else %}2. Match Winner{% endif %}
+                    </label>
                     <select name="winner_id" id="winner_id" class="form-select d-none">
                         <option value="{{ winner.id }}" selected>{{ winner.first_name }} {{ winner.last_name }}</option>
                         <option value="{{ loser.id }}">{{ loser.first_name }} {{ loser.last_name }}</option>
@@ -35,24 +63,91 @@
                     <div class="row g-2" role="group" aria-label="Select Winner">
                         <div class="col-6">
                             <input type="radio" class="btn-check" name="winner_radio" id="win_radio_a" value="{{ winner.id }}" checked autocomplete="off">
-                            <label class="btn btn-outline-primary w-100 py-2 fw-bold text-truncate" for="win_radio_a">
-                                &#127942; {{ winner.first_name }} {{ winner.last_name }}
+                            <label class="btn btn-outline-primary w-100 py-2 fw-bold text-truncate" for="win_radio_a" id="winRadioLabelA">
+                                &#127942; {{ winner.first_name }} {{ winner.last_name }}{% if winner == me %} (You){% endif %}
                             </label>
                         </div>
                         <div class="col-6">
                             <input type="radio" class="btn-check" name="winner_radio" id="win_radio_b" value="{{ loser.id }}" autocomplete="off">
-                            <label class="btn btn-outline-primary w-100 py-2 fw-bold text-truncate" for="win_radio_b">
-                                &#127942; {{ loser.first_name }} {{ loser.last_name }}
+                            <label class="btn btn-outline-primary w-100 py-2 fw-bold text-truncate" for="win_radio_b" id="winRadioLabelB">
+                                &#127942; {{ loser.first_name }} {{ loser.last_name }}{% if loser == me %} (You){% endif %}
                             </label>
                         </div>
                     </div>
                 </div>
 
-                <!-- Losing Score Selection (0-8 Tap Grid synced to hidden input) -->
+                <!-- First Player Score (Only shown for Incomplete Time) -->
+                <div class="mb-4 {% if match_mode != 'time' %}d-none{% endif %}" id="editWinnerScoreSection">
+                    <div class="d-flex justify-content-between align-items-baseline gap-2 mb-2">
+                        <label class="form-label fw-bold mb-0" id="editWinnerScoreLabel" for="winner_score">
+                            <span id="editWinnerScoreTitle">
+                                {% if winner == me %}
+                                    2. Your Score
+                                {% elif loser == me %}
+                                    2. {{ winner.first_name }}'s Score
+                                {% else %}
+                                    2. {{ winner.first_name }} {{ winner.last_name }}'s Score
+                                {% endif %}
+                            </span>
+                            <span class="text-muted fw-normal small d-block d-sm-inline ms-sm-1" id="editWinnerScoreSub">(Games Won)</span>
+                        </label>
+                        <small class="text-muted text-nowrap flex-shrink-0" id="editWinnerScoreHint">Select 0–8</small>
+                    </div>
+                    <input type="number" name="winner_score" id="winner_score" min="0" max="8"
+                           value="{% if winner_score < 9 %}{{ winner_score }}{% else %}4{% endif %}" class="form-control d-none">
+                    <div class="score-picker-grid" id="editWinnerScoreGrid">
+                        {% for s in "012345678" %}
+                            <button type="button"
+                                    class="score-btn {% if winner_score < 9 and forloop.counter0 == winner_score %}active{% elif winner_score == 9 and forloop.counter0 == 4 %}active{% endif %}"
+                                    data-wscore="{{ forloop.counter0 }}">
+                                {{ forloop.counter0 }}
+                            </button>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Losing / Second Player Score Selection (0-8 Tap Grid) -->
                 <div class="mb-4">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <label class="form-label fw-bold mb-0" for="losing_score">2. Loser's Score (Games Won)</label>
-                        <small class="text-muted">Winner scored 9</small>
+                    <div class="d-flex justify-content-between align-items-baseline gap-2 mb-2">
+                        <label class="form-label fw-bold mb-0" id="editLoserScoreLabel" for="losing_score">
+                            <span id="editLoserScoreTitle">
+                                {% if match_mode == 'time' %}
+                                    {% if loser == me %}
+                                        3. Your Score
+                                    {% elif winner == me %}
+                                        3. {{ loser.first_name }}'s Score
+                                    {% else %}
+                                        3. {{ loser.first_name }} {{ loser.last_name }}'s Score
+                                    {% endif %}
+                                {% elif match_mode == 'injury' %}
+                                    {% if loser == me %}
+                                        3. Your Score at Retirement
+                                    {% elif winner == me %}
+                                        3. {{ loser.first_name }}'s Score at Retirement
+                                    {% else %}
+                                        3. Injured Player's Score
+                                    {% endif %}
+                                {% else %}
+                                    {% if loser == me %}
+                                        3. Your Score
+                                    {% elif winner == me %}
+                                        3. {{ loser.first_name }}'s Score
+                                    {% else %}
+                                        3. Loser's Score
+                                    {% endif %}
+                                {% endif %}
+                            </span>
+                            <span class="text-muted fw-normal small d-block d-sm-inline ms-sm-1" id="editLoserScoreSub">(Games Won)</span>
+                        </label>
+                        <small class="text-muted text-nowrap flex-shrink-0" id="editLoserScoreHint">
+                            {% if match_mode == 'time' %}
+                                Select 0–8
+                            {% elif match_mode == 'injury' %}
+                                {% if winner == me %}You are awarded 9{% elif loser == me %}{{ winner.first_name }} awarded 9{% else %}Awarded 9 (12 pts){% endif %}
+                            {% else %}
+                                {% if winner == me %}You scored 9{% elif loser == me %}{{ winner.first_name }} scored 9{% else %}Winner scored 9{% endif %}
+                            {% endif %}
+                        </small>
                     </div>
                     <input type="number" name="losing_score" id="losing_score" min="0" max="8"
                            value="{{ losing_score }}" class="form-control d-none">
@@ -60,7 +155,7 @@
                     <div class="score-picker-grid" id="editScoreGrid">
                         {% for s in "012345678" %}
                             <button type="button"
-                                    class="score-btn {% if forloop.counter0 == losing_score %}active{% endif %}"
+                                     class="score-btn {% if forloop.counter0 == losing_score %}active{% endif %}"
                                     data-score="{{ forloop.counter0 }}">
                                 {{ forloop.counter0 }}
                             </button>
@@ -72,18 +167,35 @@
                 <div class="scoreboard-preview mb-4">
                     <div class="d-flex justify-content-between align-items-center text-center">
                         <div class="text-start" style="flex: 1; min-width: 0;">
-                            <div class="text-muted text-uppercase fw-semibold" style="font-size: 0.7rem;">Winner</div>
+                            <div class="text-muted text-uppercase fw-semibold" style="font-size: 0.7rem;" id="editLeftRole">
+                                {% if match_mode == 'time' %}
+                                    {% if winner == me %}You{% elif loser == me %}Opponent{% else %}Player 1{% endif %}
+                                {% else %}
+                                    {% if winner == me %}You (Winner){% else %}Winner{% endif %}
+                                {% endif %}
+                            </div>
                             <div class="fw-bold text-truncate" id="editWinnerName">{{ winner.first_name }} {{ winner.last_name }}</div>
                         </div>
-                        <div class="px-3 flex-shrink-0">
+                        <div class="px-3 flex-shrink-0 text-center">
                             <div class="scoreboard-digits">
-                                <span>9</span>
+                                <span id="editWinnerScoreText">{% if match_mode == 'time' %}{{ winner_score }}{% else %}9{% endif %}</span>
                                 <span class="text-muted fw-normal mx-1">&ndash;</span>
                                 <span id="editLoserScoreText">{{ losing_score }}</span>
                             </div>
+                            <div id="editStatusBadge" class="badge mt-1 {% if match_mode == 'time' %}bg-info-subtle text-info-emphasis border border-info-subtle{% elif match_mode == 'injury' %}bg-warning-subtle text-warning-emphasis border border-warning-subtle{% else %}d-none{% endif %}">
+                                {% if match_mode == 'time' %}Incomplete (Inc.){% elif match_mode == 'injury' %}Retirement (Ret.){% endif %}
+                            </div>
                         </div>
                         <div class="text-end" style="flex: 1; min-width: 0;">
-                            <div class="text-muted text-uppercase fw-semibold" style="font-size: 0.7rem;">Loser</div>
+                            <div class="text-muted text-uppercase fw-semibold" style="font-size: 0.7rem;" id="editRightRole">
+                                {% if match_mode == 'time' %}
+                                    {% if loser == me %}You{% elif winner == me %}Opponent{% else %}Player 2{% endif %}
+                                {% elif match_mode == 'injury' %}
+                                    {% if loser == me %}You (Retired){% else %}Retired{% endif %}
+                                {% else %}
+                                    {% if loser == me %}You (Loser){% else %}Loser{% endif %}
+                                {% endif %}
+                            </div>
                             <div class="fw-bold text-truncate" id="editLoserName">{{ loser.first_name }} {{ loser.last_name }}</div>
                         </div>
                     </div>
@@ -113,43 +225,171 @@ document.addEventListener('DOMContentLoaded', function () {
     const form = document.getElementById('edit_result_form');
     const box = document.getElementById('confirmBox');
     const help = document.getElementById('confirmHelp');
+    const modeInput = document.getElementById('match_mode');
+    const modeRadios = Array.prototype.slice.call(document.querySelectorAll('input[name="mode_radio"]'));
+    const winnerSection = document.getElementById('editWinnerSection');
+    const winnerLabel = document.getElementById('editWinnerLabel');
+    const winnerScoreSection = document.getElementById('editWinnerScoreSection');
+    const editWinnerScoreTitle = document.getElementById('editWinnerScoreTitle');
+    const editLoserScoreTitle = document.getElementById('editLoserScoreTitle');
+    const editLoserScoreSub = document.getElementById('editLoserScoreSub');
+    const loserScoreHint = document.getElementById('editLoserScoreHint');
+
     const winnerSelect = document.getElementById('winner_id');
+    const winnerScoreInput = document.getElementById('winner_score');
     const losingInput = document.getElementById('losing_score');
     const radioA = document.getElementById('win_radio_a');
     const radioB = document.getElementById('win_radio_b');
+    const wScoreBtns = Array.prototype.slice.call(document.querySelectorAll('#editWinnerScoreGrid .score-btn'));
     const scoreBtns = Array.prototype.slice.call(document.querySelectorAll('#editScoreGrid .score-btn'));
+
+    const editLeftRole = document.getElementById('editLeftRole');
+    const editRightRole = document.getElementById('editRightRole');
     const editWinnerName = document.getElementById('editWinnerName');
     const editLoserName = document.getElementById('editLoserName');
+    const editWinnerScoreText = document.getElementById('editWinnerScoreText');
     const editLoserScoreText = document.getElementById('editLoserScoreText');
+    const editStatusBadge = document.getElementById('editStatusBadge');
 
     const nameA = "{{ winner.first_name|escapejs }} {{ winner.last_name|escapejs }}";
     const nameB = "{{ loser.first_name|escapejs }} {{ loser.last_name|escapejs }}";
+    const firstA = "{{ winner.first_name|escapejs }}";
+    const firstB = "{{ loser.first_name|escapejs }}";
+    const idA = {{ winner.id }};
+    const idB = {{ loser.id }};
+    const myId = {% if me %}{{ me.id }}{% else %}null{% endif %};
 
-    function syncWinner() {
-        if (radioA && radioA.checked) {
-            winnerSelect.value = radioA.value;
+    function syncAll() {
+        const activeModeRadio = modeRadios.find(r => r.checked);
+        const mode = activeModeRadio ? activeModeRadio.value : 'completed';
+        if (modeInput) modeInput.value = mode;
+
+        if (mode === 'time') {
+            winnerSection.classList.add('d-none');
+            winnerScoreSection.classList.remove('d-none');
+
+            // Winner score section (Player 1)
+            if (myId === idA) {
+                editWinnerScoreTitle.textContent = "2. Your Score";
+            } else if (myId === idB) {
+                editWinnerScoreTitle.textContent = `2. ${firstA}'s Score`;
+            } else {
+                editWinnerScoreTitle.textContent = `2. ${nameA}'s Score`;
+            }
+
+            // Loser score section (Player 2)
+            if (myId === idB) {
+                editLoserScoreTitle.textContent = "3. Your Score";
+            } else if (myId === idA) {
+                editLoserScoreTitle.textContent = `3. ${firstB}'s Score`;
+            } else {
+                editLoserScoreTitle.textContent = `3. ${nameB}'s Score`;
+            }
+            if (editLoserScoreSub) editLoserScoreSub.textContent = "(Games Won)";
+            loserScoreHint.textContent = 'Select 0–8';
+
+            editLeftRole.textContent = (myId === idA) ? 'You' : ((myId === idB) ? 'Opponent' : 'Player 1');
+            editRightRole.textContent = (myId === idB) ? 'You' : ((myId === idA) ? 'Opponent' : 'Player 2');
             editWinnerName.textContent = nameA;
             editLoserName.textContent = nameB;
-        } else if (radioB && radioB.checked) {
-            winnerSelect.value = radioB.value;
-            editWinnerName.textContent = nameB;
-            editLoserName.textContent = nameA;
+            editWinnerScoreText.textContent = winnerScoreInput.value;
+            editLoserScoreText.textContent = losingInput.value;
+            editStatusBadge.className = 'badge mt-1 bg-info-subtle text-info-emphasis border border-info-subtle';
+            editStatusBadge.textContent = 'Incomplete (Inc.)';
+        } else {
+            winnerSection.classList.remove('d-none');
+            winnerScoreSection.classList.add('d-none');
+
+            let winId = idA;
+            let winName = nameA;
+            let winFirst = firstA;
+            let loseId = idB;
+            let loseName = nameB;
+            let loseFirst = firstB;
+
+            if (radioB && radioB.checked) {
+                winId = idB;
+                winName = nameB;
+                winFirst = firstB;
+                loseId = idA;
+                loseName = nameA;
+                loseFirst = firstA;
+            }
+
+            if (winnerSelect) winnerSelect.value = String(winId);
+
+            editWinnerName.textContent = winName;
+            editLoserName.textContent = loseName;
+            editWinnerScoreText.textContent = '9';
+            editLoserScoreText.textContent = losingInput.value;
+
+            const isUserWinner = (myId === winId);
+            const isUserLoser = (myId === loseId);
+
+            if (mode === 'injury') {
+                winnerLabel.textContent = '2. Match Winner (Uninjured Player)';
+                if (isUserLoser) {
+                    editLoserScoreTitle.textContent = '3. Your Score at Retirement';
+                    loserScoreHint.textContent = `${winFirst} awarded 9`;
+                } else if (isUserWinner) {
+                    editLoserScoreTitle.textContent = `3. ${loseFirst}'s Score at Retirement`;
+                    loserScoreHint.textContent = 'You are awarded 9';
+                } else {
+                    editLoserScoreTitle.textContent = "3. Injured Player's Score";
+                    loserScoreHint.textContent = 'Awarded 9 (12 pts)';
+                }
+                editLeftRole.textContent = isUserWinner ? 'You (Winner)' : 'Winner';
+                editRightRole.textContent = isUserLoser ? 'You (Retired)' : 'Retired';
+                editStatusBadge.className = 'badge mt-1 bg-warning-subtle text-warning-emphasis border border-warning-subtle';
+                editStatusBadge.textContent = 'Retirement (Ret.)';
+            } else {
+                winnerLabel.textContent = '2. Match Winner';
+                if (isUserLoser) {
+                    editLoserScoreTitle.textContent = '3. Your Score';
+                    loserScoreHint.textContent = `${winFirst} scored 9`;
+                } else if (isUserWinner) {
+                    editLoserScoreTitle.textContent = `3. ${loseFirst}'s Score`;
+                    loserScoreHint.textContent = 'You scored 9';
+                } else {
+                    editLoserScoreTitle.textContent = "3. Loser's Score";
+                    loserScoreHint.textContent = 'Winner scored 9';
+                }
+                editLeftRole.textContent = isUserWinner ? 'You (Winner)' : 'Winner';
+                editRightRole.textContent = isUserLoser ? 'You (Loser)' : 'Loser';
+                editStatusBadge.className = 'badge mt-1 d-none';
+            }
+            if (editLoserScoreSub) editLoserScoreSub.textContent = "(Games Won)";
         }
     }
 
+    modeRadios.forEach(function (r) {
+        r.addEventListener('change', syncAll);
+    });
+
     if (radioA && radioB) {
-        radioA.addEventListener('change', syncWinner);
-        radioB.addEventListener('change', syncWinner);
+        radioA.addEventListener('change', syncAll);
+        radioB.addEventListener('change', syncAll);
     }
+
+    wScoreBtns.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            const val = parseInt(btn.getAttribute('data-wscore'), 10);
+            winnerScoreInput.value = val;
+            wScoreBtns.forEach(function (b) {
+                b.classList.toggle('active', b === btn);
+            });
+            syncAll();
+        });
+    });
 
     scoreBtns.forEach(function (btn) {
         btn.addEventListener('click', function () {
             const val = parseInt(btn.getAttribute('data-score'), 10);
             losingInput.value = val;
-            editLoserScoreText.textContent = String(val);
             scoreBtns.forEach(function (b) {
                 b.classList.toggle('active', b === btn);
             });
+            syncAll();
         });
     });
 
@@ -164,6 +404,8 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     }
+
+    syncAll();
 });
 </script>
 {% endblock %}

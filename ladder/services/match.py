@@ -64,12 +64,26 @@ class MatchService:
             if len(rows) < 2:
                 continue
             r1, r2 = rows[0], rows[1]
-            if r1.result == 9:
+            reason = r1.incomplete_reason or r2.incomplete_reason
+            is_incomplete = (r1.result < 9 and r2.result < 9) or reason == 'time'
+            is_injury = (reason == 'injury') and (r1.result == 9 or r2.result == 9)
+
+            if is_incomplete:
+                if (r1.result, -r1.player_id) >= (r2.result, -r2.player_id):
+                    winner, loser = r1.player, r2.player
+                    winner_score, loser_score = r1.result, r2.result
+                else:
+                    winner, loser = r2.player, r1.player
+                    winner_score, loser_score = r2.result, r1.result
+                score_display = f"{winner_score} – {loser_score} (Inc.)"
+            elif r1.result == 9:
                 winner, loser = r1.player, r2.player
                 winner_score, loser_score = r1.result, r2.result
+                score_display = f"{winner_score} – {loser_score} (Ret.)" if is_injury else f"{winner_score} – {loser_score}"
             elif r2.result == 9:
                 winner, loser = r2.player, r1.player
                 winner_score, loser_score = r2.result, r1.result
+                score_display = f"{winner_score} – {loser_score} (Ret.)" if is_injury else f"{winner_score} – {loser_score}"
             else:
                 continue
 
@@ -109,7 +123,10 @@ class MatchService:
                 'loser_name': loser_name,
                 'winner_score': winner_score,
                 'loser_score': loser_score,
-                'score_display': f"{winner_score} – {loser_score}",
+                'score_display': score_display,
+                'is_incomplete': is_incomplete,
+                'is_injury': is_injury,
+                'incomplete_reason': reason or ('time' if is_incomplete else None),
                 'division': ladder.division,
                 'division_url': division_url,
                 'date_added': date_added,

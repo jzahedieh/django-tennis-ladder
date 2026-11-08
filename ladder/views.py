@@ -329,7 +329,7 @@ def add(request, year, season_round, division_id):
             # build the mirror result (aka winner) from losing form data
             winning_result = Result(ladder=losing_result.ladder, player=losing_result.opponent,
                                     opponent=losing_result.player, result=9, date_added=losing_result.date_added,
-                                    inaccurate_flag=losing_result.inaccurate_flag)
+                                    incomplete_reason=losing_result.incomplete_reason)
             losing_result.save()
             winning_result.save()
 
@@ -412,31 +412,15 @@ def player_search(request):
     return JsonResponse({"options": options})
 
 
-@login_required
-def result_entry(request):
-    user = request.user
-    try:
-        ladder = (Ladder.objects
-                  .filter(league__player__user=user, season__is_draft=False)
-                  .order_by('-id')[0])
-    except IndexError:
-        raise Http404
-
-    me = Player.objects.get(user=user)
-
-    # Unplayed (kept as before)
-    unplayed = _unplayed_opponents_for(me, ladder)
-
-    # Entered: only matches where the logged-in player took part
+def _build_entered_matches(me, ladder):
     entered_raw = (
         Result.objects
         .filter(ladder=ladder)
         .filter(Q(player=me) | Q(opponent=me))
         .select_related('player', 'opponent', 'entered_by')
-        .order_by('-date_added')
+        .order_by('-date_added', '-id')
     )
 
-    # Collapse mirror rows to a single “match”
     pairs = {}
     for r in entered_raw:
         key = tuple(sorted((r.player_id, r.opponent_id)))
@@ -446,33 +430,90 @@ def result_entry(request):
     for (a_id, b_id), rows in pairs.items():
         if len(rows) == 1:
             r = rows[0]
-            # find mirror so we can compute losing score reliably
             try:
-                mirror = Result.objects.get(ladder=ladder, player_id=r.opponent_id, opponent_id=r.player_id)
+                mirror = Result.objects.select_related('player', 'opponent', 'entered_by').get(
+                    ladder=ladder, player_id=r.opponent_id, opponent_id=r.player_id
+                )
                 rows = [r, mirror]
             except Result.DoesNotExist:
                 continue
 
-        # normalize winner/loser
         ra, rb = rows[0], rows[1]
-        if ra.result == 9:
-            winner_row, loser_row = ra, rb
-        elif rb.result == 9:
-            winner_row, loser_row = rb, ra
+        my_row = ra if ra.player_id == me.id else rb
+        opp_row = rb if ra.player_id == me.id else ra
+        reason = my_row.incomplete_reason or opp_row.incomplete_reason
+
+        is_incomplete_time = (
+            (my_row.result < 9 and opp_row.result < 9)
+            or reason == Result.IncompleteReason.TIME
+        )
+        is_injury = (
+            reason == Result.IncompleteReason.INJURY
+            and (my_row.result == 9 or opp_row.result == 9)
+        )
+
+        if is_incomplete_time:
+            winner_row, loser_row = my_row, opp_row
+            outcome_code = 'I'
+            score_display = f"{my_row.result}\u2013{opp_row.result} (Inc.)"
         else:
-            # invalid pair (shouldn’t happen), skip
-            continue
+            if ra.result == 9:
+                winner_row, loser_row = ra, rb
+            elif rb.result == 9:
+                winner_row, loser_row = rb, ra
+            else:
+                winner_row, loser_row = my_row, opp_row
+
+            if my_row.result == 9:
+                outcome_code = 'W'
+                score_display = (
+                    f"9\u2013{opp_row.result} (Ret.)"
+                    if is_injury
+                    else f"9\u2013{opp_row.result}"
+                )
+            else:
+                outcome_code = 'R' if is_injury else 'L'
+                score_display = (
+                    f"{my_row.result}\u20139 (Ret.)"
+                    if is_injury
+                    else f"{my_row.result}\u20139"
+                )
 
         entered.append({
             'winner': winner_row.player,
             'loser': loser_row.player,
             'losing_score': loser_row.result,
-            'date_added': winner_row.date_added,     # use winner row date
+            'opponent': opp_row.player,
+            'my_score': my_row.result,
+            'opp_score': opp_row.result,
+            'outcome_code': outcome_code,
+            'is_incomplete': is_incomplete_time,
+            'is_injury': is_injury,
+            'incomplete_reason': reason or (Result.IncompleteReason.TIME if is_incomplete_time else None),
+            'score_display': score_display,
+            'date_added': winner_row.date_added,
             'entered_by': winner_row.entered_by or loser_row.entered_by,
             'pair_key': f'{a_id}-{b_id}',
         })
 
-    # form as before
+    return entered
+
+
+@login_required
+def result_entry(request):
+    user = request.user
+    try:
+        ladder = (Ladder.objects
+                  .filter(league__player__user=user, season__is_draft=False)
+                  .order_by('-season__start_date', '-season__season_round', '-id')[0])
+    except IndexError:
+        raise Http404
+
+    me = Player.objects.get(user=user)
+
+    unplayed = _unplayed_opponents_for(me, ladder)
+    entered = _build_entered_matches(me, ladder)
+
     result = Result(ladder=ladder, date_added=datetime.datetime.now(), result=0)
     form = AddEntryForm(ladder, user, instance=result)
     if unplayed:
@@ -497,28 +538,29 @@ def result_entry_add(request):
     user = request.user
     ladder = (Ladder.objects
               .filter(league__player__user=user, season__is_draft=False)
-              .order_by('-id')[0])
+              .order_by('-season__start_date', '-season__season_round', '-id')[0])
 
     me = Player.objects.get(user=user)
-    result = Result(ladder=ladder, date_added=datetime.datetime.now(), inaccurate_flag=0)
+    result = Result(ladder=ladder, date_added=datetime.datetime.now())
     form = AddEntryForm(ladder, user, request.POST, instance=result)
 
     if not form.is_valid():
         unplayed = _unplayed_opponents_for(me, ladder)
+        entered = _build_entered_matches(me, ladder)
         return render(request, 'ladder/result/entry.html', {
             'user': user,
             'me': me,
             'ladder': ladder,
             'form': form,
             'unplayed': unplayed,
-            'entered': [],
-            'total_opponents': len(unplayed),
+            'entered': entered,
+            'total_opponents': len(unplayed) + len(entered),
             'is_closed': ladder.is_closed(),
         })
 
     user_result = form.save(commit=False)
-    is_user_winner = form.cleaned_data['winner'] == 1
-    losing_result = form.cleaned_data['result']
+    outcome = form.cleaned_data.get('outcome') or ('won' if form.cleaned_data.get('winner') else 'lost')
+    primary_score = form.cleaned_data['result']
     me = user_result.player
     opp = user_result.opponent
 
@@ -526,24 +568,41 @@ def result_entry_add(request):
     Result.objects.filter(ladder=ladder, player=me, opponent=opp).delete()
     Result.objects.filter(ladder=ladder, player=opp, opponent=me).delete()
 
-    # build mirror
+    reason = None
+    if outcome == 'won':
+        my_score = 9
+        opp_score = primary_score
+    elif outcome == 'lost':
+        my_score = primary_score
+        opp_score = 9
+    else:
+        reason = form.cleaned_data.get('incomplete_reason')
+        if reason == Result.IncompleteReason.TIME:
+            my_score = primary_score
+            opp_score = form.cleaned_data['opponent_result']
+        else:
+            # Injury / retirement: uninjured player gets 9, injured player keeps primary_score
+            injured = form.cleaned_data.get('injured_player')
+            if injured == 'opponent':
+                my_score = 9
+                opp_score = primary_score
+            else:
+                my_score = primary_score
+                opp_score = 9
+
+    user_result.result = my_score
+    user_result.incomplete_reason = reason
+    user_result.entered_by = user
+
     opponent_result = Result(
         ladder=user_result.ladder,
-        player=opp, opponent=me,
-        result=9, date_added=user_result.date_added,
-        inaccurate_flag=user_result.inaccurate_flag
+        player=opp,
+        opponent=me,
+        result=opp_score,
+        date_added=user_result.date_added,
+        incomplete_reason=reason,
+        entered_by=user,
     )
-
-    if is_user_winner:
-        opponent_result.result = losing_result
-        user_result.result = 9
-    else:
-        # user lost; their result already is losing_result
-        pass
-
-    # log who entered
-    user_result.entered_by = user
-    opponent_result.entered_by = user
 
     user_result.save()
     opponent_result.save()
@@ -572,53 +631,113 @@ def result_entry_edit(request, pair_key):
     except ValueError:
         raise Http404
 
-    ladder = (Ladder.objects
-              .filter(league__player__user=request.user, season__is_draft=False)
-              .order_by('-id')[0])
+    # fetch the two rows and find their ladder
+    try:
+        r_ab = (Result.objects
+                .select_related('player', 'ladder', 'ladder__season')
+                .filter(player_id=a_id, opponent_id=b_id, ladder__season__is_draft=False)
+                .order_by('-ladder__season__start_date', '-ladder__season__season_round', '-id')[0])
+        ladder = r_ab.ladder
+        r_ba = Result.objects.select_related('player').get(ladder=ladder, player_id=b_id, opponent_id=a_id)
+    except (Result.DoesNotExist, IndexError):
+        raise Http404
 
     if not _can_edit(request.user, ladder, a_id, b_id):
         return HttpResponseForbidden()
 
-    # fetch the two rows
-    try:
-        r_ab = Result.objects.get(ladder=ladder, player_id=a_id, opponent_id=b_id)
-        r_ba = Result.objects.get(ladder=ladder, player_id=b_id, opponent_id=a_id)
-    except Result.DoesNotExist:
-        raise Http404
+    me = Player.objects.filter(user=request.user).first()
 
-    # normalize to winner/loser
-    if r_ab.result == 9:
-        winner, loser, losing_score = r_ab.player, r_ba.player, r_ba.result
+    reason = r_ab.incomplete_reason or r_ba.incomplete_reason
+    is_incomplete_time = (
+        (r_ab.result < 9 and r_ba.result < 9)
+        or reason == Result.IncompleteReason.TIME
+    )
+    is_injury = (
+        reason == Result.IncompleteReason.INJURY
+        and (r_ab.result == 9 or r_ba.result == 9)
+    )
+
+    if is_incomplete_time:
+        if me and me.id == b_id:
+            winner, loser = r_ba.player, r_ab.player
+            winner_score, losing_score = r_ba.result, r_ab.result
+        else:
+            winner, loser = r_ab.player, r_ba.player
+            winner_score, losing_score = r_ab.result, r_ba.result
+        match_mode = 'time'
     else:
-        winner, loser, losing_score = r_ba.player, r_ab.player, r_ab.result
+        if r_ab.result == 9:
+            winner, loser, winner_score, losing_score = r_ab.player, r_ba.player, 9, r_ba.result
+        else:
+            winner, loser, winner_score, losing_score = r_ba.player, r_ab.player, 9, r_ab.result
+        match_mode = 'injury' if is_injury else 'completed'
 
     if request.method == 'POST':
-        # light friction: require a checkbox confirm and the new losing score
         confirmed = request.POST.get('confirm') == 'on'
         if not confirmed:
             messages.error(request, 'Please confirm you want to update this result.')
         else:
-            new_winner_id = int(request.POST['winner_id'])
-            new_losing_score = int(request.POST['losing_score'])
-            if new_winner_id == winner.id and new_losing_score == losing_score:
-                messages.info(request, 'No changes made - result already matches')
-                return HttpResponseRedirect(reverse('ladder', kwargs={
-                    'year': ladder.season.start_date.year,
-                    'season_round': ladder.season.season_round,
-                    'division_id': ladder.division,
-                }))
+            new_mode = request.POST.get('match_mode') or 'completed'
+            if new_mode == 'time':
+                score_w = max(0, min(8, int(request.POST.get('winner_score', winner_score if match_mode == 'time' else 4))))
+                score_l = max(0, min(8, int(request.POST.get('losing_score', losing_score))))
+                if match_mode == 'time' and score_w == winner_score and score_l == losing_score:
+                    messages.info(request, 'No changes made - result already matches')
+                    return HttpResponseRedirect(reverse('ladder', kwargs={
+                        'year': ladder.season.start_date.year,
+                        'season_round': ladder.season.season_round,
+                        'division_id': ladder.division,
+                    }))
 
-            # rewrite both rows
-            win_id, lose_id = (a_id, b_id) if new_winner_id == a_id else (b_id, a_id)
-            Result.objects.filter(ladder=ladder, player_id=a_id, opponent_id=b_id).delete()
-            Result.objects.filter(ladder=ladder, player_id=b_id, opponent_id=a_id).delete()
+                Result.objects.filter(ladder=ladder, player_id=a_id, opponent_id=b_id).delete()
+                Result.objects.filter(ladder=ladder, player_id=b_id, opponent_id=a_id).delete()
 
-            win_row = Result(ladder=ladder, player_id=win_id, opponent_id=lose_id, inaccurate_flag=0,
-                             result=9, date_added=datetime.datetime.now(), entered_by=request.user)
-            lose_row = Result(ladder=ladder, player_id=lose_id, opponent_id=win_id, inaccurate_flag=0,
-                              result=new_losing_score, date_added=win_row.date_added, entered_by=request.user)
-            win_row.save()
-            lose_row.save()
+                now_dt = datetime.datetime.now()
+                Result(
+                    ladder=ladder, player_id=winner.id, opponent_id=loser.id,
+                    result=score_w, incomplete_reason=Result.IncompleteReason.TIME,
+                    date_added=now_dt, entered_by=request.user,
+                ).save()
+                Result(
+                    ladder=ladder, player_id=loser.id, opponent_id=winner.id,
+                    result=score_l, incomplete_reason=Result.IncompleteReason.TIME,
+                    date_added=now_dt, entered_by=request.user,
+                ).save()
+            else:
+                new_winner_id = int(request.POST['winner_id'])
+                new_losing_score = max(0, min(8, int(request.POST['losing_score'])))
+                new_reason = Result.IncompleteReason.INJURY if new_mode == 'injury' else None
+
+                if (
+                    new_mode == match_mode
+                    and new_winner_id == winner.id
+                    and new_losing_score == losing_score
+                ):
+                    messages.info(request, 'No changes made - result already matches')
+                    return HttpResponseRedirect(reverse('ladder', kwargs={
+                        'year': ladder.season.start_date.year,
+                        'season_round': ladder.season.season_round,
+                        'division_id': ladder.division,
+                    }))
+
+                win_id, lose_id = (a_id, b_id) if new_winner_id == a_id else (b_id, a_id)
+                Result.objects.filter(ladder=ladder, player_id=a_id, opponent_id=b_id).delete()
+                Result.objects.filter(ladder=ladder, player_id=b_id, opponent_id=a_id).delete()
+
+                now_dt = datetime.datetime.now()
+                win_row = Result(
+                    ladder=ladder, player_id=win_id, opponent_id=lose_id,
+                    incomplete_reason=new_reason, result=9,
+                    date_added=now_dt, entered_by=request.user,
+                )
+                lose_row = Result(
+                    ladder=ladder, player_id=lose_id, opponent_id=win_id,
+                    incomplete_reason=new_reason, result=new_losing_score,
+                    date_added=now_dt, entered_by=request.user,
+                )
+                win_row.save()
+                lose_row.save()
+
             messages.success(request, 'Result updated')
             return HttpResponseRedirect(reverse('ladder', kwargs={
                 'year': ladder.season.start_date.year,
@@ -629,7 +748,12 @@ def result_entry_edit(request, pair_key):
     return render(request, 'ladder/result/edit.html', {
         'ladder': ladder,
         'pair_key': pair_key,
-        'winner': winner, 'loser': loser, 'losing_score': losing_score
+        'me': me,
+        'winner': winner,
+        'loser': loser,
+        'winner_score': winner_score,
+        'losing_score': losing_score,
+        'match_mode': match_mode,
     })
 
 @login_required
@@ -639,9 +763,16 @@ def result_entry_delete(request, pair_key):
     except ValueError:
         raise Http404
 
-    ladder = (Ladder.objects
-              .filter(league__player__user=request.user, season__is_draft=False)
-              .order_by('-id')[0])
+    try:
+        r_ab = (Result.objects
+                .select_related('player', 'ladder', 'ladder__season')
+                .filter(player_id=a_id, opponent_id=b_id, ladder__season__is_draft=False)
+                .order_by('-ladder__season__start_date', '-ladder__season__season_round', '-id')[0])
+        ladder = r_ab.ladder
+        r_ba = Result.objects.select_related('player').get(ladder=ladder, player_id=b_id, opponent_id=a_id)
+    except (Result.DoesNotExist, IndexError):
+        raise Http404
+
     if not _can_edit(request.user, ladder, a_id, b_id):
         return HttpResponseForbidden()
 
@@ -657,23 +788,31 @@ def result_entry_delete(request, pair_key):
 
     winner = None
     loser = None
+    winner_score = 9
     losing_score = None
-    try:
-        r_ab = Result.objects.select_related('player').get(ladder=ladder, player_id=a_id, opponent_id=b_id)
-        r_ba = Result.objects.select_related('player').get(ladder=ladder, player_id=b_id, opponent_id=a_id)
-        if r_ab.result == 9:
-            winner, loser, losing_score = r_ab.player, r_ba.player, r_ba.result
-        else:
-            winner, loser, losing_score = r_ba.player, r_ab.player, r_ab.result
-    except Result.DoesNotExist:
-        pass
+    is_incomplete = False
+    is_injury = False
+    reason = r_ab.incomplete_reason or r_ba.incomplete_reason
+    if (r_ab.result < 9 and r_ba.result < 9) or reason == Result.IncompleteReason.TIME:
+        winner, loser = r_ab.player, r_ba.player
+        winner_score, losing_score = r_ab.result, r_ba.result
+        is_incomplete = True
+    elif r_ab.result == 9:
+        winner, loser, winner_score, losing_score = r_ab.player, r_ba.player, 9, r_ba.result
+        is_injury = (reason == Result.IncompleteReason.INJURY)
+    else:
+        winner, loser, winner_score, losing_score = r_ba.player, r_ab.player, 9, r_ab.result
+        is_injury = (reason == Result.IncompleteReason.INJURY)
 
     return render(request, 'ladder/result/delete_confirm.html', {
         'pair_key': pair_key,
         'ladder': ladder,
         'winner': winner,
         'loser': loser,
+        'winner_score': winner_score,
         'losing_score': losing_score,
+        'is_incomplete': is_incomplete,
+        'is_injury': is_injury,
     })
 
 @csrf_exempt

@@ -407,6 +407,16 @@ a:focus {
   border-color: #fecaca;
 }
 
+.scoreboard-preview.state-incomplete {
+  background-color: #f0f9ff;
+  border-color: #bae6fd;
+}
+
+.scoreboard-preview.state-retired {
+  background-color: #fffbeb;
+  border-color: #fde68a;
+}
+
 .scoreboard-digits {
   font-size: 1.65rem;
   font-weight: 800;

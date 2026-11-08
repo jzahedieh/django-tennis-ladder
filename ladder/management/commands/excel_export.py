@@ -180,10 +180,7 @@ class Command(BaseCommand):
                         # result
                         for result in getkey(export.results, league.player.id):
                             if league.player.id == result.player.id and opponent.player.id == result.opponent.id:
-                                if result.inaccurate_flag:
-                                    ws.write(col, row, result.result, inaccurate_style)
-                                else:
-                                    ws.write(col, row, result.result, style0)
+                                ws.write(col, row, result.result, style0)
 
                     row += 1
                     column_counter += 1

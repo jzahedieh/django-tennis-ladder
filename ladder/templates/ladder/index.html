@@ -264,8 +264,8 @@
                                         </a>
                                         <span class="text-truncate">
                                             <a href="{% url 'player_history' match.winner_id %}" class="fw-bold text-decoration-none text-dark">{{ match.winner_name }}</a>
-                                            <span class="text-muted small mx-1">def.</span>
-                                            <a href="{% url 'player_history' match.loser_id %}" class="text-decoration-none text-muted">{{ match.loser_name }}</a>
+                                            <span class="text-muted small mx-1">{% if match.is_incomplete %}vs{% else %}def.{% endif %}</span>
+                                            <a href="{% url 'player_history' match.loser_id %}" class="text-decoration-none {% if match.is_incomplete %}fw-bold text-dark{% else %}text-muted{% endif %}">{{ match.loser_name }}</a>
                                         </span>
                                     </div>
                                     <div class="small text-muted" title="{{ match.date_full }}">
@@ -276,7 +276,7 @@
                                     <a href="{{ match.h2h_url }}"
                                        data-h2h-url="{{ match.h2h_url }}"
                                        data-h2h-title="{{ match.h2h_title }}"
-                                       class="badge bg-primary-subtle text-primary border border-primary-subtle text-decoration-none fs-6 px-2 py-1"
+                                       class="badge {% if match.is_incomplete %}bg-secondary-subtle text-secondary-emphasis border{% else %}bg-primary-subtle text-primary border border-primary-subtle{% endif %} text-decoration-none fs-6 px-2 py-1"
                                        title="View Head-to-Head match history">
                                         {{ match.score_display }}
                                     </a>

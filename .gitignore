@@ -36,3 +36,6 @@
 
 .devcontainer/*
 .venv/
+
+# Assistant instructions
+GEMINI.md
