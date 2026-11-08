@@ -35,7 +35,6 @@ class PlayerStatsServiceTest(TestCase):
             opponent=self.p2,
             result=9,
             date_added=datetime.date(2026, 2, 1),
-            inaccurate_flag=False,
         )
         Result.objects.create(
             ladder=self.ladder,
@@ -43,7 +42,6 @@ class PlayerStatsServiceTest(TestCase):
             opponent=self.p1,
             result=7,
             date_added=datetime.date(2026, 2, 1),
-            inaccurate_flag=False,
         )
 
         # Match 2: Alice beats Charlie 9-0 (bagel / dominant win)
@@ -53,7 +51,6 @@ class PlayerStatsServiceTest(TestCase):
             opponent=self.p3,
             result=9,
             date_added=datetime.date(2026, 2, 10),
-            inaccurate_flag=False,
         )
         Result.objects.create(
             ladder=self.ladder,
@@ -61,7 +58,6 @@ class PlayerStatsServiceTest(TestCase):
             opponent=self.p1,
             result=0,
             date_added=datetime.date(2026, 2, 10),
-            inaccurate_flag=False,
         )
 
     def test_get_player_profile_stats_and_insights(self):
@@ -121,3 +117,44 @@ class PlayerStatsServiceTest(TestCase):
         # Lightbox modal container and Won / Played header
         self.assertContains(resp, 'id="h2hLightboxModal"')
         self.assertContains(resp, "Won / Played")
+
+    def test_incomplete_and_injury_matches_in_profile_and_h2h(self):
+        # Match 3: Bob vs Charlie incomplete (6-6, ran out of time)
+        Result.objects.create(
+            ladder=self.ladder,
+            player=self.p2,
+            opponent=self.p3,
+            result=6,
+            incomplete_reason=Result.IncompleteReason.TIME,
+            date_added=datetime.date(2026, 2, 15),
+        )
+        Result.objects.create(
+            ladder=self.ladder,
+            player=self.p3,
+            opponent=self.p2,
+            result=6,
+            incomplete_reason=Result.IncompleteReason.TIME,
+            date_added=datetime.date(2026, 2, 15),
+        )
+
+        # Check Bob's profile: 2 played (0W, 1L, 0R, 1I), games won = 7+6=13, games lost = 9+6=15
+        bob_ctx = PlayerStatsService.get_player_profile(self.p2, authenticated=True)
+        bob_stats = bob_ctx["player_stats"]
+        self.assertEqual(bob_stats["played"], 2)
+        self.assertEqual(bob_stats["won"], 0)
+        self.assertEqual(bob_stats["lost"], 1)
+        self.assertEqual(bob_stats["retired"], 0)
+        self.assertEqual(bob_stats["incomplete"], 1)
+        self.assertEqual(bob_ctx["insights"]["total_games_won"], 13)
+        self.assertEqual(bob_ctx["insights"]["total_games_lost"], 15)
+        self.assertEqual(bob_ctx["insights"]["recent_form"][0]["outcome_code"], "I")
+
+        # Check H2H between Bob and Charlie: 1 played, 0 won, 0 lost, 1 incomplete (not duplicated!)
+        h2h = PlayerStatsService.get_head_to_head(self.p2, self.p3, authenticated=True)
+        self.assertEqual(len(h2h["matches"]), 1)
+        self.assertEqual(h2h["stats"]["played"], 1)
+        self.assertEqual(h2h["stats"]["won"], 0)
+        self.assertEqual(h2h["stats"]["lost"], 0)
+        self.assertEqual(h2h["stats"]["incomplete"], 1)
+        self.assertEqual(h2h["matches"][0]["score_display"], "6 \u2013 6 (Inc.)")
+

@@ -37,7 +37,9 @@
                     <span>
                         Played: <strong>{{ stats.played }}</strong> &middot;
                         Won: <strong>{{ stats.won }}</strong> &middot;
-                        Lost: <strong>{{ stats.lost }}</strong>
+                        Lost: <strong>{{ stats.lost }}</strong>{% if stats.retired %} &middot;
+                        Retired: <strong>{{ stats.retired }}</strong>{% endif %}{% if stats.incomplete %} &middot;
+                        Incomplete: <strong>{{ stats.incomplete }}</strong>{% endif %}
                     </span>
                     <span>
                         {% if stats.close_matches > 0 %}
@@ -81,17 +83,28 @@
                                 </a>
                             </td>
                             <td class="text-nowrap fw-semibold">
-                                <span class="badge {% if m.player_won %}bg-success-subtle text-success border border-success-subtle{% else %}bg-primary-subtle text-primary border border-primary-subtle{% endif %} me-1">W</span>
+                                {% if m.is_incomplete %}
+                                    <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle me-1" title="Incomplete (Ran out of time / conditions)">I</span>
+                                {% else %}
+                                    <span class="badge {% if m.player_won %}bg-success-subtle text-success border border-success-subtle{% else %}bg-primary-subtle text-primary border border-primary-subtle{% endif %} me-1">W</span>
+                                {% endif %}
                                 <a href="{% url 'player_history' m.winner_id %}" class="text-decoration-none text-dark">
                                     {{ m.winner_name }}
                                 </a>
                             </td>
                             <td class="text-center text-nowrap">
-                                <span class="badge {% if m.is_close %}bg-warning-subtle text-dark border border-warning-subtle{% else %}bg-light text-dark border{% endif %} fw-bold">
-                                    9 &ndash; {{ m.losing_score }}
+                                <span class="badge {% if m.is_close %}bg-warning-subtle text-dark border border-warning-subtle{% elif m.is_incomplete %}bg-info-subtle text-info-emphasis border border-info-subtle{% else %}bg-light text-dark border{% endif %} fw-bold">
+                                    {{ m.score_display }}
                                 </span>
                             </td>
                             <td class="d-none d-sm-table-cell pe-2 text-nowrap text-muted">
+                                {% if m.is_incomplete %}
+                                    <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle me-1" title="Incomplete (Ran out of time / conditions)">I</span>
+                                {% elif m.is_injury %}
+                                    <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle me-1" title="Retired (Injury)">R</span>
+                                {% else %}
+                                    <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle me-1">L</span>
+                                {% endif %}
                                 <a href="{% url 'player_history' m.loser_id %}" class="text-decoration-none text-muted">
                                     {{ m.loser_name }}
                                 </a>

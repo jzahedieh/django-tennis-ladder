@@ -663,9 +663,9 @@ class LeagueAdmin(admin.ModelAdmin):
 
 @admin.register(Result)
 class ResultAdmin(admin.ModelAdmin):
-    list_filter = ["ladder__season"]
+    list_filter = ["ladder__season", "incomplete_reason"]
     search_fields = ["player__first_name", "player__last_name"]
-    list_display = ("ladder", "player", "opponent", "result", "date_added")
+    list_display = ("ladder", "player", "opponent", "result", "incomplete_reason", "date_added")
     date_hierarchy = "date_added"
 
 

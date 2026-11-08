@@ -41,7 +41,7 @@
                 <div class="text-muted small text-uppercase fw-semibold">Played</div>
                 <div class="fs-4 fw-bold text-dark">{{ player_stats.played }}</div>
                 {% if insights.has_matches %}
-                    <div class="text-muted" style="font-size: 0.75rem;">{{ player_stats.won }}W &ndash; {{ player_stats.lost }}L</div>
+                    <div class="text-muted" style="font-size: 0.75rem;">{{ player_stats.won }}W &ndash; {{ player_stats.lost }}L{% if player_stats.retired %} &ndash; {{ player_stats.retired }}R{% endif %}{% if player_stats.incomplete %} &ndash; {{ player_stats.incomplete }}I{% endif %}</div>
                 {% endif %}
             </div>
         </div>
@@ -122,9 +122,9 @@
                             <a href="{{ form_h2h_url }}"
                                data-h2h-url="{{ form_h2h_url }}"
                                data-h2h-title="{{ main_player_name }} vs {{ m.opponent_name }}"
-                               class="badge text-decoration-none {% if m.won %}bg-success{% else %}bg-secondary{% endif %}"
+                               class="badge text-decoration-none {% if m.outcome_code == 'W' %}bg-success{% elif m.outcome_code == 'R' %}bg-warning text-dark{% elif m.outcome_code == 'I' %}bg-info text-dark{% else %}bg-secondary{% endif %}"
                                title="{{ m.season_label }}: {{ m.score_display }} vs {{ m.opponent_name }}">
-                                {% if m.won %}W{% else %}L{% endif %}
+                                {{ m.outcome_code }}
                             </a>
                         {% endfor %}
                     </div>

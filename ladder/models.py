@@ -362,7 +362,9 @@ class Ladder(models.Model):
         for m in matches:
             w = m['winner']
             l = m['loser']
-            w_pts = int(m['winner_score']) + 3
+            is_inc = m.get('is_incomplete', False)
+            is_inj = m.get('is_injury', False)
+            w_pts = int(m['winner_score']) + (3 if int(m['winner_score']) == 9 and not is_inc else 1)
             l_pts = int(m['loser_score']) + 1
 
             if w.id not in player_stats_map:
@@ -374,10 +376,15 @@ class Ladder(models.Model):
                     'played': 0,
                     'won': 0,
                     'lost': 0,
+                    'retired': 0,
+                    'incomplete': 0,
                 }
             player_stats_map[w.id]['total'] += w_pts
             player_stats_map[w.id]['played'] += 1
-            player_stats_map[w.id]['won'] += 1
+            if is_inc:
+                player_stats_map[w.id]['incomplete'] += 1
+            else:
+                player_stats_map[w.id]['won'] += 1
 
             if l.id not in player_stats_map:
                 player_stats_map[l.id] = {
@@ -388,10 +395,17 @@ class Ladder(models.Model):
                     'played': 0,
                     'won': 0,
                     'lost': 0,
+                    'retired': 0,
+                    'incomplete': 0,
                 }
             player_stats_map[l.id]['total'] += l_pts
             player_stats_map[l.id]['played'] += 1
-            player_stats_map[l.id]['lost'] += 1
+            if is_inc:
+                player_stats_map[l.id]['incomplete'] += 1
+            elif is_inj:
+                player_stats_map[l.id]['retired'] += 1
+            else:
+                player_stats_map[l.id]['lost'] += 1
 
         max_possible_per_player = max(0, league_count - 1)
         for p_stat in player_stats_map.values():
@@ -419,12 +433,21 @@ class Ladder(models.Model):
             leaders = [p for p in sorted_players if p['total'] == top_total]
 
         if matches:
-            total_loser_games = sum(int(m['loser_score']) for m in matches)
+            completed_matches = [m for m in matches if not m.get('is_incomplete', False)]
             total_games_played = sum(int(m['winner_score']) + int(m['loser_score']) for m in matches)
-            avg_loser_score = total_loser_games / total_matches_played
-            avg_match_score = f"9 – {avg_loser_score:.1f}"
             avg_games_per_match = f"{(total_games_played / total_matches_played):.1f}"
-            close_matches_count = sum(1 for m in matches if int(m['loser_score']) >= 7)
+            if completed_matches:
+                total_loser_games = sum(int(m['loser_score']) for m in completed_matches)
+                avg_loser_score = total_loser_games / len(completed_matches)
+                avg_match_score = f"9 – {avg_loser_score:.1f}"
+            else:
+                avg_w = sum(int(m['winner_score']) for m in matches) / total_matches_played
+                avg_l = sum(int(m['loser_score']) for m in matches) / total_matches_played
+                avg_match_score = f"{avg_w:.1f} – {avg_l:.1f}"
+            close_matches_count = sum(
+                1 for m in completed_matches
+                if not m.get('is_injury', False) and int(m['loser_score']) >= 7
+            )
             close_matches_pct = (close_matches_count / total_matches_played) * 100.0
 
         return {
@@ -509,12 +532,22 @@ class League(models.Model):
 
 
 class Result(models.Model):
+    class IncompleteReason(models.TextChoices):
+        TIME = "time", "Ran out of time / conditions"
+        INJURY = "injury", "Injury / retirement"
+
     ladder = models.ForeignKey(Ladder, on_delete=models.CASCADE)
     player = models.ForeignKey(Player, on_delete=models.CASCADE, related_name='result_player')
     opponent = models.ForeignKey(Player, on_delete=models.CASCADE, related_name='result_opponent')
     result = models.IntegerField()
     date_added = models.DateField('Date added')
-    inaccurate_flag = models.BooleanField(default=None)
+    incomplete_reason = models.CharField(
+        max_length=20,
+        choices=IncompleteReason.choices,
+        null=True,
+        blank=True,
+        default=None,
+    )
     entered_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name='entered_results')
 
     def __str__(self):

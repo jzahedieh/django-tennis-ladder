@@ -99,14 +99,14 @@ class PlayerStatsService:
             .order_by("date_added", "id")
         )
 
-        # Fetch mirror loser rows where this player won (so we know opponent's losing score)
-        mirror_loser_rows = (
-            Result.objects.filter(opponent=player, result__lt=9)
-            .values_list("ladder_id", "player_id", "result")
+        # Fetch mirror rows for all matches involving this player
+        mirror_rows = (
+            Result.objects.filter(opponent=player)
+            .values_list("ladder_id", "player_id", "result", "incomplete_reason")
         )
-        mirror_score_map = {
-            (ladder_id, opp_id): int(score or 0)
-            for ladder_id, opp_id, score in mirror_loser_rows
+        mirror_map = {
+            (ladder_id, opp_id): (int(score or 0), reason)
+            for ladder_id, opp_id, score, reason in mirror_rows
         }
 
         # 4. Aggregate career stats, per-ladder stats, H2H records, and insights
@@ -153,6 +153,9 @@ class PlayerStatsService:
         results_by_ladder = defaultdict(list)
 
         won_count = 0
+        lost_count = 0
+        retired_count = 0
+        incomplete_count = 0
         total_points = 0
         total_games_won = 0
         total_games_lost = 0
@@ -172,34 +175,64 @@ class PlayerStatsService:
                 continue
 
             results_by_ladder[r.ladder_id].append(r)
-            is_win = r.result == 9
+            my_games = int(r.result or 0)
+            default_opp_games = 0 if my_games == 9 else 9
+            opp_games, opp_reason = mirror_map.get(
+                (r.ladder_id, r.opponent_id), (default_opp_games, None)
+            )
+            reason = r.incomplete_reason or opp_reason
 
-            if is_win:
-                my_games = 9
-                opp_games = mirror_score_map.get((r.ladder_id, r.opponent_id), 0)
+            is_incomplete_time = (
+                (my_games < 9 and opp_games < 9)
+                or reason == Result.IncompleteReason.TIME
+            )
+            is_injury = (
+                reason == Result.IncompleteReason.INJURY
+                and (my_games == 9 or opp_games == 9)
+            )
+            is_win = (my_games == 9) and not is_incomplete_time
+
+            if is_incomplete_time:
+                pts = my_games + 1
+                incomplete_count += 1
+                outcome_code = "I"
+                score_display = f"{my_games}\u2013{opp_games} (Inc.)"
+            elif is_win:
                 pts = 12
                 won_count += 1
+                outcome_code = "W"
+                score_display = (
+                    f"{my_games}\u2013{opp_games} (Ret.)"
+                    if is_injury
+                    else f"{my_games}\u2013{opp_games}"
+                )
                 current_win_streak += 1
                 if current_win_streak > longest_win_streak:
                     longest_win_streak = current_win_streak
                 win_loser_scores.append(opp_games)
 
-                if opp_games == 0:
-                    bagels_won += 1
-                if opp_games <= 2:
-                    dominant_wins += 1
-                if opp_games >= 7:
-                    clutch_played += 1
-                    clutch_won += 1
+                if not is_injury:
+                    if opp_games == 0:
+                        bagels_won += 1
+                    if opp_games <= 2:
+                        dominant_wins += 1
+                    if opp_games >= 7:
+                        clutch_played += 1
+                        clutch_won += 1
             else:
-                my_games = int(r.result or 0)
-                opp_games = 9
                 pts = my_games + 1
                 current_win_streak = 0
                 loss_player_scores.append(my_games)
-
-                if my_games >= 7:
-                    clutch_played += 1
+                if is_injury:
+                    retired_count += 1
+                    outcome_code = "R"
+                    score_display = f"{my_games}\u2013{opp_games} (Ret.)"
+                else:
+                    lost_count += 1
+                    outcome_code = "L"
+                    score_display = f"{my_games}\u2013{opp_games}"
+                    if my_games >= 7:
+                        clutch_played += 1
 
             total_points += pts
             total_games_won += my_games
@@ -220,23 +253,32 @@ class PlayerStatsService:
                     "times_played": 0,
                     "won": 0,
                     "lost": 0,
+                    "retired": 0,
+                    "incomplete": 0,
                     "last_played": r.date_added,
                 }
                 h2h_by_opponent[opp_id] = h_rec
 
             h_rec["times_played"] += 1
-            if is_win:
+            if is_incomplete_time:
+                h_rec["incomplete"] += 1
+            elif is_win:
                 h_rec["won"] += 1
             else:
                 h_rec["lost"] += 1
+                if is_injury:
+                    h_rec["retired"] += 1
             if r.date_added and (h_rec["last_played"] is None or r.date_added > h_rec["last_played"]):
                 h_rec["last_played"] = r.date_added
 
             recent_matches.append({
                 "won": is_win,
+                "outcome_code": outcome_code,
+                "is_incomplete": is_incomplete_time,
+                "is_injury": is_injury,
                 "my_games": my_games,
                 "opp_games": opp_games,
-                "score_display": f"{my_games}\u2013{opp_games}",
+                "score_display": score_display,
                 "opponent_id": opp_id,
                 "opponent_name": opp_name,
                 "date_added": r.date_added,
@@ -245,7 +287,9 @@ class PlayerStatsService:
 
         played_total = len(recent_matches)
         player_stats["won"] = won_count
-        player_stats["lost"] = max(0, played_total - won_count)
+        player_stats["lost"] = lost_count
+        player_stats["retired"] = retired_count
+        player_stats["incomplete"] = incomplete_count
         player_stats["total_points"] = total_points
         player_stats["unique_opponents"] = len(h2h_by_opponent)
 
@@ -383,77 +427,170 @@ class PlayerStatsService:
     ) -> dict:
         """
         Computes detailed head-to-head stats and match history between two players.
+        Handles completed matches, injury retirements, and incomplete (time/conditions) matches.
         """
-        results1 = Result.objects.filter(
-            player=player, opponent=opponent, result__lt=9
-        ).select_related("ladder__season", "player", "opponent")
-        results2 = Result.objects.filter(
-            player=opponent, opponent=player, result__lt=9
-        ).select_related("ladder__season", "player", "opponent")
-
-        results_qs = (results1 | results2).order_by(
-            "-date_added", "-ladder__season__end_date", "-id"
+        all_rows = list(
+            Result.objects.filter(
+                Q(player=player, opponent=opponent) | Q(player=opponent, opponent=player),
+                ladder__season__is_draft=False,
+            )
+            .select_related("ladder__season", "player", "opponent")
+            .order_by("-date_added", "-ladder__season__end_date", "-id")
         )
-        results_list = list(results_qs)
+
+        # Group by ladder_id while preserving chronological order
+        by_ladder = {}
+        ladder_order = []
+        for r in all_rows:
+            if r.ladder_id not in by_ladder:
+                by_ladder[r.ladder_id] = []
+                ladder_order.append(r.ladder_id)
+            by_ladder[r.ladder_id].append(r)
 
         won = 0
         lost = 0
+        retired = 0
+        incomplete = 0
         player_games = 0
         opponent_games = 0
         close_matches = 0
         matches = []
+        results_list = []
 
         player_name = player.full_name(authenticated=authenticated)
         opponent_name = opponent.full_name(authenticated=authenticated)
 
-        for r in results_list:
-            # In a result__lt=9 row, r.opponent is the winner (9) and r.player is the loser (r.result)
-            losing_score = int(r.result or 0)
-            player_won = r.opponent_id == player.id
+        for ladder_id in ladder_order:
+            rows = by_ladder[ladder_id]
+            p_row = next((r for r in rows if r.player_id == player.id), None)
+            o_row = next((r for r in rows if r.player_id == opponent.id), None)
 
-            if player_won:
-                won += 1
-                p_score = 9
-                o_score = losing_score
+            if p_row is not None and o_row is not None:
+                p_score = int(p_row.result or 0)
+                o_score = int(o_row.result or 0)
+                reason = p_row.incomplete_reason or o_row.incomplete_reason
+                r_ref = o_row if p_score == 9 else p_row
+            elif p_row is not None:
+                p_score = int(p_row.result or 0)
+                o_score = 9 if p_score < 9 else 0
+                reason = p_row.incomplete_reason
+                r_ref = p_row
             else:
-                lost += 1
-                p_score = losing_score
-                o_score = 9
+                o_score = int(o_row.result or 0)
+                p_score = 9 if o_score < 9 else 0
+                reason = o_row.incomplete_reason
+                r_ref = o_row
+
+            results_list.append(r_ref)
+
+            is_incomplete_time = (
+                (p_score < 9 and o_score < 9)
+                or reason == Result.IncompleteReason.TIME
+            )
+            is_injury = (
+                reason == Result.IncompleteReason.INJURY
+                and (p_score == 9 or o_score == 9)
+            )
 
             player_games += p_score
             opponent_games += o_score
-            if losing_score >= 7:
-                close_matches += 1
+            season = r_ref.ladder.season
 
-            season = r.ladder.season
-            matches.append({
-                "result_obj": r,
-                "date_added": r.date_added,
-                "year": season.start_date.year,
-                "season_round": season.season_round,
-                "division": r.ladder.division,
-                "ladder_full": f"{season.start_date.year} Round {season.season_round} \u00b7 Division {r.ladder.division}",
-                "ladder_short": f"{season.start_date.year} R{season.season_round} \u00b7 Div {r.ladder.division}",
-                "player_won": player_won,
-                "winner_id": r.opponent_id,
-                "winner_name": r.opponent.full_name(authenticated=authenticated),
-                "loser_id": r.player_id,
-                "loser_name": r.player.full_name(authenticated=authenticated),
-                "losing_score": losing_score,
-                "player_score": p_score,
-                "opponent_score": o_score,
-                "score_display": f"9\u2013{losing_score}",
-                "is_close": losing_score >= 7,
-            })
+            if is_incomplete_time:
+                incomplete += 1
+                player_won = False
+                if p_score >= o_score:
+                    first_id, first_name, first_score = player.id, player_name, p_score
+                    second_id, second_name, second_score = opponent.id, opponent_name, o_score
+                else:
+                    first_id, first_name, first_score = opponent.id, opponent_name, o_score
+                    second_id, second_name, second_score = player.id, player_name, p_score
 
-        played = won + lost
-        player_win_pct = round((won / played) * 100) if played > 0 else 0
-        opponent_win_pct = (100 - player_win_pct) if played > 0 else 0
+                matches.append({
+                    "result_obj": r_ref,
+                    "date_added": r_ref.date_added,
+                    "year": season.start_date.year,
+                    "season_round": season.season_round,
+                    "division": r_ref.ladder.division,
+                    "ladder_full": f"{season.start_date.year} Round {season.season_round} \u00b7 Division {r_ref.ladder.division}",
+                    "ladder_short": f"{season.start_date.year} R{season.season_round} \u00b7 Div {r_ref.ladder.division}",
+                    "player_won": False,
+                    "is_incomplete": True,
+                    "is_injury": False,
+                    "winner_badge": "I",
+                    "loser_badge": "I",
+                    "winner_id": first_id,
+                    "winner_name": first_name,
+                    "loser_id": second_id,
+                    "loser_name": second_name,
+                    "winner_score": first_score,
+                    "losing_score": second_score,
+                    "player_score": p_score,
+                    "opponent_score": o_score,
+                    "score_display": f"{first_score} \u2013 {second_score} (Inc.)",
+                    "is_close": False,
+                })
+            else:
+                player_won = (p_score == 9)
+                if player_won:
+                    won += 1
+                    losing_score = o_score
+                    win_id, win_name = player.id, player_name
+                    lose_id, lose_name = opponent.id, opponent_name
+                else:
+                    lost += 1
+                    if is_injury:
+                        retired += 1
+                    losing_score = p_score
+                    win_id, win_name = opponent.id, opponent_name
+                    lose_id, lose_name = player.id, player_name
+
+                is_close = (not is_injury) and (losing_score >= 7)
+                if is_close:
+                    close_matches += 1
+
+                score_display = (
+                    f"9 \u2013 {losing_score} (Ret.)"
+                    if is_injury
+                    else f"9 \u2013 {losing_score}"
+                )
+
+                matches.append({
+                    "result_obj": r_ref,
+                    "date_added": r_ref.date_added,
+                    "year": season.start_date.year,
+                    "season_round": season.season_round,
+                    "division": r_ref.ladder.division,
+                    "ladder_full": f"{season.start_date.year} Round {season.season_round} \u00b7 Division {r_ref.ladder.division}",
+                    "ladder_short": f"{season.start_date.year} R{season.season_round} \u00b7 Div {r_ref.ladder.division}",
+                    "player_won": player_won,
+                    "is_incomplete": False,
+                    "is_injury": is_injury,
+                    "winner_badge": "W",
+                    "loser_badge": "R" if is_injury else "L",
+                    "winner_id": win_id,
+                    "winner_name": win_name,
+                    "loser_id": lose_id,
+                    "loser_name": lose_name,
+                    "winner_score": 9,
+                    "losing_score": losing_score,
+                    "player_score": p_score,
+                    "opponent_score": o_score,
+                    "score_display": score_display,
+                    "is_close": is_close,
+                })
+
+        played = won + lost + incomplete
+        decided = won + lost
+        player_win_pct = round((won / decided) * 100) if decided > 0 else 0
+        opponent_win_pct = (100 - player_win_pct) if decided > 0 else 0
 
         stats = {
             "played": played,
             "won": won,
             "lost": lost,
+            "retired": retired,
+            "incomplete": incomplete,
             "player_win_pct": player_win_pct,
             "opponent_win_pct": opponent_win_pct,
             "player_games": player_games,

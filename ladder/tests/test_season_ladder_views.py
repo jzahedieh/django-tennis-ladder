@@ -73,7 +73,6 @@ class SeasonAndLadderViewsTest(TestCase):
             opponent=cls.player2,
             result=9,
             date_added=today - datetime.timedelta(days=5),
-            inaccurate_flag=False,
         )
         Result.objects.create(
             ladder=cls.ladder_c_div1,
@@ -81,7 +80,6 @@ class SeasonAndLadderViewsTest(TestCase):
             opponent=cls.player1,
             result=5,
             date_added=today - datetime.timedelta(days=5),
-            inaccurate_flag=False,
         )
 
         # Play 1 match in old season Div 1 (Bob 9 - 7 Alice)
@@ -91,7 +89,6 @@ class SeasonAndLadderViewsTest(TestCase):
             opponent=cls.player1,
             result=9,
             date_added=datetime.date(2024, 2, 1),
-            inaccurate_flag=False,
         )
         Result.objects.create(
             ladder=cls.ladder_o_div1,
@@ -99,7 +96,6 @@ class SeasonAndLadderViewsTest(TestCase):
             opponent=cls.player2,
             result=7,
             date_added=datetime.date(2024, 2, 1),
-            inaccurate_flag=False,
         )
 
     def test_list_rounds_bulk_stats_and_template(self):
@@ -247,7 +243,6 @@ class SeasonAndLadderViewsTest(TestCase):
             opponent=self.player2,
             result=9,
             date_added=today,
-            inaccurate_flag=False,
         )
         Result.objects.create(
             ladder=self.ladder_c_div1,
@@ -255,7 +250,6 @@ class SeasonAndLadderViewsTest(TestCase):
             opponent=self.player3,
             result=8,
             date_added=today,
-            inaccurate_flag=False,
         )
 
         url = reverse(
@@ -345,4 +339,117 @@ class SeasonAndLadderViewsTest(TestCase):
         response = self.client.get(reverse('index'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, f'href="{admin_url}"')
+
+    def test_result_entry_incomplete_time_and_injury_workflows(self):
+        self.client.login(username='player1_user', password='password123')
+
+        # 1. Enter an incomplete match due to time (Alice 6 - 6 Charlie)
+        resp = self.client.post(
+            reverse('result_entry_add'),
+            {
+                'player': self.player1.id,
+                'opponent': self.player3.id,
+                'outcome': 'incomplete',
+                'incomplete_reason': 'time',
+                'result': 6,
+                'opponent_result': 6,
+            },
+            follow=True,
+        )
+        self.assertEqual(resp.status_code, 200)
+
+        r_alice = Result.objects.get(ladder=self.ladder_c_div1, player=self.player1, opponent=self.player3)
+        r_charlie = Result.objects.get(ladder=self.ladder_c_div1, player=self.player3, opponent=self.player1)
+        self.assertEqual(r_alice.result, 6)
+        self.assertEqual(r_charlie.result, 6)
+        self.assertEqual(r_alice.incomplete_reason, Result.IncompleteReason.TIME)
+        self.assertEqual(r_charlie.incomplete_reason, Result.IncompleteReason.TIME)
+
+        # Verify result_entry page lists the incomplete match with 'I' badge and '6–6 (Inc.)'
+        entry_resp = self.client.get(reverse('result_entry'))
+        self.assertEqual(entry_resp.status_code, 200)
+        self.assertContains(entry_resp, '6–6 (Inc.)')
+        self.assertContains(entry_resp, 'title="Incomplete (Ran out of time / conditions)">I</span>')
+
+        # Verify division page Latest Results shows '6 – 6 (Inc.)'
+        ladder_url = reverse(
+            'ladder',
+            args=(self.season_current.start_date.year, self.season_current.season_round, 1),
+        )
+        ladder_resp = self.client.get(ladder_url)
+        self.assertContains(ladder_resp, '6 – 6 (Inc.)')
+
+        # 2. Check edit GET page shows personalized labels for incomplete time match
+        pair_key = f"{min(self.player1.id, self.player3.id)}-{max(self.player1.id, self.player3.id)}"
+        edit_get_resp = self.client.get(reverse('result_entry_edit', args=(pair_key,)))
+        self.assertEqual(edit_get_resp.status_code, 200)
+        self.assertEqual(edit_get_resp.context['me'], self.player1)
+        self.assertContains(edit_get_resp, '2. Your Score')
+        self.assertContains(edit_get_resp, "(Games Won)")
+        self.assertContains(edit_get_resp, "3. Charlie's Score")
+        self.assertContains(edit_get_resp, 'Select 0–8')
+
+        # Edit that match to an Injury retirement where Charlie retired at 6-6 (Alice gets 9)
+        edit_resp = self.client.post(
+            reverse('result_entry_edit', args=(pair_key,)),
+            {
+                'match_mode': 'injury',
+                'winner_id': self.player1.id,
+                'losing_score': 6,
+                'confirm': 'on',
+            },
+            follow=True,
+        )
+        self.assertEqual(edit_resp.status_code, 200)
+
+        # Verify edit GET as Alice (winner) for injury match
+        edit_get_injury_resp = self.client.get(reverse('result_entry_edit', args=(pair_key,)))
+        self.assertContains(edit_get_injury_resp, 'Alice Smith (You)')
+        self.assertContains(edit_get_injury_resp, "3. Charlie's Score at Retirement")
+        self.assertContains(edit_get_injury_resp, 'You (Winner)')
+
+        # Verify edit GET as Charlie (injured/loser) for injury match
+        user3 = User.objects.create_user(username='player3_user', email='p3@example.com', password='password123')
+        self.player3.user = user3
+        self.player3.save()
+        self.client.force_login(user3)
+        edit_get_charlie_resp = self.client.get(reverse('result_entry_edit', args=(pair_key,)))
+        self.assertContains(edit_get_charlie_resp, 'Charlie Brown (You)')
+        self.assertContains(edit_get_charlie_resp, '3. Your Score at Retirement')
+        self.assertContains(edit_get_charlie_resp, 'You (Retired)')
+        self.client.force_login(self.user)
+
+        r_alice = Result.objects.get(ladder=self.ladder_c_div1, player=self.player1, opponent=self.player3)
+        r_charlie = Result.objects.get(ladder=self.ladder_c_div1, player=self.player3, opponent=self.player1)
+        self.assertEqual(r_alice.result, 9)
+        self.assertEqual(r_charlie.result, 6)
+        self.assertEqual(r_alice.incomplete_reason, Result.IncompleteReason.INJURY)
+        self.assertEqual(r_charlie.incomplete_reason, Result.IncompleteReason.INJURY)
+        self.assertContains(edit_resp, '9 – 6 (Ret.)')
+
+        # 3. Direct entry of Injury retirement where user ('me') retired at 4 games
+        Result.objects.filter(ladder=self.ladder_c_div1, player=self.player1, opponent=self.player3).delete()
+        Result.objects.filter(ladder=self.ladder_c_div1, player=self.player3, opponent=self.player1).delete()
+
+        self.client.post(
+            reverse('result_entry_add'),
+            {
+                'player': self.player1.id,
+                'opponent': self.player3.id,
+                'outcome': 'incomplete',
+                'incomplete_reason': 'injury',
+                'injured_player': 'me',
+                'result': 4,
+            },
+        )
+        r_alice_ret = Result.objects.get(ladder=self.ladder_c_div1, player=self.player1, opponent=self.player3)
+        r_charlie_win = Result.objects.get(ladder=self.ladder_c_div1, player=self.player3, opponent=self.player1)
+        self.assertEqual(r_alice_ret.result, 4)
+        self.assertEqual(r_charlie_win.result, 9)
+        self.assertEqual(r_alice_ret.incomplete_reason, Result.IncompleteReason.INJURY)
+
+        entry_resp_ret = self.client.get(reverse('result_entry'))
+        self.assertContains(entry_resp_ret, '4–9 (Ret.)')
+        self.assertContains(entry_resp_ret, 'title="Retired (Injury)">R</span>')
+
 

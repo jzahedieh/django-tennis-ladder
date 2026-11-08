@@ -68,12 +68,47 @@ class AddResultForm(forms.ModelForm):
             return self.cleaned_data
 
 class AddEntryForm(forms.ModelForm):
+    OUTCOME_CHOICES = [
+        ('won', 'I Won'),
+        ('lost', 'I Lost'),
+        ('incomplete', 'Incomplete'),
+    ]
+    INCOMPLETE_REASON_CHOICES = [
+        ('', '---------'),
+        (Result.IncompleteReason.TIME, 'Ran out of time / conditions'),
+        (Result.IncompleteReason.INJURY, 'Injury / retirement'),
+    ]
+    INJURED_PLAYER_CHOICES = [
+        ('', '---------'),
+        ('opponent', 'Opponent'),
+        ('me', 'Me'),
+    ]
+
     # add NumberInput with min/max so the template doesn't need to modify it
     result = forms.IntegerField(
         min_value=0, max_value=8, label='Losing Result',
         widget=forms.NumberInput(attrs={'min': 0, 'max': 8, 'class': 'form-control'})
     )
-    winner = forms.BooleanField(label='Did you win?', required=False, widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}))
+    opponent_result = forms.IntegerField(
+        min_value=0, max_value=8, required=False, label="Opponent's Score",
+        widget=forms.NumberInput(attrs={'min': 0, 'max': 8, 'class': 'form-control'})
+    )
+    winner = forms.BooleanField(
+        label='Did you win?', required=False,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
+    )
+    outcome = forms.ChoiceField(
+        choices=OUTCOME_CHOICES, required=False,
+        widget=forms.HiddenInput()
+    )
+    incomplete_reason = forms.ChoiceField(
+        choices=INCOMPLETE_REASON_CHOICES, required=False,
+        widget=forms.HiddenInput()
+    )
+    injured_player = forms.ChoiceField(
+        choices=INJURED_PLAYER_CHOICES, required=False,
+        widget=forms.HiddenInput()
+    )
 
     def __init__(self, ladder, user, *args, **kwargs):
         super(AddEntryForm, self).__init__(*args, **kwargs)
@@ -86,7 +121,7 @@ class AddEntryForm(forms.ModelForm):
 
     class Meta(object):
         model = Result
-        exclude = ['date_added', 'ladder', 'inaccurate_flag']
+        exclude = ['date_added', 'ladder', 'entered_by']
         widgets = {'player': forms.HiddenInput()}
 
     @staticmethod
@@ -94,11 +129,41 @@ class AddEntryForm(forms.ModelForm):
         return player.first_name + " " + player.last_name
 
     def clean(self):
+        cleaned_data = super(AddEntryForm, self).clean()
         try:
-            player = self.cleaned_data['player']
-            opponent = self.cleaned_data['opponent']
+            player = cleaned_data['player']
+            opponent = cleaned_data['opponent']
         except KeyError:
-            return self.cleaned_data
+            return cleaned_data
         if player == opponent:
             raise forms.ValidationError("Invalid Result: Player and Opponent cannot be the same person.", 'player_equals_opponent')
-        return self.cleaned_data
+
+        outcome = cleaned_data.get('outcome')
+        if not outcome:
+            outcome = 'won' if cleaned_data.get('winner') else 'lost'
+        cleaned_data['outcome'] = outcome
+
+        if outcome == 'incomplete':
+            reason = cleaned_data.get('incomplete_reason')
+            if reason not in (Result.IncompleteReason.TIME, Result.IncompleteReason.INJURY):
+                raise forms.ValidationError(
+                    "Please select a reason for the incomplete match.",
+                    'missing_incomplete_reason',
+                )
+            if reason == Result.IncompleteReason.TIME:
+                if cleaned_data.get('opponent_result') is None:
+                    raise forms.ValidationError(
+                        "Please select your opponent's score for an incomplete match.",
+                        'missing_opponent_result',
+                    )
+            elif reason == Result.IncompleteReason.INJURY:
+                injured = cleaned_data.get('injured_player')
+                if injured not in ('opponent', 'me'):
+                    raise forms.ValidationError(
+                        "Please select who retired due to injury.",
+                        'missing_injured_player',
+                    )
+        else:
+            cleaned_data['incomplete_reason'] = None
+
+        return cleaned_data

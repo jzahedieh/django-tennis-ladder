@@ -94,14 +94,7 @@ document.addEventListener('DOMContentLoaded', function () {
                                                class="d-block w-100 h-100 text-decoration-none text-reset">
                                                 {% for result in results_dict|getkey:league.player.id %}
                                                     {% if league.player.id == result.player.id and opponent.player.id == result.opponent.id %}
-                                                        {% if result.inaccurate_flag %}
-                                                            <span style="color:red; font-weight: bold"> {{ result.result }} <span class="astrix">*</span></span>
-                                                            <script type="text/javascript">
-                                                                $('.score_error').show();
-                                                            </script>
-                                                        {% else %}
-                                                            {{ result.result }}
-                                                        {% endif %}
+                                                        {{ result.result }}
                                                     {% endif %}
                                                 {% endfor %}
                                             </a>
@@ -159,7 +152,7 @@ document.addEventListener('DOMContentLoaded', function () {
                                 {% if division_stats.leaders %}
                                     <div class="fw-bold">
                                         {% for ldr in division_stats.leaders %}
-                                            <a href="{% url 'player_history' ldr.player_id %}" class="text-decoration-none text-dark">{{ ldr.player_name }}</a>{% if division_stats.leaders|length == 1 %} <span class="text-muted fw-normal small ms-1">({{ ldr.won }}W &ndash; {{ ldr.lost }}L)</span>{% endif %}{% if not forloop.last %}, {% endif %}
+                                            <a href="{% url 'player_history' ldr.player_id %}" class="text-decoration-none text-dark">{{ ldr.player_name }}</a>{% if division_stats.leaders|length == 1 %} <span class="text-muted fw-normal small ms-1">({{ ldr.won }}W &ndash; {{ ldr.lost }}L{% if ldr.retired %} &ndash; {{ ldr.retired }}R{% endif %}{% if ldr.incomplete %} &ndash; {{ ldr.incomplete }}I{% endif %})</span>{% endif %}{% if not forloop.last %}, {% endif %}
                                         {% endfor %}
                                     </div>
                                 {% else %}
@@ -223,8 +216,8 @@ document.addEventListener('DOMContentLoaded', function () {
                                 <div class="me-2 text-truncate">
                                     <div class="text-truncate mb-1">
                                         <a href="{% url 'player_history' match.winner_id %}" class="fw-bold text-decoration-none text-dark">{{ match.winner_name }}</a>
-                                        <span class="text-muted small mx-1">def.</span>
-                                        <a href="{% url 'player_history' match.loser_id %}" class="text-decoration-none text-muted">{{ match.loser_name }}</a>
+                                        <span class="text-muted small mx-1">{% if match.is_incomplete %}vs{% else %}def.{% endif %}</span>
+                                        <a href="{% url 'player_history' match.loser_id %}" class="text-decoration-none {% if match.is_incomplete %}fw-bold text-dark{% else %}text-muted{% endif %}">{{ match.loser_name }}</a>
                                     </div>
                                     <div class="small text-muted" title="{{ match.date_full }}">
                                         {{ match.date_display }}
@@ -234,7 +227,7 @@ document.addEventListener('DOMContentLoaded', function () {
                                     <a href="{{ match.h2h_url }}"
                                        data-h2h-url="{{ match.h2h_url }}"
                                        data-h2h-title="{{ match.h2h_title }}"
-                                       class="badge bg-primary-subtle text-primary border border-primary-subtle text-decoration-none fs-6 px-2 py-1"
+                                       class="badge {% if match.is_incomplete %}bg-secondary-subtle text-secondary-emphasis border{% else %}bg-primary-subtle text-primary border border-primary-subtle{% endif %} text-decoration-none fs-6 px-2 py-1"
                                        title="View Head-to-Head match history">
                                         {{ match.score_display }}
                                     </a>

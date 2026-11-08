@@ -57,31 +57,31 @@ class HomepageRecentResultsTest(TestCase):
         # Match 1: Today, Alice beats Bob 9-4 in Div 1
         Result.objects.create(
             ladder=cls.ladder_c1, player=cls.player1, opponent=cls.player2,
-            result=9, date_added=today, inaccurate_flag=False,
+            result=9, date_added=today,
         )
         Result.objects.create(
             ladder=cls.ladder_c1, player=cls.player2, opponent=cls.player1,
-            result=4, date_added=today, inaccurate_flag=False,
+            result=4, date_added=today,
         )
 
         # Match 2: Yesterday, Charlie beats Diana 9-7 in Div 2
         Result.objects.create(
             ladder=cls.ladder_c2, player=cls.player3, opponent=cls.player4,
-            result=9, date_added=today - datetime.timedelta(days=1), inaccurate_flag=False,
+            result=9, date_added=today - datetime.timedelta(days=1),
         )
         Result.objects.create(
             ladder=cls.ladder_c2, player=cls.player4, opponent=cls.player3,
-            result=7, date_added=today - datetime.timedelta(days=1), inaccurate_flag=False,
+            result=7, date_added=today - datetime.timedelta(days=1),
         )
 
         # Match 3: In OLD season, Bob beats Alice 9-6
         Result.objects.create(
             ladder=cls.ladder_old, player=cls.player2, opponent=cls.player1,
-            result=9, date_added=cls.season_old.start_date + datetime.timedelta(days=5), inaccurate_flag=False,
+            result=9, date_added=cls.season_old.start_date + datetime.timedelta(days=5),
         )
         Result.objects.create(
             ladder=cls.ladder_old, player=cls.player1, opponent=cls.player2,
-            result=6, date_added=cls.season_old.start_date + datetime.timedelta(days=5), inaccurate_flag=False,
+            result=6, date_added=cls.season_old.start_date + datetime.timedelta(days=5),
         )
 
     def test_season_get_recent_results_normalization_and_relative_dates(self):

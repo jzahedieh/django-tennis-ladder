@@ -181,6 +181,8 @@ class ClubStatsService:
             .annotate(
                 played=Count("id"),
                 won=Count("id", filter=Q(result=9)),
+                retired=Count("id", filter=Q(result__lt=9, incomplete_reason=Result.IncompleteReason.INJURY)),
+                incomplete=Count("id", filter=Q(result__lt=9, incomplete_reason=Result.IncompleteReason.TIME)),
                 total_points=Sum(points_expr),
             )
         )
@@ -194,6 +196,9 @@ class ClubStatsService:
             if played <= 0:
                 continue
             won = int(row["won"] or 0)
+            retired = int(row["retired"] or 0)
+            incomplete = int(row["incomplete"] or 0)
+            lost = max(0, played - won - retired - incomplete)
             pts = float(row["total_points"] or 0.0)
             win_rate = (won / played) * 100.0
             avg_points = pts / played
@@ -211,7 +216,9 @@ class ClubStatsService:
                 "player_name": name,
                 "played": played,
                 "won": won,
-                "lost": played - won,
+                "lost": lost,
+                "retired": retired,
+                "incomplete": incomplete,
                 "total_points": int(round(pts)),
                 "win_rate": win_rate,
                 "win_rate_display": f"{win_rate:.1f}%",
