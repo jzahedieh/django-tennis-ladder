@@ -311,12 +311,34 @@ class Ladder(models.Model):
                 if pair_key in exclude_keys or pair_key in out:
                     continue
 
+                reason = result.incomplete_reason or opponent.incomplete_reason
+                is_incomplete_time = (
+                    (result.result < 9 and opponent.result < 9)
+                    or reason == Result.IncompleteReason.TIME
+                )
+                is_injury = (
+                    reason == Result.IncompleteReason.INJURY
+                    and (result.result == 9 or opponent.result == 9)
+                )
+
+                # Consistent ordering: winner first if completed/injury; otherwise keep result as player
+                if (result.result == 9 or opponent.result == 9) and opponent.result == 9:
+                    p1, p1_score = opponent.player, opponent.result
+                    p2, p2_score = result.player, result.result
+                else:
+                    p1, p1_score = result.player, result.result
+                    p2, p2_score = opponent.player, opponent.result
+
                 out[pair_key] = {
-                    'player': result.player,
-                    'player_result': result.result,
-                    'opponent_result': opponent.result,
-                    'opponent': opponent.player,
+                    'player': p1,
+                    'player_result': p1_score,
+                    'opponent_result': p2_score,
+                    'opponent': p2,
                     'date_added': result.date_added,
+                    'is_incomplete': is_incomplete_time,
+                    'is_injury': is_injury,
+                    'incomplete_reason': reason,
+                    'status_label': '(Inc.)' if is_incomplete_time else ('(Ret.)' if is_injury else ''),
                 }
 
                 if max_items is not None and len(out) >= max_items:

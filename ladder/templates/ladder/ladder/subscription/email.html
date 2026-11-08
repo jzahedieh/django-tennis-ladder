@@ -371,6 +371,11 @@
                                             <strong>{% get_player_name value.player user %}</strong>
                                             <span style="color:#999;margin:0 6px;">{{ value.player_result }}&nbsp;vs&nbsp;{{ value.opponent_result }}</span>
                                             <strong>{% get_player_name value.opponent user %}</strong>
+                                            {% if value.is_incomplete %}
+                                              <span style="display:inline-block;padding:1px 6px;font-size:11px;border-radius:4px;background:#e2e3e5;color:#41464b;margin-left:6px;font-weight:600;">(Inc.)</span>
+                                            {% elif value.is_injury %}
+                                              <span style="display:inline-block;padding:1px 6px;font-size:11px;border-radius:4px;background:#fff3cd;color:#664d03;margin-left:6px;font-weight:600;">(Ret.)</span>
+                                            {% endif %}
                                             <div style="font-size:12px;color:#999;margin-top:4px;">{{ value.date_added }}</div>
                                           </td>
                                         </tr>
@@ -406,7 +411,14 @@
                                             <td style="padding:4px 6px;text-align:center;">{{ value.player_result }}</td>
                                             <td style="padding:4px 6px;text-align:center;">vs</td>
                                             <td style="padding:4px 6px;text-align:center;">{{ value.opponent_result }}</td>
-                                            <td style="padding:4px 6px;">{% get_player_name value.opponent user %}</td>
+                                            <td style="padding:4px 6px;">
+                                              {% get_player_name value.opponent user %}
+                                              {% if value.is_incomplete %}
+                                                <span style="display:inline-block;padding:1px 5px;font-size:10px;border-radius:3px;background:#e2e3e5;color:#41464b;margin-left:4px;font-weight:600;">(Inc.)</span>
+                                              {% elif value.is_injury %}
+                                                <span style="display:inline-block;padding:1px 5px;font-size:10px;border-radius:3px;background:#fff3cd;color:#664d03;margin-left:4px;font-weight:600;">(Ret.)</span>
+                                              {% endif %}
+                                            </td>
                                             <td style="padding:4px 6px;color:#999;">{{ value.date_added }}</td>
                                           </tr>
                                         {% endfor %}

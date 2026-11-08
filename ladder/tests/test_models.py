@@ -86,3 +86,56 @@ class SeasonModelTest(TestCase):
 
         # player count assertion
         self.assertEqual(stats['player_count'], player_count)
+
+
+class LadderModelTest(TestCase):
+    def test_get_email_latest_and_template_rendering(self):
+        from django.contrib.auth.models import User
+        from django.template.loader import get_template
+        from django.utils.timezone import now
+        from ladder.models import Ladder
+
+        today = now().date()
+        season = Season.objects.create(name='Test 2026', start_date=today, end_date=today, season_round=1, is_draft=False)
+        ladder = Ladder.objects.create(season=season, division=1)
+        user = User.objects.create_user(username='sub_user', email='sub@example.com')
+        p1 = Player.objects.create(first_name='Alpha', last_name='One', user=user)
+        p2 = Player.objects.create(first_name='Beta', last_name='Two')
+        p3 = Player.objects.create(first_name='Gamma', last_name='Three')
+
+        # 1. Incomplete (Time) match: Alpha 5 - 5 Beta
+        t_now = now()
+        Result.objects.create(ladder=ladder, player=p1, opponent=p2, result=5, incomplete_reason=Result.IncompleteReason.TIME, date_added=t_now)
+        Result.objects.create(ladder=ladder, player=p2, opponent=p1, result=5, incomplete_reason=Result.IncompleteReason.TIME, date_added=t_now)
+
+        # 2. Injury retirement match: Alpha 9 - 4 Gamma (Gamma retired)
+        Result.objects.create(ladder=ladder, player=p1, opponent=p3, result=9, incomplete_reason=Result.IncompleteReason.INJURY, date_added=t_now)
+        Result.objects.create(ladder=ladder, player=p3, opponent=p1, result=4, incomplete_reason=Result.IncompleteReason.INJURY, date_added=t_now)
+
+        buckets = ladder.get_email_latest(days=1, limit=5)
+        new_items = buckets['new']
+        self.assertEqual(len(new_items), 2)
+
+        # Check incomplete time match metadata
+        time_item = next(item for item in new_items if item['opponent'] == p2 or item['player'] == p2)
+        self.assertTrue(time_item['is_incomplete'])
+        self.assertFalse(time_item['is_injury'])
+        self.assertEqual(time_item['status_label'], '(Inc.)')
+
+        # Check injury retirement match metadata
+        injury_item = next(item for item in new_items if item['opponent'] == p3 or item['player'] == p3)
+        self.assertTrue(injury_item['is_injury'])
+        self.assertFalse(injury_item['is_incomplete'])
+        self.assertEqual(injury_item['status_label'], '(Ret.)')
+        self.assertEqual(injury_item['player_result'], 9)  # Winner ordered first
+
+        # Check template rendering
+        rendered = get_template("ladder/ladder/subscription/email.html").render({
+            'ladder': ladder,
+            'user': user,
+            'unsubscribe_url': 'https://highgate-ladder.co.uk/unsubscribe/token123/',
+            'protocol': 'https',
+            'domain': 'highgate-ladder.co.uk'
+        })
+        self.assertIn('(Inc.)', rendered)
+        self.assertIn('(Ret.)', rendered)
