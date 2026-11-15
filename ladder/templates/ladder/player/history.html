@@ -461,8 +461,8 @@
                         total_players: 'bar'
                     },
                     axes: {
-                        centile: 'y',
-                        total_players: 'y2'
+                        centile: 'y2',
+                        total_players: 'y'
                     },
                     names: {
                         centile: 'Centile (%)',
@@ -489,6 +489,15 @@
                         }
                     },
                     y: {
+                        label: 'Total Players',
+                        min: 0,
+                        padding: { top: 20, bottom: 0 },
+                        tick: {
+                            format: d3.format('d')
+                        }
+                    },
+                    y2: {
+                        show: true,
                         label: 'Centile (%)',
                         min: 0,
                         max: 100,
@@ -496,15 +505,6 @@
                         tick: {
                             values: [0, 20, 40, 60, 80, 100],
                             format: function (d) { return Math.round(d) + '%'; }
-                        }
-                    },
-                    y2: {
-                        show: true,
-                        label: 'Total Players',
-                        min: 0,
-                        padding: { top: 20, bottom: 0 },
-                        tick: {
-                            format: d3.format('d')
                         }
                     }
                 },
