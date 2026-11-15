@@ -411,6 +411,7 @@ class PlayerStatsService:
 
         return {
             "player": player,
+            "player_name": player.full_name(authenticated=authenticated),
             "league_set": league_list,
             "ladder_set": league_list,
             "head": head_list,

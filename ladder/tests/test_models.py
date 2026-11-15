@@ -121,6 +121,8 @@ class LadderModelTest(TestCase):
         self.assertTrue(time_item['is_incomplete'])
         self.assertFalse(time_item['is_injury'])
         self.assertEqual(time_item['status_label'], '(Inc.)')
+        self.assertEqual(time_item['player_name'], 'Alpha One')
+        self.assertEqual(time_item['opponent_name'], 'Beta Two')
 
         # Check injury retirement match metadata
         injury_item = next(item for item in new_items if item['opponent'] == p3 or item['player'] == p3)
@@ -128,6 +130,8 @@ class LadderModelTest(TestCase):
         self.assertFalse(injury_item['is_incomplete'])
         self.assertEqual(injury_item['status_label'], '(Ret.)')
         self.assertEqual(injury_item['player_result'], 9)  # Winner ordered first
+        self.assertEqual(injury_item['player_name'], 'Alpha One')
+        self.assertEqual(injury_item['opponent_name'], 'Gamma Three')
 
         # Check template rendering
         rendered = get_template("ladder/ladder/subscription/email.html").render({
@@ -139,3 +143,6 @@ class LadderModelTest(TestCase):
         })
         self.assertIn('(Inc.)', rendered)
         self.assertIn('(Ret.)', rendered)
+        self.assertIn('Alpha One', rendered)
+        self.assertIn('Beta Two', rendered)
+        self.assertIn('Gamma Three', rendered)

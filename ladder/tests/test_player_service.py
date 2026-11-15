@@ -1,4 +1,5 @@
 import datetime
+from django.contrib.auth.models import User
 from django.test import TestCase
 from django.urls import reverse
 
@@ -66,6 +67,11 @@ class PlayerStatsServiceTest(TestCase):
         insights = ctx["insights"]
         head = ctx["head"]
 
+        self.assertEqual(ctx["player_name"], "Alice A.")
+        self.assertEqual(
+            PlayerStatsService.get_player_profile(self.p1, authenticated=True)["player_name"],
+            "Alice Anderson",
+        )
         self.assertEqual(stats["played"], 2)
         self.assertEqual(stats["won"], 2)
         self.assertEqual(stats["lost"], 0)
@@ -106,17 +112,32 @@ class PlayerStatsServiceTest(TestCase):
         self.assertEqual(resp_full.status_code, 200)
         self.assertContains(resp_full, "<html")
         self.assertContains(resp_full, "h2h-detail-content")
+        self.assertContains(resp_full, "Alice A. vs Bob B.")
+
+        user = User.objects.create_user(username="h2h_viewer", password="password123")
+        self.client.force_login(user)
+        resp_auth = self.client.get(url)
+        self.assertEqual(resp_auth.status_code, 200)
+        self.assertContains(resp_auth, "Alice Anderson vs Bob Brown")
 
     def test_player_history_view_responsive_labels_and_lightbox(self):
         url = reverse("player_history", args=(self.p1.id,))
         resp = self.client.get(url)
         self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "Alice A.")
+        self.assertNotContains(resp, "Alice Anderson")
         # Mobile short label and desktop full label
         self.assertContains(resp, "2026 R1 &middot; Div 1")
         self.assertContains(resp, "2026 Round 1 &middot; Division 1")
         # Lightbox modal container and Won / Played header
         self.assertContains(resp, 'id="h2hLightboxModal"')
         self.assertContains(resp, "Won / Played")
+
+        user = User.objects.create_user(username="history_viewer", password="password123")
+        self.client.force_login(user)
+        auth_resp = self.client.get(url)
+        self.assertEqual(auth_resp.status_code, 200)
+        self.assertContains(auth_resp, "Alice Anderson")
 
     def test_incomplete_and_injury_matches_in_profile_and_h2h(self):
         # Match 3: Bob vs Charlie incomplete (6-6, ran out of time)

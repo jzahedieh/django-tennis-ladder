@@ -1,14 +1,13 @@
 {% extends 'base.html' %}
-{% load ladder_extras %}
 {% block container %}
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-        <h2 class="mb-0">{% get_player_name player user %} vs {% get_player_name opponent user %}</h2>
+        <h2 class="mb-0">{{ player_name }} vs {{ opponent_name }}</h2>
         <div class="d-flex gap-2">
             <a href="{% url 'player_history' player.id %}" class="btn btn-sm btn-outline-secondary">
-                {% get_player_name player user %} Profile
+                {{ player_name }} Profile
             </a>
             <a href="{% url 'player_history' opponent.id %}" class="btn btn-sm btn-outline-secondary">
-                {% get_player_name opponent user %} Profile
+                {{ opponent_name }} Profile
             </a>
         </div>
     </div>
