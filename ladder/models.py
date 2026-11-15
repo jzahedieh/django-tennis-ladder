@@ -331,9 +331,11 @@ class Ladder(models.Model):
 
                 out[pair_key] = {
                     'player': p1,
+                    'player_name': p1.full_name(authenticated=True),
                     'player_result': p1_score,
                     'opponent_result': p2_score,
                     'opponent': p2,
+                    'opponent_name': p2.full_name(authenticated=True),
                     'date_added': result.date_added,
                     'is_incomplete': is_incomplete_time,
                     'is_injury': is_injury,

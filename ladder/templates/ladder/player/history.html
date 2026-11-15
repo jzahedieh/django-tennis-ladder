@@ -1,12 +1,10 @@
 {% extends 'base.html' %}
-{% load ladder_extras %}
 {% load static %}
 {% block container %}
-{% get_player_name player user as main_player_name %}
 
 <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-3">
     <div>
-        <h1 class="mb-1">{{ main_player_name }}</h1>
+        <h1 class="mb-1">{{ player_name }}</h1>
         <div class="d-flex flex-wrap align-items-center gap-2 text-muted small">
             {% if player_stats.first_year %}
                 <span>
@@ -121,7 +119,7 @@
                             {% url 'head_to_head' player.id m.opponent_id as form_h2h_url %}
                             <a href="{{ form_h2h_url }}"
                                data-h2h-url="{{ form_h2h_url }}"
-                               data-h2h-title="{{ main_player_name }} vs {{ m.opponent_name }}"
+                               data-h2h-title="{{ player_name }} vs {{ m.opponent_name }}"
                                class="badge text-decoration-none {% if m.outcome_code == 'W' %}bg-success{% elif m.outcome_code == 'R' %}bg-warning text-dark{% elif m.outcome_code == 'I' %}bg-info text-dark{% else %}bg-secondary{% endif %}"
                                title="{{ m.season_label }}: {{ m.score_display }} vs {{ m.opponent_name }}">
                                 {{ m.outcome_code }}
@@ -209,7 +207,7 @@
                         {% url 'head_to_head' player.id insights.most_played_rival.opponent as mp_url %}
                         <a href="{{ mp_url }}"
                            data-h2h-url="{{ mp_url }}"
-                           data-h2h-title="{{ main_player_name }} vs {{ insights.most_played_rival.opponent_name }}"
+                           data-h2h-title="{{ player_name }} vs {{ insights.most_played_rival.opponent_name }}"
                            class="fw-semibold text-decoration-none">
                             {{ insights.most_played_rival.opponent_name }}
                             <span class="badge bg-light text-dark border ms-1">{{ insights.most_played_rival.won_played_display }}</span>
@@ -224,7 +222,7 @@
                         {% url 'head_to_head' player.id insights.favourite_rival.opponent as fav_url %}
                         <a href="{{ fav_url }}"
                            data-h2h-url="{{ fav_url }}"
-                           data-h2h-title="{{ main_player_name }} vs {{ insights.favourite_rival.opponent_name }}"
+                           data-h2h-title="{{ player_name }} vs {{ insights.favourite_rival.opponent_name }}"
                            class="fw-semibold text-decoration-none">
                             {{ insights.favourite_rival.opponent_name }}
                             <span class="badge bg-success-subtle text-success border border-success-subtle ms-1">{{ insights.favourite_rival.won_played_display }}</span>
@@ -239,7 +237,7 @@
                         {% url 'head_to_head' player.id insights.toughest_rival.opponent as tough_url %}
                         <a href="{{ tough_url }}"
                            data-h2h-url="{{ tough_url }}"
-                           data-h2h-title="{{ main_player_name }} vs {{ insights.toughest_rival.opponent_name }}"
+                           data-h2h-title="{{ player_name }} vs {{ insights.toughest_rival.opponent_name }}"
                            class="fw-semibold text-decoration-none">
                             {{ insights.toughest_rival.opponent_name }}
                             <span class="badge bg-secondary-subtle text-secondary border ms-1">{{ insights.toughest_rival.won_played_display }}</span>
@@ -291,7 +289,7 @@
                             data-search-text="{{ h.opponent_name|lower }}"
                             style="cursor: pointer;"
                             data-h2h-url="{{ row_h2h_url }}"
-                            data-h2h-title="{{ main_player_name }} vs {{ h.opponent_name }}">
+                            data-h2h-title="{{ player_name }} vs {{ h.opponent_name }}">
                             <td class="ps-3 fw-semibold">
                                 <a href="{% url 'player_history' h.opponent %}" class="text-decoration-none">
                                     {{ h.opponent_name }}
@@ -315,7 +313,7 @@
                             <td class="text-end pe-3 text-nowrap">
                                 <a href="{{ row_h2h_url }}"
                                    data-h2h-url="{{ row_h2h_url }}"
-                                   data-h2h-title="{{ main_player_name }} vs {{ h.opponent_name }}"
+                                   data-h2h-title="{{ player_name }} vs {{ h.opponent_name }}"
                                    class="btn btn-sm btn-outline-primary py-0 px-2">
                                     More Detail
                                 </a>
