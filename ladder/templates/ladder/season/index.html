@@ -1,5 +1,4 @@
 {% extends 'base.html' %}
-{% load ladder_extras %}
 {% load static %}
 
 {% block container %}
@@ -23,8 +22,8 @@
             <thead>
             <tr>
             <th></th><th class="text-nowrap">Name</th>
-            {% for i in ladder.league_set.all %}
-                <th class="score_field"><strong> {{ forloop.counter }} </strong></th>
+            {% for row in ladder.grid.rows %}
+                <th class="score_field"><strong> {{ row.position }} </strong></th>
             {% endfor %}
             <th class="score_field score_total score_average">Avg</th>
             <th class="score_field score_total">Total</th>
@@ -32,42 +31,31 @@
             </thead>
 
             <tbody>
-            {% for league in ladder.league_set.all %}
-                {% with player_counter=forloop.counter %}
-                    {% get_player_name league.player user as row_player_name %}
-                    <tr{% if user.is_authenticated and league.player.user_id == user.id %} class="table-primary current-user-row"{% endif %}>
-                    <td class="player_position"><strong> {{ player_counter }} </strong></td>
-                    <td class="player_name"><a href="{% url 'player_history' league.player.id %}">{{ row_player_name }}</a></td>
-                    {% for opponent in ladder.league_set.all %}
-                        {% with column_counter=forloop.counter %}
-                            {% if column_counter == player_counter %}
-                            <td class="box_grey score_field"></td>
-                            {% else %}
-                            {% url 'head_to_head' league.player.id opponent.player.id as h2h_url %}
-                            {% get_player_name opponent.player user as col_opponent_name %}
-                            <td class="score_field selectable"
-                                data-player="{{ league.player.id }}"
-                                data-opp="{{ opponent.player.id }}"
-                                data-h2h-url="{{ h2h_url }}"
-                                data-h2h-title="{{ row_player_name }} vs {{ col_opponent_name }}">
-                                <a href="{{ h2h_url }}"
-                                   data-h2h-url="{{ h2h_url }}"
-                                   data-h2h-title="{{ row_player_name }} vs {{ col_opponent_name }}"
-                                   class="d-block w-100 h-100 text-decoration-none text-reset">
-                                    {% for result in results_dict|getkey:league.player.id %}
-                                        {% if league.player.id == result.player.id and opponent.player.id == result.opponent.id %}
-                                            {{ result.result }}
-                                        {% endif %}
-                                    {% endfor %}
-                                </a>
-                            </td>
-                            {% endif %}
-                        {% endwith %}
-                    {% endfor %}
-                    <td class="score_field score_total score_average"> {{ results_dict|getaverage:league.player.id }} </td>
-                    <td class="score_field score_total"> {{ results_dict|gettotal:league.player.id }} </td>
-                    </tr>
-                {% endwith %}
+            {% for row in ladder.grid.rows %}
+                <tr{% if row.is_current_user %} class="table-primary current-user-row"{% endif %}>
+                <td class="player_position"><strong> {{ row.position }} </strong></td>
+                <td class="player_name"><a href="{{ row.player_history_url }}">{{ row.player_name }}</a></td>
+                {% for cell in row.cells %}
+                    {% if cell.is_self %}
+                    <td class="box_grey score_field"></td>
+                    {% else %}
+                    <td class="score_field selectable"
+                        data-player="{{ cell.player_id }}"
+                        data-opp="{{ cell.opponent_id }}"
+                        data-h2h-url="{{ cell.h2h_url }}"
+                        data-h2h-title="{{ cell.h2h_title }}">
+                        <a href="{{ cell.h2h_url }}"
+                           data-h2h-url="{{ cell.h2h_url }}"
+                           data-h2h-title="{{ cell.h2h_title }}"
+                           class="d-block w-100 h-100 text-decoration-none text-reset">
+                            {% if cell.result is not None %}{{ cell.result }}{% endif %}
+                        </a>
+                    </td>
+                    {% endif %}
+                {% endfor %}
+                <td class="score_field score_total score_average"> {{ row.average }} </td>
+                <td class="score_field score_total"> {{ row.total }} </td>
+                </tr>
             {% endfor %}
             </tbody>
             </table>

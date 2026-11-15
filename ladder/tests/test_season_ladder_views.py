@@ -452,4 +452,86 @@ class SeasonAndLadderViewsTest(TestCase):
         self.assertContains(entry_resp_ret, '4–9 (Ret.)')
         self.assertContains(entry_resp_ret, 'title="Retired (Injury)">R</span>')
 
+    def test_grid_views_render_scores_including_zero_totals_and_add_view(self):
+        # Record a 9-0 match in Div 1 (Alice beats Charlie 9-0)
+        today = datetime.date.today()
+        Result.objects.create(
+            ladder=self.ladder_c_div1,
+            player=self.player1,
+            opponent=self.player3,
+            result=9,
+            date_added=today,
+        )
+        Result.objects.create(
+            ladder=self.ladder_c_div1,
+            player=self.player3,
+            opponent=self.player1,
+            result=0,
+            date_added=today,
+        )
+
+        season_url = reverse(
+            'season',
+            args=(self.season_current.start_date.year, self.season_current.season_round),
+        )
+        ladder_url = reverse(
+            'ladder',
+            args=(self.season_current.start_date.year, self.season_current.season_round, 1),
+        )
+        add_url = reverse(
+            'add',
+            args=(self.season_current.start_date.year, self.season_current.season_round, 1),
+        )
+
+        # 1. Season view uses precomputed ladder.grid
+        season_resp = self.client.get(season_url)
+        self.assertEqual(season_resp.status_code, 200)
+        self.assertNotIn('results_dict', season_resp.context)
+        div1_ladder = next(l for l in season_resp.context['ladders'] if l.division == 1)
+        self.assertEqual(div1_ladder.grid['rows'][0]['total'], 24)
+        self.assertEqual(div1_ladder.grid['rows'][0]['average'], '12.00')
+        self.assertEqual(div1_ladder.grid['rows'][2]['total'], 1)
+        self.assertEqual(div1_ladder.grid['rows'][2]['average'], '1.00')
+        self.assertContains(season_resp, '12.00')
+        self.assertContains(season_resp, '1.00')
+        self.assertContains(
+            season_resp,
+            f'data-player="{self.player3.id}"\n'
+            f'                        data-opp="{self.player1.id}"',
+        )
+        # Ensure Charlie's 0 score cell renders "0" inside its anchor
+        self.assertRegex(
+            season_resp.content.decode(),
+            rf'data-player="{self.player3.id}"[^>]*data-opp="{self.player1.id}"[^>]*>\s*<a[^>]*>\s*0\s*</a>',
+        )
+
+        # 2. Ladder view uses precomputed grid
+        ladder_resp = self.client.get(ladder_url)
+        self.assertEqual(ladder_resp.status_code, 200)
+        self.assertNotIn('results_dict', ladder_resp.context)
+        self.assertIn('grid', ladder_resp.context)
+        self.assertEqual(ladder_resp.context['grid']['rows'][0]['total'], 24)
+        self.assertRegex(
+            ladder_resp.content.decode(),
+            rf'data-player="{self.player3.id}"[^>]*data-opp="{self.player1.id}"[^>]*>\s*<a[^>]*>\s*0\s*</a>',
+        )
+
+        # 3. Non-superuser is redirected away from add view
+        self.client.force_login(self.user)
+        non_admin_add_resp = self.client.get(add_url)
+        self.assertRedirects(non_admin_add_resp, ladder_url)
+
+        # 4. Superuser add view renders grid and 0 score cleanly
+        self.client.force_login(self.superuser)
+        add_resp = self.client.get(add_url)
+        self.assertEqual(add_resp.status_code, 200)
+        self.assertTemplateUsed(add_resp, 'ladder/ladder/add.html')
+        self.assertNotIn('results_dict', add_resp.context)
+        self.assertIn('grid', add_resp.context)
+        self.assertEqual(add_resp.context['grid']['rows'][0]['total'], 24)
+        self.assertRegex(
+            add_resp.content.decode(),
+            rf'data-player="{self.player3.id}"\s+data-opp="{self.player1.id}">\s*0\s*</td>',
+        )
+
 
