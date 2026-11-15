@@ -1,5 +1,4 @@
 {% extends 'base.html' %}
-{% load ladder_extras %}
 {% load static %}
 
 {% block container %}
@@ -108,38 +107,30 @@ function updateForm() {
             <tr>
                 <th></th>
                 <th>Name</th>
-                {% for i in ladder.league_set.all %}
-                    <th class="score_field"><strong> {{ forloop.counter }} </strong></th>
+                {% for row in grid.rows %}
+                    <th class="score_field"><strong> {{ row.position }} </strong></th>
                 {% endfor %}
                 <th class="score_field score_total">Total</th>
             </tr>
         </thead>
         <tbody>
-        {% for league in ladder.league_set.all %}
-            {% with player_counter=forloop.counter %}
-                <tr>
-                    <td class="player_position"><strong> {{ player_counter }} </strong></td>
-                    <td class="player_name"> {% get_player_name league.player user %}</td>
-                    {% for opponent in ladder.league_set.all %}
-                        {% with column_counter=forloop.counter %}
-                            {% if column_counter == player_counter %}
-                                <td class="box_grey score_field"></td>
-                            {% else %}
-                                <td class="score_field selectable"
-                                    data-player="{{ league.player.id }}"
-                                    data-opp="{{ opponent.player.id }}">
-                                    {% for result in results_dict|getkey:league.player.id %}
-                                        {% if league.player == result.player and opponent.player == result.opponent %}
-                                            {{ result.result }}
-                                        {% endif %}
-                                    {% endfor %}
-                                </td>
-                            {% endif %}
-                        {% endwith %}
-                    {% endfor %}
-                    <td class="score_field score_total"> {{ results_dict|gettotal:league.player.id }} </td>
-                </tr>
-            {% endwith %}
+        {% for row in grid.rows %}
+            <tr>
+                <td class="player_position"><strong> {{ row.position }} </strong></td>
+                <td class="player_name"> {{ row.player_name }}</td>
+                {% for cell in row.cells %}
+                    {% if cell.is_self %}
+                        <td class="box_grey score_field"></td>
+                    {% else %}
+                        <td class="score_field selectable"
+                            data-player="{{ cell.player_id }}"
+                            data-opp="{{ cell.opponent_id }}">
+                            {% if cell.result is not None %}{{ cell.result }}{% endif %}
+                        </td>
+                    {% endif %}
+                {% endfor %}
+                <td class="score_field score_total"> {{ row.total }} </td>
+            </tr>
         {% endfor %}
         </tbody>
     </table>

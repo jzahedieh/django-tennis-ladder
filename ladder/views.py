@@ -17,6 +17,7 @@ from django.views.decorators.csrf import csrf_exempt
 
 from ladder.forms import AddResultForm, AddEntryForm, EmailChangeForm
 from ladder.models import Ladder, League, Player, Result, Season, LadderSubscription
+from ladder.services.grid import LadderGridService
 from ladder.services.player import PlayerStatsService
 from ladder.services.stats import ClubStatsService
 
@@ -179,27 +180,23 @@ def season(request, year, season_round):
             return HttpResponseRedirect(reverse('season', args=(prev.start_date.year, prev.season_round)))
         raise Http404  # no published season to show
 
-    # Optimize with prefetch_related to avoid N+1 queries
-    ladders = Ladder.objects.filter(season=season_object).prefetch_related(
-        'league_set__player__user'  # Prefetch leagues, players, and users
+    # Optimize with select_related / prefetch_related to avoid N+1 queries
+    ladders = (
+        Ladder.objects.filter(season=season_object)
+        .select_related('season')
+        .prefetch_related('league_set__player__user')
+    )
+    results = Result.objects.filter(ladder__season=season_object)
+    ladders = LadderGridService.build_season_grids(
+        season=season_object,
+        ladders=ladders,
+        results=results,
+        user=request.user,
     )
 
-    # Get all results for this season with related data in one query
-    results = Result.objects.filter(
-        ladder__season=season_object
-    ).select_related(
-        'player', 'opponent', 'ladder'
-    )
-
-    # Build results dictionary efficiently
-    results_dict = {}
-    for result in results:
-        results_dict.setdefault(result.player.id, []).append(result)
-
-    # No need to fetch league separately as it's prefetched
     return render(
         request, 'ladder/season/index.html',
-        dict(season=season_object, ladders=ladders, results_dict=results_dict)
+        {'season': season_object, 'ladders': ladders}
     )
 
 
@@ -222,14 +219,12 @@ def ladder(request, year, season_round, division_id):
             ladder__season__season_round=season_round
         ).exists()  # Use exists() instead of count() > 0
 
-    # Optimize results query with select_related
-    results = Result.objects.filter(ladder=ladder_object).select_related(
-        'player', 'opponent'
+    results = Result.objects.filter(ladder=ladder_object)
+    grid = LadderGridService.build_ladder_grid(
+        ladder=ladder_object,
+        user=request.user,
+        results=results,
     )
-
-    results_dict = {}
-    for result in results:
-        results_dict.setdefault(result.player.id, []).append(result)
 
     recent_results = ladder_object.get_recent_results(user=request.user, limit=100)
     division_stats = ladder_object.get_stats(user=request.user, recent_results=recent_results)
@@ -237,7 +232,7 @@ def ladder(request, year, season_round, division_id):
 
     return render(request, 'ladder/ladder/index.html', {
         'ladder': ladder_object,
-        'results_dict': results_dict,
+        'grid': grid,
         'subscribed': subscribed,
         'division_stats': division_stats,
         'recent_results': recent_results,
@@ -289,7 +284,7 @@ def add(request, year, season_round, division_id):
         return HttpResponseRedirect(reverse('ladder', args=(year, season_round, division_id)))
 
     ladder_object = get_object_or_404(
-        Ladder,
+        Ladder.objects.select_related('season').prefetch_related('league_set__player__user'),
         division=division_id,
         season__start_date__year=year,
         season__season_round=season_round,
@@ -339,14 +334,18 @@ def add(request, year, season_round, division_id):
         form = AddResultForm(ladder_object, instance=result)
 
     # prepare the results for displaying
-    results = Result.objects.filter(ladder=ladder_object)
-    results_dict = {}
-    for result in results:
-        results_dict.setdefault(result.player.id, []).append(result)
+    grid = LadderGridService.build_ladder_grid(
+        ladder=ladder_object,
+        user=request.user,
+    )
 
-    return render(request, 'ladder/ladder/add.html',
-                  {'ladder': ladder_object, 'results_dict': results_dict, 'form': form,
-                   'next_ladder': next_ladder, 'previous_ladder': previous_ladder})
+    return render(request, 'ladder/ladder/add.html', {
+        'ladder': ladder_object,
+        'grid': grid,
+        'form': form,
+        'next_ladder': next_ladder,
+        'previous_ladder': previous_ladder,
+    })
 
 
 def player_history(request, player_id):
