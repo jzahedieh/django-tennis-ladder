@@ -2,6 +2,7 @@ import type { ConfigContext, ExpoConfig } from "expo/config";
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
+  owner: "jz-apps",
   name: "Highgate Competitions",
   slug: "highgate-competitions",
   scheme: "highgate",
@@ -11,6 +12,15 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   userInterfaceStyle: "light",
   runtimeVersion: {
     policy: "appVersion",
+  },
+  updates: {
+    url: "https://u.expo.dev/1b1a5f8a-4327-439c-a4dd-1f599f8b0cb9",
+  },
+  extra: {
+    ...(config.extra ?? {}),
+    eas: {
+      projectId: "1b1a5f8a-4327-439c-a4dd-1f599f8b0cb9",
+    },
   },
   plugins: ["expo-router", "expo-secure-store"],
   experiments: {
