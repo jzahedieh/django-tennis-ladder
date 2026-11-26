@@ -1,29 +1,28 @@
-# Non-Expo directories & local environments
-.git/
-.venv/
-venv/
-data/
-api/
-ladder/
-tennis/
-docker/
-docs/
-static/
-social/
-.vscode/
-.idea/
-.ruff_cache/
+# Non-Expo root directories & local environments
+/.git/
+/.venv/
+/venv/
+/data/
+/api/
+/ladder/
+/tennis/
+/docker/
+/docs/
+/static/
+/social/
+/.vscode/
+/.idea/
+/.ruff_cache/
 __pycache__/
-.env*
+/.env*
 *.sqlite3
 *.log
 
 # Expo local/build artifacts
 node_modules/
-app/node_modules/
-app/.expo/
-app/dist/
-app/web-build/
-app/ios/
-app/android/
+/app/.expo/
+/app/dist/
+/app/web-build/
+/app/ios/
+/app/android/
 *.tsbuildinfo
