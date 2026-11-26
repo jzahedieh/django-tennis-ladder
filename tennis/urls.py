@@ -3,9 +3,12 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 
+from api.api import api as ninja_api
+
 admin.autodiscover()
 
 urlpatterns = [
+    path('v1/', ninja_api.urls),
     path('', include('ladder.urls')),
     path('accounts/', include('django.contrib.auth.urls')),
     path(f'{settings.ADMIN_URL}/', admin.site.urls),

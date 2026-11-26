@@ -1,0 +1,19 @@
+{
+  "name": "Highgate Competitions",
+  "short_name": "Highgate",
+  "description": "Highgate CLTC tennis ladders, club stats, and competitions.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#F8FAFC",
+  "theme_color": "#1D3557",
+  "icons": [
+    {
+      "src": "/icon.png",
+      "sizes": "546x454",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

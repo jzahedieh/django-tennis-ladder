@@ -13,6 +13,7 @@ services:
       - ./data/certbot/conf:/etc/letsencrypt
       - ./data/certbot/www:/var/www/certbot
       - ./static:/var/www/static
+      - ./app/dist:/var/www/expo-web:ro
     env_file:
       - ./.env.prod
     command: /bin/sh -c "export ADMINER_PATH=$${ADMINER_PATH:-db-admin}
