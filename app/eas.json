@@ -7,11 +7,13 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
-      "channel": "development"
+      "channel": "development",
+      "environment": "development"
     },
     "preview": {
       "distribution": "internal",
       "channel": "preview",
+      "environment": "preview",
       "android": {
         "buildType": "apk"
       },
@@ -22,6 +24,7 @@
     "production-apk": {
       "distribution": "internal",
       "channel": "production",
+      "environment": "production",
       "android": {
         "buildType": "apk"
       },
@@ -32,6 +35,7 @@
     "production": {
       "autoIncrement": true,
       "channel": "production",
+      "environment": "production",
       "env": {
         "EXPO_PUBLIC_API_URL": "https://api.highgate-ladder.co.uk"
       }
