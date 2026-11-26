@@ -35,8 +35,8 @@
     "gen:api": "openapi-typescript src/api/openapi.json -o src/api/schema.d.ts",
     "build:web": "expo export --platform web",
     "typecheck": "tsc --noEmit",
-    "ota:preview": "eas update --branch preview",
-    "ota:prod": "eas update --branch production"
+    "ota:preview": "eas update --branch preview --environment preview",
+    "ota:prod": "eas update --branch production --environment production"
   },
   "private": true
 }

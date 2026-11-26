@@ -22,6 +22,10 @@ export function getApiBaseUrl(): string {
     return PROD_API_URL;
   }
 
+  if (!__DEV__) {
+    return PROD_API_URL;
+  }
+
   const hostUri =
     Constants.expoConfig?.hostUri ??
     (Constants as unknown as { expoGoConfig?: { debuggerHost?: string } })
