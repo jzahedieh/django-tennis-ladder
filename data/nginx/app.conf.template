@@ -17,7 +17,7 @@ server {
 
 server {
     listen 80;
-    server_name ${NGINX_HOST} www.${NGINX_HOST};
+    server_name ${NGINX_HOST} www.${NGINX_HOST} api.${NGINX_HOST} beta.${NGINX_HOST};
     location / {
         return 301 https://$host$request_uri;
     }
@@ -28,6 +28,52 @@ server {
 
 upstream web_gunicorn {
     server web:8000;
+}
+
+# Dedicated API subdomain (Django Ninja /v1/)
+server {
+    listen 443 ssl;
+    server_name api.${NGINX_HOST};
+
+    ssl_certificate /etc/letsencrypt/live/${NGINX_HOST}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/${NGINX_HOST}/privkey.pem;
+
+    location /v1/ {
+        proxy_pass http://web_gunicorn;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Host $host;
+        proxy_redirect off;
+    }
+
+    location / {
+        return 404;
+    }
+}
+
+# Parallel preview subdomain for Expo Web PWA (root / with zero baseUrl rewrite)
+server {
+    listen 443 ssl;
+    server_name beta.${NGINX_HOST};
+
+    ssl_certificate /etc/letsencrypt/live/${NGINX_HOST}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/${NGINX_HOST}/privkey.pem;
+
+    root /var/www/expo-web;
+    index index.html;
+
+    location = /index.html {
+        add_header Cache-Control "no-cache, no-store, must-revalidate";
+    }
+
+    location /_expo/static/ {
+        expires 1y;
+        add_header Cache-Control "public, max-age=31536000, immutable";
+    }
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
 }
 
 server {

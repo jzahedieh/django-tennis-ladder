@@ -6,7 +6,7 @@ from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import PasswordChangeForm
 from django.core.mail import send_mail
-from django.db.models import Count, Q
+from django.db.models import Count
 from django.http import HttpResponseRedirect, Http404, HttpResponse, HttpResponseForbidden, JsonResponse, \
     HttpResponseBadRequest
 from django.shortcuts import render, get_object_or_404
@@ -19,24 +19,8 @@ from ladder.forms import AddResultForm, AddEntryForm, EmailChangeForm
 from ladder.models import Ladder, League, Player, Result, Season, LadderSubscription
 from ladder.services.grid import LadderGridService
 from ladder.services.player import PlayerStatsService
+from ladder.services.result_entry import ResultMutationService, ResultNotFoundError
 from ladder.services.stats import ClubStatsService
-
-def _unplayed_opponents_for(user_player, ladder):
-    # players in this ladder, in ladder order
-    league_players = [l.player for l in ladder.league_set.select_related('player').all()]
-    # all pairings already played (either direction)
-    played_pairs = set()
-    for r in Result.objects.filter(ladder=ladder).values_list('player_id', 'opponent_id'):
-        played_pairs.add(tuple(sorted(r)))
-    # opponents the user hasn't played yet, in league (sort_order) order
-    unplayed = []
-    for p in league_players:
-        if p.id == user_player.id:
-            continue
-        pair = tuple(sorted((user_player.id, p.id)))
-        if pair not in played_pairs:
-            unplayed.append(p)
-    return unplayed
 
 def index(request):
     current_season = Season.objects.filter(is_draft=False).latest('start_date')
@@ -304,29 +288,19 @@ def add(request, year, season_round, division_id):
         previous_ladder = False
 
 
-    # process or generate te score adding form
+    # process or generate the score adding form
     if request.POST:
         form = AddResultForm(ladder_object, request.POST, instance=result)
         if form.is_valid():
             losing_result = form.save(commit=False)
-
-            # check for existing results, assume update if find a match aka delete
-            try:
-                existing_player_result = Result.objects.get(ladder=ladder_object, player=losing_result.player,
-                                                            opponent=losing_result.opponent)
-                existing_player_result.delete()
-                existing_opponent_result = Result.objects.get(ladder=ladder_object, player=losing_result.opponent,
-                                                              opponent=losing_result.player)
-                existing_opponent_result.delete()
-            except Result.DoesNotExist:
-                pass
-
-            # build the mirror result (aka winner) from losing form data
-            winning_result = Result(ladder=losing_result.ladder, player=losing_result.opponent,
-                                    opponent=losing_result.player, result=9, date_added=losing_result.date_added,
-                                    incomplete_reason=losing_result.incomplete_reason)
-            losing_result.save()
-            winning_result.save()
+            ResultMutationService.admin_submit_result(
+                user=request.user,
+                ladder=ladder_object,
+                winner_id=losing_result.opponent_id,
+                loser_id=losing_result.player_id,
+                losing_score=losing_result.result,
+                incomplete_reason=losing_result.incomplete_reason,
+            )
 
             return HttpResponseRedirect(reverse('add', args=(
                 ladder_object.season.start_date.year, ladder_object.season.season_round, ladder_object.division)))
@@ -411,107 +385,16 @@ def player_search(request):
     return JsonResponse({"options": options})
 
 
-def _build_entered_matches(me, ladder):
-    entered_raw = (
-        Result.objects
-        .filter(ladder=ladder)
-        .filter(Q(player=me) | Q(opponent=me))
-        .select_related('player', 'opponent', 'entered_by')
-        .order_by('-date_added', '-id')
-    )
-
-    pairs = {}
-    for r in entered_raw:
-        key = tuple(sorted((r.player_id, r.opponent_id)))
-        pairs.setdefault(key, []).append(r)
-
-    entered = []
-    for (a_id, b_id), rows in pairs.items():
-        if len(rows) == 1:
-            r = rows[0]
-            try:
-                mirror = Result.objects.select_related('player', 'opponent', 'entered_by').get(
-                    ladder=ladder, player_id=r.opponent_id, opponent_id=r.player_id
-                )
-                rows = [r, mirror]
-            except Result.DoesNotExist:
-                continue
-
-        ra, rb = rows[0], rows[1]
-        my_row = ra if ra.player_id == me.id else rb
-        opp_row = rb if ra.player_id == me.id else ra
-        reason = my_row.incomplete_reason or opp_row.incomplete_reason
-
-        is_incomplete_time = (
-            (my_row.result < 9 and opp_row.result < 9)
-            or reason == Result.IncompleteReason.TIME
-        )
-        is_injury = (
-            reason == Result.IncompleteReason.INJURY
-            and (my_row.result == 9 or opp_row.result == 9)
-        )
-
-        if is_incomplete_time:
-            winner_row, loser_row = my_row, opp_row
-            outcome_code = 'I'
-            score_display = f"{my_row.result}\u2013{opp_row.result} (Inc.)"
-        else:
-            if ra.result == 9:
-                winner_row, loser_row = ra, rb
-            elif rb.result == 9:
-                winner_row, loser_row = rb, ra
-            else:
-                winner_row, loser_row = my_row, opp_row
-
-            if my_row.result == 9:
-                outcome_code = 'W'
-                score_display = (
-                    f"9\u2013{opp_row.result} (Ret.)"
-                    if is_injury
-                    else f"9\u2013{opp_row.result}"
-                )
-            else:
-                outcome_code = 'R' if is_injury else 'L'
-                score_display = (
-                    f"{my_row.result}\u20139 (Ret.)"
-                    if is_injury
-                    else f"{my_row.result}\u20139"
-                )
-
-        entered.append({
-            'winner': winner_row.player,
-            'loser': loser_row.player,
-            'losing_score': loser_row.result,
-            'opponent': opp_row.player,
-            'my_score': my_row.result,
-            'opp_score': opp_row.result,
-            'outcome_code': outcome_code,
-            'is_incomplete': is_incomplete_time,
-            'is_injury': is_injury,
-            'incomplete_reason': reason or (Result.IncompleteReason.TIME if is_incomplete_time else None),
-            'score_display': score_display,
-            'date_added': winner_row.date_added,
-            'entered_by': winner_row.entered_by or loser_row.entered_by,
-            'pair_key': f'{a_id}-{b_id}',
-        })
-
-    return entered
-
-
 @login_required
 def result_entry(request):
     user = request.user
     try:
-        ladder = (Ladder.objects
-                  .filter(league__player__user=user, season__is_draft=False)
-                  .order_by('-season__start_date', '-season__season_round', '-id')[0])
-    except IndexError:
+        me, ladder = ResultMutationService.get_active_ladder_for_user(user)
+    except ResultNotFoundError:
         raise Http404
 
-    me = Player.objects.get(user=user)
-
-    unplayed = _unplayed_opponents_for(me, ladder)
-    entered = _build_entered_matches(me, ladder)
+    unplayed = ResultMutationService.get_unplayed_opponents(me, ladder)
+    entered = ResultMutationService.get_entered_matches(me, ladder)
 
     result = Result(ladder=ladder, date_added=datetime.datetime.now(), result=0)
     form = AddEntryForm(ladder, user, instance=result)
@@ -535,17 +418,17 @@ def result_entry(request):
 @login_required
 def result_entry_add(request):
     user = request.user
-    ladder = (Ladder.objects
-              .filter(league__player__user=user, season__is_draft=False)
-              .order_by('-season__start_date', '-season__season_round', '-id')[0])
+    try:
+        me, ladder = ResultMutationService.get_active_ladder_for_user(user)
+    except ResultNotFoundError:
+        raise Http404
 
-    me = Player.objects.get(user=user)
     result = Result(ladder=ladder, date_added=datetime.datetime.now())
     form = AddEntryForm(ladder, user, request.POST, instance=result)
 
     if not form.is_valid():
-        unplayed = _unplayed_opponents_for(me, ladder)
-        entered = _build_entered_matches(me, ladder)
+        unplayed = ResultMutationService.get_unplayed_opponents(me, ladder)
+        entered = ResultMutationService.get_entered_matches(me, ladder)
         return render(request, 'ladder/result/entry.html', {
             'user': user,
             'me': me,
@@ -557,54 +440,21 @@ def result_entry_add(request):
             'is_closed': ladder.is_closed(),
         })
 
-    user_result = form.save(commit=False)
     outcome = form.cleaned_data.get('outcome') or ('won' if form.cleaned_data.get('winner') else 'lost')
     primary_score = form.cleaned_data['result']
-    me = user_result.player
-    opp = user_result.opponent
+    opp = form.cleaned_data['opponent']
 
-    # de-duplicate if the pair already exists
-    Result.objects.filter(ladder=ladder, player=me, opponent=opp).delete()
-    Result.objects.filter(ladder=ladder, player=opp, opponent=me).delete()
-
-    reason = None
-    if outcome == 'won':
-        my_score = 9
-        opp_score = primary_score
-    elif outcome == 'lost':
-        my_score = primary_score
-        opp_score = 9
-    else:
-        reason = form.cleaned_data.get('incomplete_reason')
-        if reason == Result.IncompleteReason.TIME:
-            my_score = primary_score
-            opp_score = form.cleaned_data['opponent_result']
-        else:
-            # Injury / retirement: uninjured player gets 9, injured player keeps primary_score
-            injured = form.cleaned_data.get('injured_player')
-            if injured == 'opponent':
-                my_score = 9
-                opp_score = primary_score
-            else:
-                my_score = primary_score
-                opp_score = 9
-
-    user_result.result = my_score
-    user_result.incomplete_reason = reason
-    user_result.entered_by = user
-
-    opponent_result = Result(
-        ladder=user_result.ladder,
-        player=opp,
-        opponent=me,
-        result=opp_score,
-        date_added=user_result.date_added,
-        incomplete_reason=reason,
-        entered_by=user,
+    ResultMutationService.submit_result(
+        user=user,
+        ladder=ladder,
+        opponent_id=opp.id,
+        outcome=outcome,
+        primary_score=primary_score,
+        opponent_score=form.cleaned_data.get('opponent_result'),
+        incomplete_reason=form.cleaned_data.get('incomplete_reason'),
+        injured_player=form.cleaned_data.get('injured_player'),
+        enforce_open=False,
     )
-
-    user_result.save()
-    opponent_result.save()
 
     messages.success(request, 'Result added successfully')
     return HttpResponseRedirect(reverse('ladder', kwargs={
@@ -613,63 +463,27 @@ def result_entry_add(request):
         'division_id': ladder.division,
     }))
 
-def _can_edit(user, ladder, player_a_id, player_b_id):
-    if user.is_superuser:
-        return True
-    try:
-        me = Player.objects.get(user=user)
-    except Player.DoesNotExist:
-        return False
-    return me.id in (player_a_id, player_b_id)
 
 @login_required
 def result_entry_edit(request, pair_key):
-    # pair_key format "<idA>-<idB>" sorted asc when created
+    me = Player.objects.filter(user=request.user).first()
     try:
-        a_id, b_id = map(int, pair_key.split('-'))
-    except ValueError:
+        info = ResultMutationService.get_match_pair(pair_key, viewer_player=me)
+    except ResultNotFoundError:
         raise Http404
 
-    # fetch the two rows and find their ladder
-    try:
-        r_ab = (Result.objects
-                .select_related('player', 'ladder', 'ladder__season')
-                .filter(player_id=a_id, opponent_id=b_id, ladder__season__is_draft=False)
-                .order_by('-ladder__season__start_date', '-ladder__season__season_round', '-id')[0])
-        ladder = r_ab.ladder
-        r_ba = Result.objects.select_related('player').get(ladder=ladder, player_id=b_id, opponent_id=a_id)
-    except (Result.DoesNotExist, IndexError):
-        raise Http404
+    ladder = info['ladder']
+    a_id = info['a_id']
+    b_id = info['b_id']
 
-    if not _can_edit(request.user, ladder, a_id, b_id):
+    if not ResultMutationService.can_edit_match(request.user, ladder, a_id, b_id):
         return HttpResponseForbidden()
 
-    me = Player.objects.filter(user=request.user).first()
-
-    reason = r_ab.incomplete_reason or r_ba.incomplete_reason
-    is_incomplete_time = (
-        (r_ab.result < 9 and r_ba.result < 9)
-        or reason == Result.IncompleteReason.TIME
-    )
-    is_injury = (
-        reason == Result.IncompleteReason.INJURY
-        and (r_ab.result == 9 or r_ba.result == 9)
-    )
-
-    if is_incomplete_time:
-        if me and me.id == b_id:
-            winner, loser = r_ba.player, r_ab.player
-            winner_score, losing_score = r_ba.result, r_ab.result
-        else:
-            winner, loser = r_ab.player, r_ba.player
-            winner_score, losing_score = r_ab.result, r_ba.result
-        match_mode = 'time'
-    else:
-        if r_ab.result == 9:
-            winner, loser, winner_score, losing_score = r_ab.player, r_ba.player, 9, r_ba.result
-        else:
-            winner, loser, winner_score, losing_score = r_ba.player, r_ab.player, 9, r_ab.result
-        match_mode = 'injury' if is_injury else 'completed'
+    winner = info['winner']
+    loser = info['loser']
+    winner_score = info['winner_score']
+    losing_score = info['losing_score']
+    match_mode = info['match_mode']
 
     if request.method == 'POST':
         confirmed = request.POST.get('confirm') == 'on'
@@ -680,64 +494,30 @@ def result_entry_edit(request, pair_key):
             if new_mode == 'time':
                 score_w = max(0, min(8, int(request.POST.get('winner_score', winner_score if match_mode == 'time' else 4))))
                 score_l = max(0, min(8, int(request.POST.get('losing_score', losing_score))))
-                if match_mode == 'time' and score_w == winner_score and score_l == losing_score:
-                    messages.info(request, 'No changes made - result already matches')
-                    return HttpResponseRedirect(reverse('ladder', kwargs={
-                        'year': ladder.season.start_date.year,
-                        'season_round': ladder.season.season_round,
-                        'division_id': ladder.division,
-                    }))
-
-                Result.objects.filter(ladder=ladder, player_id=a_id, opponent_id=b_id).delete()
-                Result.objects.filter(ladder=ladder, player_id=b_id, opponent_id=a_id).delete()
-
-                now_dt = datetime.datetime.now()
-                Result(
-                    ladder=ladder, player_id=winner.id, opponent_id=loser.id,
-                    result=score_w, incomplete_reason=Result.IncompleteReason.TIME,
-                    date_added=now_dt, entered_by=request.user,
-                ).save()
-                Result(
-                    ladder=ladder, player_id=loser.id, opponent_id=winner.id,
-                    result=score_l, incomplete_reason=Result.IncompleteReason.TIME,
-                    date_added=now_dt, entered_by=request.user,
-                ).save()
+                _, changed = ResultMutationService.edit_result(
+                    user=request.user,
+                    pair_key=pair_key,
+                    match_mode='time',
+                    winner_score=score_w,
+                    losing_score=score_l,
+                    enforce_open=False,
+                )
             else:
                 new_winner_id = int(request.POST['winner_id'])
                 new_losing_score = max(0, min(8, int(request.POST['losing_score'])))
-                new_reason = Result.IncompleteReason.INJURY if new_mode == 'injury' else None
-
-                if (
-                    new_mode == match_mode
-                    and new_winner_id == winner.id
-                    and new_losing_score == losing_score
-                ):
-                    messages.info(request, 'No changes made - result already matches')
-                    return HttpResponseRedirect(reverse('ladder', kwargs={
-                        'year': ladder.season.start_date.year,
-                        'season_round': ladder.season.season_round,
-                        'division_id': ladder.division,
-                    }))
-
-                win_id, lose_id = (a_id, b_id) if new_winner_id == a_id else (b_id, a_id)
-                Result.objects.filter(ladder=ladder, player_id=a_id, opponent_id=b_id).delete()
-                Result.objects.filter(ladder=ladder, player_id=b_id, opponent_id=a_id).delete()
-
-                now_dt = datetime.datetime.now()
-                win_row = Result(
-                    ladder=ladder, player_id=win_id, opponent_id=lose_id,
-                    incomplete_reason=new_reason, result=9,
-                    date_added=now_dt, entered_by=request.user,
+                _, changed = ResultMutationService.edit_result(
+                    user=request.user,
+                    pair_key=pair_key,
+                    match_mode=new_mode,
+                    winner_id=new_winner_id,
+                    losing_score=new_losing_score,
+                    enforce_open=False,
                 )
-                lose_row = Result(
-                    ladder=ladder, player_id=lose_id, opponent_id=win_id,
-                    incomplete_reason=new_reason, result=new_losing_score,
-                    date_added=now_dt, entered_by=request.user,
-                )
-                win_row.save()
-                lose_row.save()
 
-            messages.success(request, 'Result updated')
+            if not changed:
+                messages.info(request, 'No changes made - result already matches')
+            else:
+                messages.success(request, 'Result updated')
             return HttpResponseRedirect(reverse('ladder', kwargs={
                 'year': ladder.season.start_date.year,
                 'season_round': ladder.season.season_round,
@@ -755,29 +535,22 @@ def result_entry_edit(request, pair_key):
         'match_mode': match_mode,
     })
 
+
 @login_required
 def result_entry_delete(request, pair_key):
     try:
-        a_id, b_id = map(int, pair_key.split('-'))
-    except ValueError:
+        info = ResultMutationService.get_match_pair(pair_key)
+    except ResultNotFoundError:
         raise Http404
 
-    try:
-        r_ab = (Result.objects
-                .select_related('player', 'ladder', 'ladder__season')
-                .filter(player_id=a_id, opponent_id=b_id, ladder__season__is_draft=False)
-                .order_by('-ladder__season__start_date', '-ladder__season__season_round', '-id')[0])
-        ladder = r_ab.ladder
-        r_ba = Result.objects.select_related('player').get(ladder=ladder, player_id=b_id, opponent_id=a_id)
-    except (Result.DoesNotExist, IndexError):
-        raise Http404
-
-    if not _can_edit(request.user, ladder, a_id, b_id):
+    ladder = info['ladder']
+    if not ResultMutationService.can_edit_match(request.user, ladder, info['a_id'], info['b_id']):
         return HttpResponseForbidden()
 
     if request.method == 'POST':
-        Result.objects.filter(ladder=ladder, player_id=a_id, opponent_id=b_id).delete()
-        Result.objects.filter(ladder=ladder, player_id=b_id, opponent_id=a_id).delete()
+        ResultMutationService.delete_result(
+            user=request.user, pair_key=pair_key, enforce_open=False
+        )
         messages.success(request, 'Result removed')
         return HttpResponseRedirect(reverse('ladder', kwargs={
             'year': ladder.season.start_date.year,
@@ -785,33 +558,15 @@ def result_entry_delete(request, pair_key):
             'division_id': ladder.division,
         }))
 
-    winner = None
-    loser = None
-    winner_score = 9
-    losing_score = None
-    is_incomplete = False
-    is_injury = False
-    reason = r_ab.incomplete_reason or r_ba.incomplete_reason
-    if (r_ab.result < 9 and r_ba.result < 9) or reason == Result.IncompleteReason.TIME:
-        winner, loser = r_ab.player, r_ba.player
-        winner_score, losing_score = r_ab.result, r_ba.result
-        is_incomplete = True
-    elif r_ab.result == 9:
-        winner, loser, winner_score, losing_score = r_ab.player, r_ba.player, 9, r_ba.result
-        is_injury = (reason == Result.IncompleteReason.INJURY)
-    else:
-        winner, loser, winner_score, losing_score = r_ba.player, r_ab.player, 9, r_ab.result
-        is_injury = (reason == Result.IncompleteReason.INJURY)
-
     return render(request, 'ladder/result/delete_confirm.html', {
         'pair_key': pair_key,
         'ladder': ladder,
-        'winner': winner,
-        'loser': loser,
-        'winner_score': winner_score,
-        'losing_score': losing_score,
-        'is_incomplete': is_incomplete,
-        'is_injury': is_injury,
+        'winner': info['winner'],
+        'loser': info['loser'],
+        'winner_score': info['winner_score'],
+        'losing_score': info['losing_score'],
+        'is_incomplete': info['is_incomplete'],
+        'is_injury': info['is_injury'],
     })
 
 @csrf_exempt

@@ -59,7 +59,7 @@ TEMPLATES = [
 # See https://docs.djangoproject.com/en/1.5/ref/settings/#allowed-hosts
 ALLOWED_HOSTS = os.environ.get(
     "DJANGO_ALLOWED_HOSTS",
-    "highgate-ladder.co.uk,www.highgate-ladder.co.uk"
+    "highgate-ladder.co.uk,www.highgate-ladder.co.uk,api.highgate-ladder.co.uk,beta.highgate-ladder.co.uk"
 ).split(",")
 
 # Local time zone for this installation. Choices can be found here:
@@ -128,6 +128,7 @@ SECRET_KEY = os.environ["SECRET_KEY"]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -147,6 +148,8 @@ WSGI_APPLICATION = 'tennis.wsgi.application'
 
 INSTALLED_APPS = [
     'ladder',
+    'api',
+    'corsheaders',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -218,9 +221,13 @@ INTERNAL_IPS = (
 
 DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 
+from corsheaders.defaults import default_headers
+
 CSRF_TRUSTED_ORIGINS = [
     "https://highgate-ladder.co.uk",
     "https://www.highgate-ladder.co.uk",
+    "https://beta.highgate-ladder.co.uk",
+    "https://api.highgate-ladder.co.uk",
 ]
 
 # Add additional domains from environment variable
@@ -233,6 +240,34 @@ if additional_domains:
             if not domain.startswith(('http://', 'https://')):
                 domain = f"https://{domain}"
             CSRF_TRUSTED_ORIGINS.append(domain)
+
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOWED_ORIGINS = [
+    "https://highgate-ladder.co.uk",
+    "https://www.highgate-ladder.co.uk",
+    "https://beta.highgate-ladder.co.uk",
+]
+if DEBUG:
+    CORS_ALLOWED_ORIGINS.extend([
+        "http://localhost:8081",
+        "http://127.0.0.1:8081",
+        "http://localhost:19006",
+        "http://127.0.0.1:19006",
+    ])
+
+additional_cors = os.environ.get("CORS_ADDITIONAL_ORIGINS", "")
+if additional_cors:
+    for origin in additional_cors.split(","):
+        origin = origin.strip()
+        if origin:
+            if not origin.startswith(("http://", "https://")):
+                origin = f"https://{origin}"
+            CORS_ALLOWED_ORIGINS.append(origin)
+
+CORS_ALLOW_HEADERS = [
+    *default_headers,
+    "x-client-platform",
+]
 
 # Production security hardening
 if not DEBUG:

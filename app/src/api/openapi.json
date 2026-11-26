@@ -1,0 +1,4201 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Highgate Competitions API",
+    "version": "1.0.0",
+    "description": ""
+  },
+  "paths": {
+    "/v1/auth/login": {
+      "post": {
+        "operationId": "api_routers_auth_login",
+        "summary": "Login",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenOut"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginIn"
+              }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/v1/auth/refresh": {
+      "post": {
+        "operationId": "api_routers_auth_refresh",
+        "summary": "Refresh",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenOut"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/RefreshIn"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          },
+          "required": false
+        }
+      }
+    },
+    "/v1/auth/logout": {
+      "post": {
+        "operationId": "api_routers_auth_logout",
+        "summary": "Logout",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageOut"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/LogoutIn"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          },
+          "required": false
+        }
+      }
+    },
+    "/v1/auth/me": {
+      "get": {
+        "operationId": "api_routers_auth_me",
+        "summary": "Me",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserMeOut"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Auth"
+        ],
+        "security": [
+          {
+            "JWTAuth": []
+          }
+        ]
+      }
+    },
+    "/v1/auth/password-reset": {
+      "post": {
+        "operationId": "api_routers_auth_password_reset_request",
+        "summary": "Password Reset Request",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageOut"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasswordResetRequestIn"
+              }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/v1/auth/password-reset/confirm": {
+      "post": {
+        "operationId": "api_routers_auth_password_reset_confirm",
+        "summary": "Password Reset Confirm",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageOut"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasswordResetConfirmIn"
+              }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/v1/account/": {
+      "get": {
+        "operationId": "api_routers_account_get_account",
+        "summary": "Get Account",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountOut"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Account"
+        ],
+        "security": [
+          {
+            "JWTAuth": []
+          }
+        ]
+      }
+    },
+    "/v1/account/email/": {
+      "patch": {
+        "operationId": "api_routers_account_update_email",
+        "summary": "Update Email",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountOut"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Account"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateEmailIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "security": [
+          {
+            "JWTAuth": []
+          }
+        ]
+      }
+    },
+    "/v1/account/password/": {
+      "post": {
+        "operationId": "api_routers_account_change_password",
+        "summary": "Change Password",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageOut"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Account"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "security": [
+          {
+            "JWTAuth": []
+          }
+        ]
+      }
+    },
+    "/v1/account/devices/": {
+      "post": {
+        "operationId": "api_routers_account_register_device",
+        "summary": "Register Device",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageOut"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Account"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeviceTokenIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "security": [
+          {
+            "JWTAuth": []
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "api_routers_account_unregister_device",
+        "summary": "Unregister Device",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "expo_push_token",
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Expo Push Token"
+            },
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageOut"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Account"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/DeviceTokenDeleteIn"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          },
+          "required": false
+        },
+        "security": [
+          {
+            "JWTAuth": []
+          }
+        ]
+      }
+    },
+    "/v1/players/search/": {
+      "get": {
+        "operationId": "api_routers_players_search_players",
+        "summary": "Search Players",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "schema": {
+              "default": "",
+              "title": "Q",
+              "type": "string"
+            },
+            "required": false
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 10,
+              "title": "Limit",
+              "type": "integer"
+            },
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayerSearchOut"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Players"
+        ],
+        "security": [
+          {
+            "OptionalJWTAuth": []
+          }
+        ]
+      }
+    },
+    "/v1/players/{player_id}/": {
+      "get": {
+        "operationId": "api_routers_players_player_profile",
+        "summary": "Player Profile",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "player_id",
+            "schema": {
+              "title": "Player Id",
+              "type": "integer"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayerProfileOut"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Players"
+        ],
+        "security": [
+          {
+            "OptionalJWTAuth": []
+          }
+        ]
+      }
+    },
+    "/v1/players/{player_id}/vs/{opponent_id}/": {
+      "get": {
+        "operationId": "api_routers_players_head_to_head",
+        "summary": "Head To Head",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "player_id",
+            "schema": {
+              "title": "Player Id",
+              "type": "integer"
+            },
+            "required": true
+          },
+          {
+            "in": "path",
+            "name": "opponent_id",
+            "schema": {
+              "title": "Opponent Id",
+              "type": "integer"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HeadToHeadOut"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Players"
+        ],
+        "security": [
+          {
+            "OptionalJWTAuth": []
+          }
+        ]
+      }
+    },
+    "/v1/ladder/seasons/current/overview": {
+      "get": {
+        "operationId": "api_routers_ladder_current_season_overview",
+        "summary": "Current Season Overview",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CurrentSeasonOverviewOut"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Ladder"
+        ],
+        "security": [
+          {
+            "OptionalJWTAuth": []
+          }
+        ]
+      }
+    },
+    "/v1/ladder/seasons/": {
+      "get": {
+        "operationId": "api_routers_ladder_list_seasons",
+        "summary": "List Seasons",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SeasonListOut"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Ladder"
+        ],
+        "security": [
+          {
+            "OptionalJWTAuth": []
+          }
+        ]
+      }
+    },
+    "/v1/ladder/seasons/{year}/round/{season_round}/": {
+      "get": {
+        "operationId": "api_routers_ladder_season_detail",
+        "summary": "Season Detail",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "year",
+            "schema": {
+              "title": "Year",
+              "type": "integer"
+            },
+            "required": true
+          },
+          {
+            "in": "path",
+            "name": "season_round",
+            "schema": {
+              "title": "Season Round",
+              "type": "integer"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SeasonDetailOut"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Ladder"
+        ],
+        "security": [
+          {
+            "OptionalJWTAuth": []
+          }
+        ]
+      }
+    },
+    "/v1/ladder/seasons/{year}/round/{season_round}/division/{division_id}/": {
+      "get": {
+        "operationId": "api_routers_ladder_division_detail",
+        "summary": "Division Detail",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "year",
+            "schema": {
+              "title": "Year",
+              "type": "integer"
+            },
+            "required": true
+          },
+          {
+            "in": "path",
+            "name": "season_round",
+            "schema": {
+              "title": "Season Round",
+              "type": "integer"
+            },
+            "required": true
+          },
+          {
+            "in": "path",
+            "name": "division_id",
+            "schema": {
+              "title": "Division Id",
+              "type": "integer"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DivisionDetailOut"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Ladder"
+        ],
+        "security": [
+          {
+            "OptionalJWTAuth": []
+          }
+        ]
+      }
+    },
+    "/v1/ladder/seasons/{year}/round/{season_round}/division/{division_id}/subscription/": {
+      "post": {
+        "operationId": "api_routers_ladder_toggle_division_subscription",
+        "summary": "Toggle Division Subscription",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "year",
+            "schema": {
+              "title": "Year",
+              "type": "integer"
+            },
+            "required": true
+          },
+          {
+            "in": "path",
+            "name": "season_round",
+            "schema": {
+              "title": "Season Round",
+              "type": "integer"
+            },
+            "required": true
+          },
+          {
+            "in": "path",
+            "name": "division_id",
+            "schema": {
+              "title": "Division Id",
+              "type": "integer"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionToggleOut"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Ladder"
+        ],
+        "security": [
+          {
+            "JWTAuth": []
+          }
+        ]
+      }
+    },
+    "/v1/ladder/results/entry/": {
+      "get": {
+        "operationId": "api_routers_ladder_result_entry_context",
+        "summary": "Result Entry Context",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultEntryContextOut"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Ladder"
+        ],
+        "security": [
+          {
+            "JWTAuth": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "api_routers_ladder_submit_result",
+        "summary": "Submit Result",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultMutationOut"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Ladder"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitResultIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "security": [
+          {
+            "JWTAuth": []
+          }
+        ]
+      }
+    },
+    "/v1/ladder/results/entry/{pair_key}/": {
+      "put": {
+        "operationId": "api_routers_ladder_edit_result",
+        "summary": "Edit Result",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pair_key",
+            "schema": {
+              "title": "Pair Key",
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultMutationOut"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Ladder"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EditResultIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "security": [
+          {
+            "JWTAuth": []
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "api_routers_ladder_delete_result",
+        "summary": "Delete Result",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pair_key",
+            "schema": {
+              "title": "Pair Key",
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultMutationOut"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Ladder"
+        ],
+        "security": [
+          {
+            "JWTAuth": []
+          }
+        ]
+      }
+    },
+    "/v1/ladder/results/admin/{year}/round/{season_round}/division/{division_id}/": {
+      "post": {
+        "operationId": "api_routers_ladder_admin_submit_result",
+        "summary": "Admin Submit Result",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "year",
+            "schema": {
+              "title": "Year",
+              "type": "integer"
+            },
+            "required": true
+          },
+          {
+            "in": "path",
+            "name": "season_round",
+            "schema": {
+              "title": "Season Round",
+              "type": "integer"
+            },
+            "required": true
+          },
+          {
+            "in": "path",
+            "name": "division_id",
+            "schema": {
+              "title": "Division Id",
+              "type": "integer"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultMutationOut"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Ladder"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminSubmitResultIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "security": [
+          {
+            "JWTAuth": []
+          }
+        ]
+      }
+    },
+    "/v1/ladder/stats/": {
+      "get": {
+        "operationId": "api_routers_ladder_club_stats",
+        "summary": "Club Stats",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "period",
+            "schema": {
+              "default": "all",
+              "title": "Period",
+              "type": "string"
+            },
+            "required": false
+          },
+          {
+            "in": "query",
+            "name": "year",
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Year"
+            },
+            "required": false
+          },
+          {
+            "in": "query",
+            "name": "season_id",
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Season Id"
+            },
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClubStatsOut"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Ladder"
+        ],
+        "security": [
+          {
+            "OptionalJWTAuth": []
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ActiveDivisionRef": {
+        "properties": {
+          "season_id": {
+            "title": "Season Id",
+            "type": "integer"
+          },
+          "season_name": {
+            "title": "Season Name",
+            "type": "string"
+          },
+          "year": {
+            "title": "Year",
+            "type": "integer"
+          },
+          "season_round": {
+            "title": "Season Round",
+            "type": "integer"
+          },
+          "division": {
+            "title": "Division",
+            "type": "integer"
+          },
+          "ladder_id": {
+            "title": "Ladder Id",
+            "type": "integer"
+          },
+          "is_closed": {
+            "title": "Is Closed",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "season_id",
+          "season_name",
+          "year",
+          "season_round",
+          "division",
+          "ladder_id",
+          "is_closed"
+        ],
+        "title": "ActiveDivisionRef",
+        "type": "object"
+      },
+      "TokenOut": {
+        "properties": {
+          "access_token": {
+            "title": "Access Token",
+            "type": "string"
+          },
+          "token_type": {
+            "default": "Bearer",
+            "title": "Token Type",
+            "type": "string"
+          },
+          "expires_in": {
+            "title": "Expires In",
+            "type": "integer"
+          },
+          "refresh_token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refresh Token"
+          },
+          "user": {
+            "$ref": "#/components/schemas/UserMeOut"
+          }
+        },
+        "required": [
+          "access_token",
+          "expires_in",
+          "user"
+        ],
+        "title": "TokenOut",
+        "type": "object"
+      },
+      "UserMeOut": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "first_name": {
+            "title": "First Name",
+            "type": "string"
+          },
+          "last_name": {
+            "title": "Last Name",
+            "type": "string"
+          },
+          "is_staff": {
+            "title": "Is Staff",
+            "type": "boolean"
+          },
+          "is_superuser": {
+            "title": "Is Superuser",
+            "type": "boolean"
+          },
+          "roles": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Roles",
+            "type": "array"
+          },
+          "player_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Player Id"
+          },
+          "player_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Player Name"
+          },
+          "active_division": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ActiveDivisionRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "first_name",
+          "last_name",
+          "is_staff",
+          "is_superuser",
+          "roles",
+          "player_id",
+          "player_name",
+          "active_division"
+        ],
+        "title": "UserMeOut",
+        "type": "object"
+      },
+      "LoginIn": {
+        "properties": {
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "password": {
+            "title": "Password",
+            "type": "string"
+          },
+          "device_label": {
+            "default": "",
+            "title": "Device Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ],
+        "title": "LoginIn",
+        "type": "object"
+      },
+      "RefreshIn": {
+        "properties": {
+          "refresh_token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refresh Token"
+          }
+        },
+        "title": "RefreshIn",
+        "type": "object"
+      },
+      "MessageOut": {
+        "properties": {
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          }
+        },
+        "required": [
+          "detail"
+        ],
+        "title": "MessageOut",
+        "type": "object"
+      },
+      "LogoutIn": {
+        "properties": {
+          "refresh_token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refresh Token"
+          }
+        },
+        "title": "LogoutIn",
+        "type": "object"
+      },
+      "PasswordResetRequestIn": {
+        "properties": {
+          "email": {
+            "title": "Email",
+            "type": "string"
+          }
+        },
+        "required": [
+          "email"
+        ],
+        "title": "PasswordResetRequestIn",
+        "type": "object"
+      },
+      "PasswordResetConfirmIn": {
+        "properties": {
+          "uid": {
+            "title": "Uid",
+            "type": "string"
+          },
+          "token": {
+            "title": "Token",
+            "type": "string"
+          },
+          "new_password": {
+            "title": "New Password",
+            "type": "string"
+          }
+        },
+        "required": [
+          "uid",
+          "token",
+          "new_password"
+        ],
+        "title": "PasswordResetConfirmIn",
+        "type": "object"
+      },
+      "AccountOut": {
+        "properties": {
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "player_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Player Id"
+          },
+          "player_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Player Name"
+          },
+          "current_season_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Season Name"
+          },
+          "current_division": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ActiveDivisionRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "latest_division": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ActiveDivisionRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "subscriptions": {
+            "items": {
+              "$ref": "#/components/schemas/SubscriptionRef"
+            },
+            "title": "Subscriptions",
+            "type": "array"
+          },
+          "active_device_count": {
+            "title": "Active Device Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "email",
+          "player_id",
+          "player_name",
+          "current_season_name",
+          "current_division",
+          "latest_division",
+          "subscriptions",
+          "active_device_count"
+        ],
+        "title": "AccountOut",
+        "type": "object"
+      },
+      "SubscriptionRef": {
+        "properties": {
+          "ladder_id": {
+            "title": "Ladder Id",
+            "type": "integer"
+          },
+          "season_name": {
+            "title": "Season Name",
+            "type": "string"
+          },
+          "year": {
+            "title": "Year",
+            "type": "integer"
+          },
+          "season_round": {
+            "title": "Season Round",
+            "type": "integer"
+          },
+          "division": {
+            "title": "Division",
+            "type": "integer"
+          },
+          "subscribed_at": {
+            "format": "date",
+            "title": "Subscribed At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "ladder_id",
+          "season_name",
+          "year",
+          "season_round",
+          "division",
+          "subscribed_at"
+        ],
+        "title": "SubscriptionRef",
+        "type": "object"
+      },
+      "UpdateEmailIn": {
+        "properties": {
+          "email": {
+            "title": "Email",
+            "type": "string"
+          }
+        },
+        "required": [
+          "email"
+        ],
+        "title": "UpdateEmailIn",
+        "type": "object"
+      },
+      "ChangePasswordIn": {
+        "properties": {
+          "old_password": {
+            "title": "Old Password",
+            "type": "string"
+          },
+          "new_password": {
+            "title": "New Password",
+            "type": "string"
+          }
+        },
+        "required": [
+          "old_password",
+          "new_password"
+        ],
+        "title": "ChangePasswordIn",
+        "type": "object"
+      },
+      "DeviceTokenIn": {
+        "properties": {
+          "expo_push_token": {
+            "title": "Expo Push Token",
+            "type": "string"
+          },
+          "platform": {
+            "enum": [
+              "ios",
+              "android",
+              "web"
+            ],
+            "title": "Platform",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expo_push_token",
+          "platform"
+        ],
+        "title": "DeviceTokenIn",
+        "type": "object"
+      },
+      "DeviceTokenDeleteIn": {
+        "properties": {
+          "expo_push_token": {
+            "title": "Expo Push Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expo_push_token"
+        ],
+        "title": "DeviceTokenDeleteIn",
+        "type": "object"
+      },
+      "PlayerAutocompleteOption": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "subtext": {
+            "title": "Subtext",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "subtext"
+        ],
+        "title": "PlayerAutocompleteOption",
+        "type": "object"
+      },
+      "PlayerSearchOut": {
+        "properties": {
+          "options": {
+            "items": {
+              "$ref": "#/components/schemas/PlayerAutocompleteOption"
+            },
+            "title": "Options",
+            "type": "array"
+          }
+        },
+        "required": [
+          "options"
+        ],
+        "title": "PlayerSearchOut",
+        "type": "object"
+      },
+      "CentilePointOut": {
+        "properties": {
+          "league_id": {
+            "title": "League Id",
+            "type": "integer"
+          },
+          "season_label": {
+            "title": "Season Label",
+            "type": "string"
+          },
+          "season_name": {
+            "title": "Season Name",
+            "type": "string"
+          },
+          "division": {
+            "title": "Division",
+            "type": "integer"
+          },
+          "rank": {
+            "title": "Rank",
+            "type": "integer"
+          },
+          "total_players": {
+            "title": "Total Players",
+            "type": "integer"
+          },
+          "centile": {
+            "title": "Centile",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "league_id",
+          "season_label",
+          "season_name",
+          "division",
+          "rank",
+          "total_players",
+          "centile"
+        ],
+        "title": "CentilePointOut",
+        "type": "object"
+      },
+      "DivisionWonBadgeOut": {
+        "properties": {
+          "division": {
+            "title": "Division",
+            "type": "integer"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "is_div1": {
+            "title": "Is Div1",
+            "type": "boolean"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "division",
+          "count",
+          "is_div1",
+          "label"
+        ],
+        "title": "DivisionWonBadgeOut",
+        "type": "object"
+      },
+      "PlayerCareerStatsOut": {
+        "properties": {
+          "played": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Played"
+          },
+          "win_rate": {
+            "title": "Win Rate",
+            "type": "string"
+          },
+          "completion_rate": {
+            "default": "- %",
+            "title": "Completion Rate",
+            "type": "string"
+          },
+          "average": {
+            "title": "Average",
+            "type": "string"
+          },
+          "best_centile": {
+            "title": "Best Centile",
+            "type": "string"
+          },
+          "avg_centile": {
+            "title": "Avg Centile",
+            "type": "string"
+          },
+          "seasons_played": {
+            "title": "Seasons Played",
+            "type": "integer"
+          },
+          "division_titles": {
+            "title": "Division Titles",
+            "type": "integer"
+          },
+          "divisions_won_badges": {
+            "items": {
+              "$ref": "#/components/schemas/DivisionWonBadgeOut"
+            },
+            "title": "Divisions Won Badges",
+            "type": "array"
+          },
+          "highest_division": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Highest Division"
+          },
+          "scheduled_matches": {
+            "title": "Scheduled Matches",
+            "type": "integer"
+          },
+          "first_year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Year"
+          },
+          "last_year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Year"
+          },
+          "best_rank": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Best Rank"
+          },
+          "best_total_players": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Best Total Players"
+          },
+          "best_season_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Best Season Label"
+          },
+          "won": {
+            "title": "Won",
+            "type": "integer"
+          },
+          "lost": {
+            "title": "Lost",
+            "type": "integer"
+          },
+          "retired": {
+            "title": "Retired",
+            "type": "integer"
+          },
+          "incomplete": {
+            "title": "Incomplete",
+            "type": "integer"
+          },
+          "total_points": {
+            "title": "Total Points",
+            "type": "integer"
+          },
+          "unique_opponents": {
+            "title": "Unique Opponents",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "played",
+          "win_rate",
+          "average",
+          "best_centile",
+          "avg_centile",
+          "seasons_played",
+          "division_titles",
+          "divisions_won_badges",
+          "highest_division",
+          "scheduled_matches",
+          "first_year",
+          "last_year",
+          "best_rank",
+          "best_total_players",
+          "best_season_label",
+          "won",
+          "lost",
+          "retired",
+          "incomplete",
+          "total_points",
+          "unique_opponents"
+        ],
+        "title": "PlayerCareerStatsOut",
+        "type": "object"
+      },
+      "PlayerH2HSummaryOut": {
+        "properties": {
+          "opponent_id": {
+            "title": "Opponent Id",
+            "type": "integer"
+          },
+          "opponent_name": {
+            "title": "Opponent Name",
+            "type": "string"
+          },
+          "times_played": {
+            "title": "Times Played",
+            "type": "integer"
+          },
+          "won": {
+            "title": "Won",
+            "type": "integer"
+          },
+          "lost": {
+            "title": "Lost",
+            "type": "integer"
+          },
+          "retired": {
+            "title": "Retired",
+            "type": "integer"
+          },
+          "incomplete": {
+            "title": "Incomplete",
+            "type": "integer"
+          },
+          "win_rate": {
+            "title": "Win Rate",
+            "type": "number"
+          },
+          "win_rate_display": {
+            "title": "Win Rate Display",
+            "type": "string"
+          },
+          "won_played_display": {
+            "title": "Won Played Display",
+            "type": "string"
+          },
+          "last_played": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Played"
+          }
+        },
+        "required": [
+          "opponent_id",
+          "opponent_name",
+          "times_played",
+          "won",
+          "lost",
+          "retired",
+          "incomplete",
+          "win_rate",
+          "win_rate_display",
+          "won_played_display",
+          "last_played"
+        ],
+        "title": "PlayerH2HSummaryOut",
+        "type": "object"
+      },
+      "PlayerInsightsOut": {
+        "properties": {
+          "has_matches": {
+            "title": "Has Matches",
+            "type": "boolean"
+          },
+          "recent_form": {
+            "items": {
+              "$ref": "#/components/schemas/PlayerRecentMatchOut"
+            },
+            "title": "Recent Form",
+            "type": "array"
+          },
+          "longest_win_streak": {
+            "title": "Longest Win Streak",
+            "type": "integer"
+          },
+          "current_win_streak": {
+            "title": "Current Win Streak",
+            "type": "integer"
+          },
+          "full_completion_rounds": {
+            "title": "Full Completion Rounds",
+            "type": "integer"
+          },
+          "full_completion_rate": {
+            "title": "Full Completion Rate",
+            "type": "string"
+          },
+          "best_round_points": {
+            "title": "Best Round Points",
+            "type": "integer"
+          },
+          "best_round_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Best Round Label"
+          },
+          "clutch_played": {
+            "title": "Clutch Played",
+            "type": "integer"
+          },
+          "clutch_won": {
+            "title": "Clutch Won",
+            "type": "integer"
+          },
+          "clutch_lost": {
+            "title": "Clutch Lost",
+            "type": "integer"
+          },
+          "clutch_win_rate": {
+            "title": "Clutch Win Rate",
+            "type": "string"
+          },
+          "dominant_wins": {
+            "title": "Dominant Wins",
+            "type": "integer"
+          },
+          "bagels_won": {
+            "title": "Bagels Won",
+            "type": "integer"
+          },
+          "total_games_won": {
+            "title": "Total Games Won",
+            "type": "integer"
+          },
+          "total_games_lost": {
+            "title": "Total Games Lost",
+            "type": "integer"
+          },
+          "games_win_rate": {
+            "title": "Games Win Rate",
+            "type": "string"
+          },
+          "avg_loser_score_in_wins": {
+            "title": "Avg Loser Score In Wins",
+            "type": "string"
+          },
+          "avg_player_score_in_losses": {
+            "title": "Avg Player Score In Losses",
+            "type": "string"
+          },
+          "most_played_rival": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PlayerH2HSummaryOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "favourite_rival": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PlayerH2HSummaryOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "toughest_rival": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PlayerH2HSummaryOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "has_matches",
+          "recent_form",
+          "longest_win_streak",
+          "current_win_streak",
+          "full_completion_rounds",
+          "full_completion_rate",
+          "best_round_points",
+          "best_round_label",
+          "clutch_played",
+          "clutch_won",
+          "clutch_lost",
+          "clutch_win_rate",
+          "dominant_wins",
+          "bagels_won",
+          "total_games_won",
+          "total_games_lost",
+          "games_win_rate",
+          "avg_loser_score_in_wins",
+          "avg_player_score_in_losses",
+          "most_played_rival",
+          "favourite_rival",
+          "toughest_rival"
+        ],
+        "title": "PlayerInsightsOut",
+        "type": "object"
+      },
+      "PlayerProfileOut": {
+        "properties": {
+          "player_id": {
+            "title": "Player Id",
+            "type": "integer"
+          },
+          "player_name": {
+            "title": "Player Name",
+            "type": "string"
+          },
+          "is_authenticated_view": {
+            "title": "Is Authenticated View",
+            "type": "boolean"
+          },
+          "stats": {
+            "$ref": "#/components/schemas/PlayerCareerStatsOut"
+          },
+          "insights": {
+            "$ref": "#/components/schemas/PlayerInsightsOut"
+          },
+          "centile_chart_data": {
+            "items": {
+              "$ref": "#/components/schemas/CentilePointOut"
+            },
+            "title": "Centile Chart Data",
+            "type": "array"
+          },
+          "head_to_head": {
+            "items": {
+              "$ref": "#/components/schemas/PlayerH2HSummaryOut"
+            },
+            "title": "Head To Head",
+            "type": "array"
+          },
+          "season_history": {
+            "items": {
+              "$ref": "#/components/schemas/PlayerSeasonHistoryOut"
+            },
+            "title": "Season History",
+            "type": "array"
+          }
+        },
+        "required": [
+          "player_id",
+          "player_name",
+          "is_authenticated_view",
+          "stats",
+          "insights",
+          "centile_chart_data",
+          "head_to_head",
+          "season_history"
+        ],
+        "title": "PlayerProfileOut",
+        "type": "object"
+      },
+      "PlayerRecentMatchOut": {
+        "properties": {
+          "won": {
+            "title": "Won",
+            "type": "boolean"
+          },
+          "outcome_code": {
+            "title": "Outcome Code",
+            "type": "string"
+          },
+          "is_incomplete": {
+            "title": "Is Incomplete",
+            "type": "boolean"
+          },
+          "is_injury": {
+            "title": "Is Injury",
+            "type": "boolean"
+          },
+          "my_games": {
+            "title": "My Games",
+            "type": "integer"
+          },
+          "opp_games": {
+            "title": "Opp Games",
+            "type": "integer"
+          },
+          "score_display": {
+            "title": "Score Display",
+            "type": "string"
+          },
+          "opponent_id": {
+            "title": "Opponent Id",
+            "type": "integer"
+          },
+          "opponent_name": {
+            "title": "Opponent Name",
+            "type": "string"
+          },
+          "date_added": {
+            "format": "date",
+            "title": "Date Added",
+            "type": "string"
+          },
+          "season_label": {
+            "title": "Season Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "won",
+          "outcome_code",
+          "is_incomplete",
+          "is_injury",
+          "my_games",
+          "opp_games",
+          "score_display",
+          "opponent_id",
+          "opponent_name",
+          "date_added",
+          "season_label"
+        ],
+        "title": "PlayerRecentMatchOut",
+        "type": "object"
+      },
+      "PlayerSeasonHistoryOut": {
+        "properties": {
+          "league_id": {
+            "title": "League Id",
+            "type": "integer"
+          },
+          "season_id": {
+            "title": "Season Id",
+            "type": "integer"
+          },
+          "season_name": {
+            "title": "Season Name",
+            "type": "string"
+          },
+          "year": {
+            "title": "Year",
+            "type": "integer"
+          },
+          "season_round": {
+            "title": "Season Round",
+            "type": "integer"
+          },
+          "division": {
+            "title": "Division",
+            "type": "integer"
+          },
+          "total_points": {
+            "title": "Total Points",
+            "type": "number"
+          },
+          "games": {
+            "title": "Games",
+            "type": "integer"
+          },
+          "scheduled_matches": {
+            "title": "Scheduled Matches",
+            "type": "integer"
+          },
+          "points_per_game": {
+            "title": "Points Per Game",
+            "type": "number"
+          },
+          "won_count": {
+            "title": "Won Count",
+            "type": "integer"
+          },
+          "pct_played": {
+            "title": "Pct Played",
+            "type": "number"
+          },
+          "is_division_winner": {
+            "title": "Is Division Winner",
+            "type": "boolean"
+          },
+          "centile": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Centile"
+          },
+          "rank": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rank"
+          },
+          "total_players": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Players"
+          }
+        },
+        "required": [
+          "league_id",
+          "season_id",
+          "season_name",
+          "year",
+          "season_round",
+          "division",
+          "total_points",
+          "games",
+          "scheduled_matches",
+          "points_per_game",
+          "won_count",
+          "pct_played",
+          "is_division_winner",
+          "centile",
+          "rank",
+          "total_players"
+        ],
+        "title": "PlayerSeasonHistoryOut",
+        "type": "object"
+      },
+      "H2HMatchOut": {
+        "properties": {
+          "date_added": {
+            "format": "date",
+            "title": "Date Added",
+            "type": "string"
+          },
+          "year": {
+            "title": "Year",
+            "type": "integer"
+          },
+          "season_round": {
+            "title": "Season Round",
+            "type": "integer"
+          },
+          "division": {
+            "title": "Division",
+            "type": "integer"
+          },
+          "ladder_full": {
+            "title": "Ladder Full",
+            "type": "string"
+          },
+          "ladder_short": {
+            "title": "Ladder Short",
+            "type": "string"
+          },
+          "player_won": {
+            "title": "Player Won",
+            "type": "boolean"
+          },
+          "is_incomplete": {
+            "title": "Is Incomplete",
+            "type": "boolean"
+          },
+          "is_injury": {
+            "title": "Is Injury",
+            "type": "boolean"
+          },
+          "winner_badge": {
+            "title": "Winner Badge",
+            "type": "string"
+          },
+          "loser_badge": {
+            "title": "Loser Badge",
+            "type": "string"
+          },
+          "winner_id": {
+            "title": "Winner Id",
+            "type": "integer"
+          },
+          "winner_name": {
+            "title": "Winner Name",
+            "type": "string"
+          },
+          "loser_id": {
+            "title": "Loser Id",
+            "type": "integer"
+          },
+          "loser_name": {
+            "title": "Loser Name",
+            "type": "string"
+          },
+          "winner_score": {
+            "title": "Winner Score",
+            "type": "integer"
+          },
+          "losing_score": {
+            "title": "Losing Score",
+            "type": "integer"
+          },
+          "player_score": {
+            "title": "Player Score",
+            "type": "integer"
+          },
+          "opponent_score": {
+            "title": "Opponent Score",
+            "type": "integer"
+          },
+          "score_display": {
+            "title": "Score Display",
+            "type": "string"
+          },
+          "is_close": {
+            "title": "Is Close",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "date_added",
+          "year",
+          "season_round",
+          "division",
+          "ladder_full",
+          "ladder_short",
+          "player_won",
+          "is_incomplete",
+          "is_injury",
+          "winner_badge",
+          "loser_badge",
+          "winner_id",
+          "winner_name",
+          "loser_id",
+          "loser_name",
+          "winner_score",
+          "losing_score",
+          "player_score",
+          "opponent_score",
+          "score_display",
+          "is_close"
+        ],
+        "title": "H2HMatchOut",
+        "type": "object"
+      },
+      "H2HStatsOut": {
+        "properties": {
+          "played": {
+            "title": "Played",
+            "type": "integer"
+          },
+          "won": {
+            "title": "Won",
+            "type": "integer"
+          },
+          "lost": {
+            "title": "Lost",
+            "type": "integer"
+          },
+          "retired": {
+            "title": "Retired",
+            "type": "integer"
+          },
+          "incomplete": {
+            "title": "Incomplete",
+            "type": "integer"
+          },
+          "player_win_pct": {
+            "title": "Player Win Pct",
+            "type": "integer"
+          },
+          "opponent_win_pct": {
+            "title": "Opponent Win Pct",
+            "type": "integer"
+          },
+          "player_games": {
+            "title": "Player Games",
+            "type": "integer"
+          },
+          "opponent_games": {
+            "title": "Opponent Games",
+            "type": "integer"
+          },
+          "close_matches": {
+            "title": "Close Matches",
+            "type": "integer"
+          },
+          "first_played": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Played"
+          },
+          "last_played": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Played"
+          }
+        },
+        "required": [
+          "played",
+          "won",
+          "lost",
+          "retired",
+          "incomplete",
+          "player_win_pct",
+          "opponent_win_pct",
+          "player_games",
+          "opponent_games",
+          "close_matches",
+          "first_played",
+          "last_played"
+        ],
+        "title": "H2HStatsOut",
+        "type": "object"
+      },
+      "HeadToHeadOut": {
+        "properties": {
+          "player_id": {
+            "title": "Player Id",
+            "type": "integer"
+          },
+          "player_name": {
+            "title": "Player Name",
+            "type": "string"
+          },
+          "opponent_id": {
+            "title": "Opponent Id",
+            "type": "integer"
+          },
+          "opponent_name": {
+            "title": "Opponent Name",
+            "type": "string"
+          },
+          "stats": {
+            "$ref": "#/components/schemas/H2HStatsOut"
+          },
+          "matches": {
+            "items": {
+              "$ref": "#/components/schemas/H2HMatchOut"
+            },
+            "title": "Matches",
+            "type": "array"
+          }
+        },
+        "required": [
+          "player_id",
+          "player_name",
+          "opponent_id",
+          "opponent_name",
+          "stats",
+          "matches"
+        ],
+        "title": "HeadToHeadOut",
+        "type": "object"
+      },
+      "CurrentSeasonOverviewOut": {
+        "properties": {
+          "season": {
+            "$ref": "#/components/schemas/SeasonSummaryRef"
+          },
+          "stats": {
+            "$ref": "#/components/schemas/SeasonStatsOut"
+          },
+          "leaders": {
+            "items": {
+              "$ref": "#/components/schemas/DivisionLeaderOut"
+            },
+            "title": "Leaders",
+            "type": "array"
+          },
+          "progress": {
+            "$ref": "#/components/schemas/SeasonProgressOut"
+          },
+          "recent_results": {
+            "items": {
+              "$ref": "#/components/schemas/RecentMatchOut"
+            },
+            "title": "Recent Results",
+            "type": "array"
+          },
+          "my_division": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MyDivisionSummaryOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "season",
+          "stats",
+          "leaders",
+          "progress",
+          "recent_results"
+        ],
+        "title": "CurrentSeasonOverviewOut",
+        "type": "object"
+      },
+      "DivisionLeaderOut": {
+        "properties": {
+          "division": {
+            "title": "Division",
+            "type": "integer"
+          },
+          "player": {
+            "title": "Player",
+            "type": "string"
+          },
+          "player_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Player Id"
+          },
+          "total": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Total"
+          },
+          "played": {
+            "title": "Played",
+            "type": "number"
+          }
+        },
+        "required": [
+          "division",
+          "player",
+          "player_id",
+          "total",
+          "played"
+        ],
+        "title": "DivisionLeaderOut",
+        "type": "object"
+      },
+      "MyDivisionSummaryOut": {
+        "properties": {
+          "ladder_id": {
+            "title": "Ladder Id",
+            "type": "integer"
+          },
+          "division": {
+            "title": "Division",
+            "type": "integer"
+          },
+          "matches_played": {
+            "title": "Matches Played",
+            "type": "integer"
+          },
+          "total_opponents": {
+            "title": "Total Opponents",
+            "type": "integer"
+          },
+          "total_points": {
+            "title": "Total Points",
+            "type": "integer"
+          },
+          "rank_in_division": {
+            "title": "Rank In Division",
+            "type": "integer"
+          },
+          "division_size": {
+            "title": "Division Size",
+            "type": "integer"
+          },
+          "is_closed": {
+            "title": "Is Closed",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "ladder_id",
+          "division",
+          "matches_played",
+          "total_opponents",
+          "total_points",
+          "rank_in_division",
+          "division_size",
+          "is_closed"
+        ],
+        "title": "MyDivisionSummaryOut",
+        "type": "object"
+      },
+      "RecentMatchOut": {
+        "properties": {
+          "winner_id": {
+            "title": "Winner Id",
+            "type": "integer"
+          },
+          "winner_name": {
+            "title": "Winner Name",
+            "type": "string"
+          },
+          "loser_id": {
+            "title": "Loser Id",
+            "type": "integer"
+          },
+          "loser_name": {
+            "title": "Loser Name",
+            "type": "string"
+          },
+          "winner_score": {
+            "title": "Winner Score",
+            "type": "integer"
+          },
+          "loser_score": {
+            "title": "Loser Score",
+            "type": "integer"
+          },
+          "score_display": {
+            "title": "Score Display",
+            "type": "string"
+          },
+          "is_incomplete": {
+            "title": "Is Incomplete",
+            "type": "boolean"
+          },
+          "is_injury": {
+            "title": "Is Injury",
+            "type": "boolean"
+          },
+          "incomplete_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Incomplete Reason"
+          },
+          "division": {
+            "title": "Division",
+            "type": "integer"
+          },
+          "year": {
+            "title": "Year",
+            "type": "integer"
+          },
+          "season_round": {
+            "title": "Season Round",
+            "type": "integer"
+          },
+          "date_added": {
+            "format": "date",
+            "title": "Date Added",
+            "type": "string"
+          },
+          "date_display": {
+            "title": "Date Display",
+            "type": "string"
+          },
+          "date_full": {
+            "title": "Date Full",
+            "type": "string"
+          }
+        },
+        "required": [
+          "winner_id",
+          "winner_name",
+          "loser_id",
+          "loser_name",
+          "winner_score",
+          "loser_score",
+          "score_display",
+          "is_incomplete",
+          "is_injury",
+          "incomplete_reason",
+          "division",
+          "year",
+          "season_round",
+          "date_added",
+          "date_display",
+          "date_full"
+        ],
+        "title": "RecentMatchOut",
+        "type": "object"
+      },
+      "SeasonProgressOut": {
+        "properties": {
+          "season_days": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Season Days",
+            "type": "array"
+          },
+          "season_total_matches": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Season Total Matches",
+            "type": "array"
+          },
+          "played_days": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Played Days",
+            "type": "array"
+          },
+          "played": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Played",
+            "type": "array"
+          },
+          "played_cumulative": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Played Cumulative",
+            "type": "array"
+          },
+          "season_start": {
+            "title": "Season Start",
+            "type": "string"
+          },
+          "today_day": {
+            "title": "Today Day",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "season_days",
+          "season_total_matches",
+          "played_days",
+          "played",
+          "played_cumulative",
+          "season_start",
+          "today_day"
+        ],
+        "title": "SeasonProgressOut",
+        "type": "object"
+      },
+      "SeasonStatsOut": {
+        "properties": {
+          "divisions": {
+            "title": "Divisions",
+            "type": "integer"
+          },
+          "percentage_played": {
+            "title": "Percentage Played",
+            "type": "string"
+          },
+          "total_games_count": {
+            "title": "Total Games Count",
+            "type": "integer"
+          },
+          "results_count": {
+            "title": "Results Count",
+            "type": "integer"
+          },
+          "player_count": {
+            "title": "Player Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "divisions",
+          "percentage_played",
+          "total_games_count",
+          "results_count",
+          "player_count"
+        ],
+        "title": "SeasonStatsOut",
+        "type": "object"
+      },
+      "SeasonSummaryRef": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "year": {
+            "title": "Year",
+            "type": "integer"
+          },
+          "season_round": {
+            "title": "Season Round",
+            "type": "integer"
+          },
+          "start_date": {
+            "format": "date",
+            "title": "Start Date",
+            "type": "string"
+          },
+          "end_date": {
+            "format": "date",
+            "title": "End Date",
+            "type": "string"
+          },
+          "is_draft": {
+            "title": "Is Draft",
+            "type": "boolean"
+          },
+          "is_closed": {
+            "title": "Is Closed",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "year",
+          "season_round",
+          "start_date",
+          "end_date",
+          "is_draft",
+          "is_closed"
+        ],
+        "title": "SeasonSummaryRef",
+        "type": "object"
+      },
+      "SeasonArchiveItemOut": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "year": {
+            "title": "Year",
+            "type": "integer"
+          },
+          "season_round": {
+            "title": "Season Round",
+            "type": "integer"
+          },
+          "start_date": {
+            "format": "date",
+            "title": "Start Date",
+            "type": "string"
+          },
+          "end_date": {
+            "format": "date",
+            "title": "End Date",
+            "type": "string"
+          },
+          "divisions_count": {
+            "title": "Divisions Count",
+            "type": "integer"
+          },
+          "player_count": {
+            "title": "Player Count",
+            "type": "integer"
+          },
+          "total_matches": {
+            "title": "Total Matches",
+            "type": "integer"
+          },
+          "matches_played": {
+            "title": "Matches Played",
+            "type": "integer"
+          },
+          "completion_pct": {
+            "title": "Completion Pct",
+            "type": "number"
+          },
+          "is_latest": {
+            "title": "Is Latest",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "year",
+          "season_round",
+          "start_date",
+          "end_date",
+          "divisions_count",
+          "player_count",
+          "total_matches",
+          "matches_played",
+          "completion_pct",
+          "is_latest"
+        ],
+        "title": "SeasonArchiveItemOut",
+        "type": "object"
+      },
+      "SeasonArchiveSummaryOut": {
+        "properties": {
+          "total_seasons": {
+            "title": "Total Seasons",
+            "type": "integer"
+          },
+          "total_divisions": {
+            "title": "Total Divisions",
+            "type": "integer"
+          },
+          "total_matches_played": {
+            "title": "Total Matches Played",
+            "type": "integer"
+          },
+          "total_matches_scheduled": {
+            "title": "Total Matches Scheduled",
+            "type": "integer"
+          },
+          "overall_completion": {
+            "title": "Overall Completion",
+            "type": "string"
+          },
+          "years_span": {
+            "title": "Years Span",
+            "type": "string"
+          }
+        },
+        "required": [
+          "total_seasons",
+          "total_divisions",
+          "total_matches_played",
+          "total_matches_scheduled",
+          "overall_completion",
+          "years_span"
+        ],
+        "title": "SeasonArchiveSummaryOut",
+        "type": "object"
+      },
+      "SeasonListOut": {
+        "properties": {
+          "seasons": {
+            "items": {
+              "$ref": "#/components/schemas/SeasonArchiveItemOut"
+            },
+            "title": "Seasons",
+            "type": "array"
+          },
+          "available_years": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Available Years",
+            "type": "array"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/SeasonArchiveSummaryOut"
+          }
+        },
+        "required": [
+          "seasons",
+          "available_years",
+          "summary"
+        ],
+        "title": "SeasonListOut",
+        "type": "object"
+      },
+      "DivisionGridOut": {
+        "properties": {
+          "ladder_id": {
+            "title": "Ladder Id",
+            "type": "integer"
+          },
+          "division": {
+            "title": "Division",
+            "type": "integer"
+          },
+          "ladder_type": {
+            "title": "Ladder Type",
+            "type": "string"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/GridRowOut"
+            },
+            "title": "Rows",
+            "type": "array"
+          }
+        },
+        "required": [
+          "ladder_id",
+          "division",
+          "ladder_type",
+          "rows"
+        ],
+        "title": "DivisionGridOut",
+        "type": "object"
+      },
+      "GridCellOut": {
+        "properties": {
+          "is_self": {
+            "title": "Is Self",
+            "type": "boolean"
+          },
+          "player_id": {
+            "title": "Player Id",
+            "type": "integer"
+          },
+          "opponent_id": {
+            "title": "Opponent Id",
+            "type": "integer"
+          },
+          "opponent_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Opponent Name"
+          },
+          "result": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Result"
+          }
+        },
+        "required": [
+          "is_self",
+          "player_id",
+          "opponent_id"
+        ],
+        "title": "GridCellOut",
+        "type": "object"
+      },
+      "GridRowOut": {
+        "properties": {
+          "position": {
+            "title": "Position",
+            "type": "integer"
+          },
+          "player_id": {
+            "title": "Player Id",
+            "type": "integer"
+          },
+          "player_name": {
+            "title": "Player Name",
+            "type": "string"
+          },
+          "is_current_user": {
+            "title": "Is Current User",
+            "type": "boolean"
+          },
+          "cells": {
+            "items": {
+              "$ref": "#/components/schemas/GridCellOut"
+            },
+            "title": "Cells",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          },
+          "average": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "title": "Average"
+          },
+          "matches_played": {
+            "title": "Matches Played",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "position",
+          "player_id",
+          "player_name",
+          "is_current_user",
+          "cells",
+          "total",
+          "average",
+          "matches_played"
+        ],
+        "title": "GridRowOut",
+        "type": "object"
+      },
+      "SeasonDetailOut": {
+        "properties": {
+          "season": {
+            "$ref": "#/components/schemas/SeasonSummaryRef"
+          },
+          "divisions": {
+            "items": {
+              "$ref": "#/components/schemas/DivisionGridOut"
+            },
+            "title": "Divisions",
+            "type": "array"
+          }
+        },
+        "required": [
+          "season",
+          "divisions"
+        ],
+        "title": "SeasonDetailOut",
+        "type": "object"
+      },
+      "DivisionDetailOut": {
+        "properties": {
+          "season": {
+            "$ref": "#/components/schemas/SeasonSummaryRef"
+          },
+          "ladder_id": {
+            "title": "Ladder Id",
+            "type": "integer"
+          },
+          "division": {
+            "title": "Division",
+            "type": "integer"
+          },
+          "ladder_type": {
+            "title": "Ladder Type",
+            "type": "string"
+          },
+          "is_closed": {
+            "title": "Is Closed",
+            "type": "boolean"
+          },
+          "subscribed": {
+            "title": "Subscribed",
+            "type": "boolean"
+          },
+          "can_admin_enter": {
+            "title": "Can Admin Enter",
+            "type": "boolean"
+          },
+          "has_prev_division": {
+            "title": "Has Prev Division",
+            "type": "boolean"
+          },
+          "has_next_division": {
+            "title": "Has Next Division",
+            "type": "boolean"
+          },
+          "grid": {
+            "$ref": "#/components/schemas/DivisionGridOut"
+          },
+          "stats": {
+            "$ref": "#/components/schemas/DivisionStatsOut"
+          },
+          "recent_results": {
+            "items": {
+              "$ref": "#/components/schemas/RecentMatchOut"
+            },
+            "title": "Recent Results",
+            "type": "array"
+          }
+        },
+        "required": [
+          "season",
+          "ladder_id",
+          "division",
+          "ladder_type",
+          "is_closed",
+          "subscribed",
+          "can_admin_enter",
+          "has_prev_division",
+          "has_next_division",
+          "grid",
+          "stats",
+          "recent_results"
+        ],
+        "title": "DivisionDetailOut",
+        "type": "object"
+      },
+      "DivisionLeaderStatOut": {
+        "properties": {
+          "player_id": {
+            "title": "Player Id",
+            "type": "integer"
+          },
+          "player_name": {
+            "title": "Player Name",
+            "type": "string"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          },
+          "played": {
+            "title": "Played",
+            "type": "integer"
+          },
+          "won": {
+            "title": "Won",
+            "type": "integer"
+          },
+          "lost": {
+            "title": "Lost",
+            "type": "integer"
+          },
+          "retired": {
+            "title": "Retired",
+            "type": "integer"
+          },
+          "incomplete": {
+            "title": "Incomplete",
+            "type": "integer"
+          },
+          "avg": {
+            "title": "Avg",
+            "type": "string"
+          },
+          "max_possible": {
+            "title": "Max Possible",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "player_id",
+          "player_name",
+          "total",
+          "played",
+          "won",
+          "lost",
+          "retired",
+          "incomplete",
+          "avg",
+          "max_possible"
+        ],
+        "title": "DivisionLeaderStatOut",
+        "type": "object"
+      },
+      "DivisionStatsOut": {
+        "properties": {
+          "players_count": {
+            "title": "Players Count",
+            "type": "integer"
+          },
+          "total_matches_played": {
+            "title": "Total Matches Played",
+            "type": "integer"
+          },
+          "total_matches": {
+            "title": "Total Matches",
+            "type": "integer"
+          },
+          "matches_remaining": {
+            "title": "Matches Remaining",
+            "type": "integer"
+          },
+          "perc_matches_played": {
+            "title": "Perc Matches Played",
+            "type": "number"
+          },
+          "leader": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DivisionLeaderStatOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "leaders": {
+            "items": {
+              "$ref": "#/components/schemas/DivisionLeaderStatOut"
+            },
+            "title": "Leaders",
+            "type": "array"
+          },
+          "avg_match_score": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avg Match Score"
+          },
+          "avg_games_per_match": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avg Games Per Match"
+          },
+          "total_games_played": {
+            "title": "Total Games Played",
+            "type": "integer"
+          },
+          "close_matches_count": {
+            "title": "Close Matches Count",
+            "type": "integer"
+          },
+          "close_matches_pct": {
+            "title": "Close Matches Pct",
+            "type": "number"
+          }
+        },
+        "required": [
+          "players_count",
+          "total_matches_played",
+          "total_matches",
+          "matches_remaining",
+          "perc_matches_played",
+          "leader",
+          "leaders",
+          "avg_match_score",
+          "avg_games_per_match",
+          "total_games_played",
+          "close_matches_count",
+          "close_matches_pct"
+        ],
+        "title": "DivisionStatsOut",
+        "type": "object"
+      },
+      "SubscriptionToggleOut": {
+        "properties": {
+          "subscribed": {
+            "title": "Subscribed",
+            "type": "boolean"
+          },
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          }
+        },
+        "required": [
+          "subscribed",
+          "detail"
+        ],
+        "title": "SubscriptionToggleOut",
+        "type": "object"
+      },
+      "EnteredMatchOut": {
+        "properties": {
+          "pair_key": {
+            "title": "Pair Key",
+            "type": "string"
+          },
+          "opponent_id": {
+            "title": "Opponent Id",
+            "type": "integer"
+          },
+          "opponent_name": {
+            "title": "Opponent Name",
+            "type": "string"
+          },
+          "winner_id": {
+            "title": "Winner Id",
+            "type": "integer"
+          },
+          "loser_id": {
+            "title": "Loser Id",
+            "type": "integer"
+          },
+          "my_score": {
+            "title": "My Score",
+            "type": "integer"
+          },
+          "opp_score": {
+            "title": "Opp Score",
+            "type": "integer"
+          },
+          "losing_score": {
+            "title": "Losing Score",
+            "type": "integer"
+          },
+          "outcome_code": {
+            "title": "Outcome Code",
+            "type": "string"
+          },
+          "is_incomplete": {
+            "title": "Is Incomplete",
+            "type": "boolean"
+          },
+          "is_injury": {
+            "title": "Is Injury",
+            "type": "boolean"
+          },
+          "incomplete_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Incomplete Reason"
+          },
+          "score_display": {
+            "title": "Score Display",
+            "type": "string"
+          },
+          "date_added": {
+            "format": "date",
+            "title": "Date Added",
+            "type": "string"
+          }
+        },
+        "required": [
+          "pair_key",
+          "opponent_id",
+          "opponent_name",
+          "winner_id",
+          "loser_id",
+          "my_score",
+          "opp_score",
+          "losing_score",
+          "outcome_code",
+          "is_incomplete",
+          "is_injury",
+          "incomplete_reason",
+          "score_display",
+          "date_added"
+        ],
+        "title": "EnteredMatchOut",
+        "type": "object"
+      },
+      "OpponentQuickOut": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "h2h_played": {
+            "title": "H2H Played",
+            "type": "integer"
+          },
+          "h2h_won": {
+            "title": "H2H Won",
+            "type": "integer"
+          },
+          "h2h_lost": {
+            "title": "H2H Lost",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "h2h_played",
+          "h2h_won",
+          "h2h_lost"
+        ],
+        "title": "OpponentQuickOut",
+        "type": "object"
+      },
+      "ResultEntryContextOut": {
+        "properties": {
+          "has_active_ladder": {
+            "title": "Has Active Ladder",
+            "type": "boolean"
+          },
+          "ladder": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ActiveDivisionRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "player_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Player Id"
+          },
+          "player_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Player Name"
+          },
+          "is_closed": {
+            "title": "Is Closed",
+            "type": "boolean"
+          },
+          "total_opponents": {
+            "title": "Total Opponents",
+            "type": "integer"
+          },
+          "unplayed": {
+            "items": {
+              "$ref": "#/components/schemas/OpponentQuickOut"
+            },
+            "title": "Unplayed",
+            "type": "array"
+          },
+          "entered": {
+            "items": {
+              "$ref": "#/components/schemas/EnteredMatchOut"
+            },
+            "title": "Entered",
+            "type": "array"
+          }
+        },
+        "required": [
+          "has_active_ladder",
+          "ladder",
+          "player_id",
+          "player_name",
+          "is_closed",
+          "total_opponents",
+          "unplayed",
+          "entered"
+        ],
+        "title": "ResultEntryContextOut",
+        "type": "object"
+      },
+      "ResultMutationOut": {
+        "properties": {
+          "pair_key": {
+            "title": "Pair Key",
+            "type": "string"
+          },
+          "changed": {
+            "default": true,
+            "title": "Changed",
+            "type": "boolean"
+          },
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          }
+        },
+        "required": [
+          "pair_key",
+          "detail"
+        ],
+        "title": "ResultMutationOut",
+        "type": "object"
+      },
+      "SubmitResultIn": {
+        "properties": {
+          "opponent_id": {
+            "title": "Opponent Id",
+            "type": "integer"
+          },
+          "outcome": {
+            "enum": [
+              "won",
+              "lost",
+              "incomplete"
+            ],
+            "title": "Outcome",
+            "type": "string"
+          },
+          "primary_score": {
+            "title": "Primary Score",
+            "type": "integer"
+          },
+          "opponent_score": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Opponent Score"
+          },
+          "incomplete_reason": {
+            "anyOf": [
+              {
+                "enum": [
+                  "time",
+                  "injury"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Incomplete Reason"
+          },
+          "injured_player": {
+            "anyOf": [
+              {
+                "enum": [
+                  "opponent",
+                  "me"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Injured Player"
+          }
+        },
+        "required": [
+          "opponent_id",
+          "outcome",
+          "primary_score"
+        ],
+        "title": "SubmitResultIn",
+        "type": "object"
+      },
+      "EditResultIn": {
+        "properties": {
+          "match_mode": {
+            "enum": [
+              "completed",
+              "time",
+              "injury"
+            ],
+            "title": "Match Mode",
+            "type": "string"
+          },
+          "winner_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Winner Id"
+          },
+          "winner_score": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Winner Score"
+          },
+          "losing_score": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Losing Score"
+          }
+        },
+        "required": [
+          "match_mode"
+        ],
+        "title": "EditResultIn",
+        "type": "object"
+      },
+      "AdminSubmitResultIn": {
+        "properties": {
+          "winner_id": {
+            "title": "Winner Id",
+            "type": "integer"
+          },
+          "loser_id": {
+            "title": "Loser Id",
+            "type": "integer"
+          },
+          "losing_score": {
+            "title": "Losing Score",
+            "type": "integer"
+          },
+          "incomplete_reason": {
+            "anyOf": [
+              {
+                "enum": [
+                  "time",
+                  "injury"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Incomplete Reason"
+          }
+        },
+        "required": [
+          "winner_id",
+          "loser_id",
+          "losing_score"
+        ],
+        "title": "AdminSubmitResultIn",
+        "type": "object"
+      },
+      "ClubLeaderboardsOut": {
+        "properties": {
+          "most_won": {
+            "items": {
+              "$ref": "#/components/schemas/ClubPlayerMatchStatOut"
+            },
+            "title": "Most Won",
+            "type": "array"
+          },
+          "most_played": {
+            "items": {
+              "$ref": "#/components/schemas/ClubPlayerMatchStatOut"
+            },
+            "title": "Most Played",
+            "type": "array"
+          },
+          "most_points": {
+            "items": {
+              "$ref": "#/components/schemas/ClubPlayerMatchStatOut"
+            },
+            "title": "Most Points",
+            "type": "array"
+          },
+          "most_titles": {
+            "items": {
+              "$ref": "#/components/schemas/ClubPlayerStandingStatOut"
+            },
+            "title": "Most Titles",
+            "type": "array"
+          },
+          "highest_completion": {
+            "items": {
+              "$ref": "#/components/schemas/ClubPlayerStandingStatOut"
+            },
+            "title": "Highest Completion",
+            "type": "array"
+          },
+          "top_rivalries": {
+            "items": {
+              "$ref": "#/components/schemas/ClubRivalryStatOut"
+            },
+            "title": "Top Rivalries",
+            "type": "array"
+          },
+          "best_centile": {
+            "items": {
+              "$ref": "#/components/schemas/ClubPlayerStandingStatOut"
+            },
+            "title": "Best Centile",
+            "type": "array"
+          }
+        },
+        "required": [
+          "most_won",
+          "most_played",
+          "most_points",
+          "most_titles",
+          "highest_completion",
+          "top_rivalries",
+          "best_centile"
+        ],
+        "title": "ClubLeaderboardsOut",
+        "type": "object"
+      },
+      "ClubPlayerMatchStatOut": {
+        "properties": {
+          "player_id": {
+            "title": "Player Id",
+            "type": "integer"
+          },
+          "player_name": {
+            "title": "Player Name",
+            "type": "string"
+          },
+          "played": {
+            "title": "Played",
+            "type": "integer"
+          },
+          "won": {
+            "title": "Won",
+            "type": "integer"
+          },
+          "lost": {
+            "title": "Lost",
+            "type": "integer"
+          },
+          "retired": {
+            "title": "Retired",
+            "type": "integer"
+          },
+          "incomplete": {
+            "title": "Incomplete",
+            "type": "integer"
+          },
+          "total_points": {
+            "title": "Total Points",
+            "type": "integer"
+          },
+          "win_rate": {
+            "title": "Win Rate",
+            "type": "number"
+          },
+          "win_rate_display": {
+            "title": "Win Rate Display",
+            "type": "string"
+          },
+          "avg_points": {
+            "title": "Avg Points",
+            "type": "number"
+          },
+          "avg_points_display": {
+            "title": "Avg Points Display",
+            "type": "string"
+          }
+        },
+        "required": [
+          "player_id",
+          "player_name",
+          "played",
+          "won",
+          "lost",
+          "retired",
+          "incomplete",
+          "total_points",
+          "win_rate",
+          "win_rate_display",
+          "avg_points",
+          "avg_points_display"
+        ],
+        "title": "ClubPlayerMatchStatOut",
+        "type": "object"
+      },
+      "ClubPlayerStandingStatOut": {
+        "properties": {
+          "player_id": {
+            "title": "Player Id",
+            "type": "integer"
+          },
+          "player_name": {
+            "title": "Player Name",
+            "type": "string"
+          },
+          "best_centile": {
+            "title": "Best Centile",
+            "type": "integer"
+          },
+          "best_rank": {
+            "title": "Best Rank",
+            "type": "integer"
+          },
+          "best_total_players": {
+            "title": "Best Total Players",
+            "type": "integer"
+          },
+          "best_year": {
+            "title": "Best Year",
+            "type": "integer"
+          },
+          "best_round": {
+            "title": "Best Round",
+            "type": "integer"
+          },
+          "best_division": {
+            "title": "Best Division",
+            "type": "integer"
+          },
+          "peak_count": {
+            "title": "Peak Count",
+            "type": "integer"
+          },
+          "avg_centile": {
+            "title": "Avg Centile",
+            "type": "number"
+          },
+          "avg_centile_display": {
+            "title": "Avg Centile Display",
+            "type": "string"
+          },
+          "seasons_played": {
+            "title": "Seasons Played",
+            "type": "integer"
+          },
+          "division_titles": {
+            "title": "Division Titles",
+            "type": "integer"
+          },
+          "div1_titles": {
+            "title": "Div1 Titles",
+            "type": "integer"
+          },
+          "title_rate": {
+            "title": "Title Rate",
+            "type": "number"
+          },
+          "title_rate_display": {
+            "title": "Title Rate Display",
+            "type": "string"
+          },
+          "divisions_won_badges": {
+            "items": {
+              "$ref": "#/components/schemas/DivisionWonBadgeOut"
+            },
+            "title": "Divisions Won Badges",
+            "type": "array"
+          },
+          "scheduled_matches": {
+            "title": "Scheduled Matches",
+            "type": "integer"
+          },
+          "played_matches": {
+            "title": "Played Matches",
+            "type": "integer"
+          },
+          "completion_rate": {
+            "title": "Completion Rate",
+            "type": "number"
+          },
+          "completion_rate_display": {
+            "title": "Completion Rate Display",
+            "type": "string"
+          }
+        },
+        "required": [
+          "player_id",
+          "player_name",
+          "best_centile",
+          "best_rank",
+          "best_total_players",
+          "best_year",
+          "best_round",
+          "best_division",
+          "peak_count",
+          "avg_centile",
+          "avg_centile_display",
+          "seasons_played",
+          "division_titles",
+          "div1_titles",
+          "title_rate",
+          "title_rate_display",
+          "divisions_won_badges",
+          "scheduled_matches",
+          "played_matches",
+          "completion_rate",
+          "completion_rate_display"
+        ],
+        "title": "ClubPlayerStandingStatOut",
+        "type": "object"
+      },
+      "ClubRivalryStatOut": {
+        "properties": {
+          "player_a_id": {
+            "title": "Player A Id",
+            "type": "integer"
+          },
+          "player_a_name": {
+            "title": "Player A Name",
+            "type": "string"
+          },
+          "player_a_wins": {
+            "title": "Player A Wins",
+            "type": "integer"
+          },
+          "player_b_id": {
+            "title": "Player B Id",
+            "type": "integer"
+          },
+          "player_b_name": {
+            "title": "Player B Name",
+            "type": "string"
+          },
+          "player_b_wins": {
+            "title": "Player B Wins",
+            "type": "integer"
+          },
+          "matches_played": {
+            "title": "Matches Played",
+            "type": "integer"
+          },
+          "last_played": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Played"
+          }
+        },
+        "required": [
+          "player_a_id",
+          "player_a_name",
+          "player_a_wins",
+          "player_b_id",
+          "player_b_name",
+          "player_b_wins",
+          "matches_played",
+          "last_played"
+        ],
+        "title": "ClubRivalryStatOut",
+        "type": "object"
+      },
+      "ClubStatsFilterOut": {
+        "properties": {
+          "filter_type": {
+            "title": "Filter Type",
+            "type": "string"
+          },
+          "period": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period"
+          },
+          "selected_year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Selected Year"
+          },
+          "selected_season_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Selected Season Id"
+          },
+          "filter_label": {
+            "title": "Filter Label",
+            "type": "string"
+          },
+          "min_rounds": {
+            "title": "Min Rounds",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "filter_type",
+          "period",
+          "selected_year",
+          "selected_season_id",
+          "filter_label",
+          "min_rounds"
+        ],
+        "title": "ClubStatsFilterOut",
+        "type": "object"
+      },
+      "ClubStatsOut": {
+        "properties": {
+          "filter": {
+            "$ref": "#/components/schemas/ClubStatsFilterOut"
+          },
+          "available_years": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Available Years",
+            "type": "array"
+          },
+          "available_seasons": {
+            "items": {
+              "$ref": "#/components/schemas/SeasonFilterOptionOut"
+            },
+            "title": "Available Seasons",
+            "type": "array"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/ClubStatsSummaryOut"
+          },
+          "leaderboards": {
+            "$ref": "#/components/schemas/ClubLeaderboardsOut"
+          },
+          "page_size": {
+            "title": "Page Size",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "filter",
+          "available_years",
+          "available_seasons",
+          "summary",
+          "leaderboards",
+          "page_size"
+        ],
+        "title": "ClubStatsOut",
+        "type": "object"
+      },
+      "ClubStatsSummaryOut": {
+        "properties": {
+          "seasons_count": {
+            "title": "Seasons Count",
+            "type": "integer"
+          },
+          "divisions_count": {
+            "title": "Divisions Count",
+            "type": "integer"
+          },
+          "matches_played": {
+            "title": "Matches Played",
+            "type": "integer"
+          },
+          "active_players": {
+            "title": "Active Players",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "seasons_count",
+          "divisions_count",
+          "matches_played",
+          "active_players"
+        ],
+        "title": "ClubStatsSummaryOut",
+        "type": "object"
+      },
+      "SeasonFilterOptionOut": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "year": {
+            "title": "Year",
+            "type": "integer"
+          },
+          "season_round": {
+            "title": "Season Round",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "year",
+          "season_round"
+        ],
+        "title": "SeasonFilterOptionOut",
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "JWTAuth": {
+        "type": "http",
+        "scheme": "bearer"
+      },
+      "OptionalJWTAuth": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    }
+  },
+  "servers": []
+}
