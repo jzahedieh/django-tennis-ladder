@@ -1,7 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  FlatList,
+  Modal,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 
 import { apiClient, extractApiError } from "../../src/api/client";
 import { useAuth } from "../../src/auth/AuthContext";
@@ -15,30 +22,25 @@ import {
   PageScroll,
   SectionHeader,
 } from "../../src/components/ui";
-import { colors, radii, spacing } from "../../src/theme/tokens";
+import {
+  cardShadow,
+  colors,
+  radii,
+  spacing,
+  useResponsive,
+} from "../../src/theme/tokens";
+import { formatDate } from "../../src/utils/dates";
 
-type BoardKey =
-  | "most_won"
-  | "most_played"
-  | "most_points"
-  | "most_titles"
-  | "highest_completion"
-  | "top_rivalries"
-  | "best_centile";
-
-const BOARDS: { key: BoardKey; label: string }[] = [
-  { key: "most_won", label: "Most Won" },
-  { key: "most_played", label: "Most Played" },
-  { key: "most_points", label: "Most Points" },
-  { key: "most_titles", label: "Division Titles" },
-  { key: "highest_completion", label: "Completion %" },
-  { key: "top_rivalries", label: "Top Rivalries" },
-  { key: "best_centile", label: "Best Centile" },
-];
+type PickerOption = {
+  key: string;
+  label: string;
+  onSelect: () => void;
+};
 
 export default function ClubStatsScreen() {
   const router = useRouter();
   const { user } = useAuth();
+  const { isDesktop } = useResponsive();
   const params = useLocalSearchParams<{ season?: string }>();
   const initialSeason = params.season ? Number(params.season) : undefined;
 
@@ -49,15 +51,15 @@ export default function ClubStatsScreen() {
   const [selectedSeasonId, setSelectedSeasonId] = useState<number | undefined>(
     initialSeason
   );
-  const [activeBoard, setActiveBoard] = useState<BoardKey>("most_won");
-  const [page, setPage] = useState(0);
+  const [pickerModal, setPickerModal] = useState<"year" | "season" | null>(
+    null
+  );
   const [h2hTarget, setH2HTarget] = useState<H2HTarget | null>(null);
 
   useEffect(() => {
     if (params.season) {
       setSelectedSeasonId(Number(params.season));
       setSelectedYear(undefined);
-      setPage(0);
     }
   }, [params.season]);
 
@@ -106,19 +108,60 @@ export default function ClubStatsScreen() {
   }
 
   const pageSize = data.page_size || 10;
-  const rows = data.leaderboards[activeBoard];
-  const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
-  const safePage = Math.min(page, totalPages - 1);
-  const pagedRows = rows.slice(safePage * pageSize, (safePage + 1) * pageSize);
+  const filterResetKey = `${data.filter.filter_type}:${data.filter.period ?? ""}:${data.filter.selected_year ?? ""}:${data.filter.selected_season_id ?? ""}`;
+  const selectedSeasonObj = data.available_seasons.find(
+    (s) => s.id === data.filter.selected_season_id
+  );
+
+  const yearOptions: PickerOption[] = [
+    {
+      key: "clear-year",
+      label: "All Years (Clear Year Filter)",
+      onSelect: () => {
+        setSelectedYear(undefined);
+        setSelectedSeasonId(undefined);
+      },
+    },
+    ...data.available_years.map((yr) => ({
+      key: String(yr),
+      label: String(yr),
+      onSelect: () => {
+        setSelectedYear(yr);
+        setSelectedSeasonId(undefined);
+      },
+    })),
+  ];
+
+  const seasonOptions: PickerOption[] = [
+    {
+      key: "clear-season",
+      label: "All Rounds (Clear Round Filter)",
+      onSelect: () => {
+        setSelectedSeasonId(undefined);
+        setSelectedYear(undefined);
+      },
+    },
+    ...data.available_seasons.map((s) => ({
+      key: String(s.id),
+      label: `${s.year} Round ${s.season_round}`,
+      onSelect: () => {
+        setSelectedSeasonId(s.id);
+        setSelectedYear(undefined);
+      },
+    })),
+  ];
+
+  const halfColStyle = isDesktop ? styles.gridHalf : undefined;
 
   return (
     <PageScroll>
-      {/* Filters */}
-      <Card>
-        <SectionHeader
-          title="Club Stats & Leaderboards"
-          subtitle={`Showing: ${data.filter.filter_label}`}
-        />
+      {/* Header & Filters */}
+      <Card style={styles.compactCard}>
+        <Text style={styles.pageTitle}>Club Stats & Leaderboards</Text>
+        <View style={styles.showingRow}>
+          <Text style={styles.showingText}>Showing records for:</Text>
+          <Badge label={data.filter.filter_label} variant="navy" />
+        </View>
 
         <View style={styles.filterGroup}>
           {(
@@ -138,7 +181,6 @@ export default function ClubStatsScreen() {
                   setPeriod(val);
                   setSelectedYear(undefined);
                   setSelectedSeasonId(undefined);
-                  setPage(0);
                 }}
                 style={[styles.filterChip, active && styles.filterChipActive]}
               >
@@ -152,204 +194,584 @@ export default function ClubStatsScreen() {
           })}
         </View>
 
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.yearChips}
-        >
-          {data.available_years.slice(0, 10).map((yr) => {
-            const active = selectedYear === yr;
-            return (
-              <Pressable
-                key={yr}
-                onPress={() => {
-                  setSelectedYear(yr);
-                  setSelectedSeasonId(undefined);
-                  setPage(0);
-                }}
-                style={[styles.subChip, active && styles.subChipActive]}
-              >
-                <Text
-                  style={[
-                    styles.subChipText,
-                    active && styles.subChipTextActive,
-                  ]}
-                >
-                  {yr}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
+        <View style={styles.selectRow}>
+          <Pressable
+            onPress={() => setPickerModal("year")}
+            style={[
+              styles.selectBtn,
+              data.filter.selected_year ? styles.selectBtnActive : undefined,
+            ]}
+          >
+            <Text
+              style={[
+                styles.selectBtnText,
+                data.filter.selected_year ? styles.selectBtnTextActive : undefined,
+              ]}
+              numberOfLines={1}
+            >
+              {data.filter.selected_year
+                ? `Year: ${data.filter.selected_year}`
+                : "By Year..."}
+            </Text>
+            <Text style={styles.caret}>▾</Text>
+          </Pressable>
+
+          <Pressable
+            onPress={() => setPickerModal("season")}
+            style={[
+              styles.selectBtn,
+              selectedSeasonObj ? styles.selectBtnActive : undefined,
+            ]}
+          >
+            <Text
+              style={[
+                styles.selectBtnText,
+                selectedSeasonObj ? styles.selectBtnTextActive : undefined,
+              ]}
+              numberOfLines={1}
+            >
+              {selectedSeasonObj
+                ? `${selectedSeasonObj.year} R${selectedSeasonObj.season_round}`
+                : "By Round..."}
+            </Text>
+            <Text style={styles.caret}>▾</Text>
+          </Pressable>
+        </View>
       </Card>
 
-      {/* Summary KPIs */}
-      <View style={styles.kpiRow}>
-        <KpiCard label="Rounds" value={data.summary.seasons_count} />
-        <KpiCard label="Divisions" value={data.summary.divisions_count} />
-        <KpiCard label="Matches" value={data.summary.matches_played} />
-        <KpiCard label="Active Players" value={data.summary.active_players} />
+      {/* Period Summary KPI Strip */}
+      <View style={styles.kpiGrid}>
+        <KpiTile
+          label="LADDERS / ROUNDS"
+          value={data.summary.seasons_count}
+          isDesktop={isDesktop}
+        />
+        <KpiTile
+          label="TOTAL DIVISIONS"
+          value={data.summary.divisions_count}
+          isDesktop={isDesktop}
+        />
+        <KpiTile
+          label="MATCHES PLAYED"
+          value={data.summary.matches_played}
+          isDesktop={isDesktop}
+        />
+        <KpiTile
+          label="ACTIVE PLAYERS"
+          value={data.summary.active_players}
+          isDesktop={isDesktop}
+        />
       </View>
 
-      {/* Leaderboard Tabs + Table */}
-      <Card>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.boardTabs}
-        >
-          {BOARDS.map((b) => {
-            const active = activeBoard === b.key;
+      {/* Leaderboards Grid (all 7 cards matching web) */}
+      <View style={[styles.boardsGrid, isDesktop && styles.boardsGridDesktop]}>
+        {/* 1. Most Matches Won */}
+        <LeaderboardCard
+          title="Most Matches Won"
+          badge={data.filter.filter_label}
+          rows={data.leaderboards.most_won}
+          pageSize={pageSize}
+          resetKey={filterResetKey}
+          emptyMessage="No matches recorded for this period."
+          containerStyle={halfColStyle}
+          headerColumns={
+            <View style={styles.tableHeader}>
+              <Text style={[styles.th, styles.colRank]}>#</Text>
+              <Text style={[styles.th, { flex: 1 }]}>Player</Text>
+              <Text style={[styles.th, styles.colSm]}>Played</Text>
+              <Text style={[styles.th, styles.colMd]}>Win %</Text>
+              <Text style={[styles.th, styles.colVal]}>Won</Text>
+            </View>
+          }
+          renderRow={(row, rank, isLast) => (
+            <Pressable
+              key={row.player_id}
+              onPress={() => router.push(`/player/${row.player_id}`)}
+              style={[styles.tr, isLast && styles.trLast]}
+            >
+              <Text style={styles.rankCell}>{rank}</Text>
+              <Text style={[styles.playerLink, { flex: 1 }]} numberOfLines={1}>
+                {row.player_name}
+              </Text>
+              <Text style={[styles.numMuted, styles.colSm]} numberOfLines={1}>
+                {row.played}
+              </Text>
+              <Text style={[styles.numMuted, styles.colMd]} numberOfLines={1}>
+                {row.win_rate_display}
+              </Text>
+              <Text style={[styles.numBold, styles.colVal]} numberOfLines={1}>
+                {row.won}
+              </Text>
+            </Pressable>
+          )}
+        />
+
+        {/* 2. Most Matches Played */}
+        <LeaderboardCard
+          title="Most Matches Played"
+          badge="Most Active"
+          rows={data.leaderboards.most_played}
+          pageSize={pageSize}
+          resetKey={filterResetKey}
+          emptyMessage="No matches recorded for this period."
+          containerStyle={halfColStyle}
+          headerColumns={
+            <View style={styles.tableHeader}>
+              <Text style={[styles.th, styles.colRank]}>#</Text>
+              <Text style={[styles.th, { flex: 1 }]}>Player</Text>
+              <Text style={[styles.th, styles.colSm]}>Won</Text>
+              <Text style={[styles.th, styles.colMd]}>Win %</Text>
+              <Text style={[styles.th, styles.colVal]}>Played</Text>
+            </View>
+          }
+          renderRow={(row, rank, isLast) => (
+            <Pressable
+              key={row.player_id}
+              onPress={() => router.push(`/player/${row.player_id}`)}
+              style={[styles.tr, isLast && styles.trLast]}
+            >
+              <Text style={styles.rankCell}>{rank}</Text>
+              <Text style={[styles.playerLink, { flex: 1 }]} numberOfLines={1}>
+                {row.player_name}
+              </Text>
+              <Text style={[styles.numMuted, styles.colSm]} numberOfLines={1}>
+                {row.won}
+              </Text>
+              <Text style={[styles.numMuted, styles.colMd]} numberOfLines={1}>
+                {row.win_rate_display}
+              </Text>
+              <Text style={[styles.numBold, styles.colVal]} numberOfLines={1}>
+                {row.played}
+              </Text>
+            </Pressable>
+          )}
+        />
+
+        {/* 3. Most Total Points */}
+        <LeaderboardCard
+          title="Most Total Points"
+          badge="12 / win · games+1 / loss"
+          rows={data.leaderboards.most_points}
+          pageSize={pageSize}
+          resetKey={filterResetKey}
+          emptyMessage="No points recorded for this period."
+          containerStyle={halfColStyle}
+          headerColumns={
+            <View style={styles.tableHeader}>
+              <Text style={[styles.th, styles.colRank]}>#</Text>
+              <Text style={[styles.th, { flex: 1 }]}>Player</Text>
+              <Text style={[styles.th, styles.colSm]}>Played</Text>
+              <Text style={[styles.th, styles.colMd]}>Avg Pts</Text>
+              <Text style={[styles.th, styles.colVal]}>Points</Text>
+            </View>
+          }
+          renderRow={(row, rank, isLast) => (
+            <Pressable
+              key={row.player_id}
+              onPress={() => router.push(`/player/${row.player_id}`)}
+              style={[styles.tr, isLast && styles.trLast]}
+            >
+              <Text style={styles.rankCell}>{rank}</Text>
+              <Text style={[styles.playerLink, { flex: 1 }]} numberOfLines={1}>
+                {row.player_name}
+              </Text>
+              <Text style={[styles.numMuted, styles.colSm]}>{row.played}</Text>
+              <Text style={[styles.numMuted, styles.colMd]}>
+                {row.avg_points_display}
+              </Text>
+              <Text style={[styles.numBold, styles.colVal]}>
+                {row.total_points}
+              </Text>
+            </Pressable>
+          )}
+        />
+
+        {/* 4. Most Division Titles */}
+        <LeaderboardCard
+          title="Most Division Titles"
+          badge="#1 Finishes"
+          rows={data.leaderboards.most_titles}
+          pageSize={pageSize}
+          resetKey={filterResetKey}
+          emptyMessage="No division titles recorded in this period."
+          containerStyle={halfColStyle}
+          headerColumns={
+            <View style={styles.tableHeader}>
+              <Text style={[styles.th, styles.colRank]}>#</Text>
+              <Text style={[styles.th, { flex: 1 }]}>Player</Text>
+              <Text style={[styles.th, styles.colSm]}>Rounds</Text>
+              <Text style={[styles.th, styles.colVal]}>Titles</Text>
+            </View>
+          }
+          renderRow={(row, rank, isLast) => (
+            <Pressable
+              key={row.player_id}
+              onPress={() => router.push(`/player/${row.player_id}`)}
+              style={[styles.tr, isLast && styles.trLast]}
+            >
+              <Text style={styles.rankCell}>{rank}</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.playerLink} numberOfLines={1}>
+                  {row.player_name}
+                </Text>
+                {row.divisions_won_badges.length > 0 ? (
+                  <View style={styles.divBadgesWrap}>
+                    {row.divisions_won_badges.map((b) => (
+                      <Badge
+                        key={b.division}
+                        label={b.label}
+                        variant={b.is_div1 ? "amber" : "neutral"}
+                      />
+                    ))}
+                  </View>
+                ) : null}
+              </View>
+              <Text style={[styles.numMuted, styles.colSm]}>
+                {row.seasons_played}
+              </Text>
+              <Text style={[styles.numBold, styles.colVal]}>
+                {row.division_titles}
+              </Text>
+            </Pressable>
+          )}
+        />
+
+        {/* 5. Match Completion % */}
+        <LeaderboardCard
+          title="Match Completion %"
+          badge={`Min ${data.filter.min_rounds} round${data.filter.min_rounds === 1 ? "" : "s"}`}
+          rows={data.leaderboards.highest_completion}
+          pageSize={pageSize}
+          resetKey={filterResetKey}
+          emptyMessage={`No players with at least ${data.filter.min_rounds} round${data.filter.min_rounds === 1 ? "" : "s"} in this period.`}
+          containerStyle={halfColStyle}
+          headerColumns={
+            <View style={styles.tableHeader}>
+              <Text style={[styles.th, styles.colRank]}>#</Text>
+              <Text style={[styles.th, { flex: 1 }]}>Player</Text>
+              <Text style={[styles.th, styles.colMd]}>Matches</Text>
+              <Text style={[styles.th, styles.colSm]}>Rds</Text>
+              <Text style={[styles.th, styles.colVal]}>Rate</Text>
+            </View>
+          }
+          renderRow={(row, rank, isLast) => (
+            <Pressable
+              key={row.player_id}
+              onPress={() => router.push(`/player/${row.player_id}`)}
+              style={[styles.tr, isLast && styles.trLast]}
+            >
+              <Text style={styles.rankCell}>{rank}</Text>
+              <Text style={[styles.playerLink, { flex: 1 }]} numberOfLines={1}>
+                {row.player_name}
+              </Text>
+              <Text style={[styles.numMuted, styles.colMd]} numberOfLines={1}>
+                {row.played_matches}/{row.scheduled_matches}
+              </Text>
+              <Text style={[styles.numMuted, styles.colSm]} numberOfLines={1}>
+                {row.seasons_played}
+              </Text>
+              <Text style={[styles.numBold, styles.colVal]} numberOfLines={1}>
+                {row.completion_rate_display}
+              </Text>
+            </Pressable>
+          )}
+        />
+
+        {/* 6. Most Played Rivalries */}
+        <LeaderboardCard
+          title="Most Played Rivalries"
+          badge="Head-to-Head"
+          rows={data.leaderboards.top_rivalries}
+          pageSize={pageSize}
+          resetKey={filterResetKey}
+          emptyMessage="No repeat head-to-head matchups in this period."
+          containerStyle={halfColStyle}
+          headerColumns={
+            <View style={styles.tableHeader}>
+              <Text style={[styles.th, styles.colRank]}>#</Text>
+              <Text style={[styles.th, { flex: 1 }]}>Rivalry</Text>
+              <Text style={[styles.th, styles.colMd]}>Record</Text>
+              <Text style={[styles.th, styles.colVal]}>Matches</Text>
+            </View>
+          }
+          renderRow={(row, rank, isLast) => {
+            const lastPlayed = formatDate(row.last_played).replace(
+              /^\d+\s+/,
+              ""
+            );
             return (
               <Pressable
-                key={b.key}
-                onPress={() => {
-                  setActiveBoard(b.key);
-                  setPage(0);
-                }}
-                style={[styles.boardTab, active && styles.boardTabActive]}
+                key={`${row.player_a_id}-${row.player_b_id}`}
+                onPress={() =>
+                  setH2HTarget({
+                    playerId: row.player_a_id,
+                    opponentId: row.player_b_id,
+                    title: `${row.player_a_name} vs ${row.player_b_name}`,
+                  })
+                }
+                style={[styles.tr, isLast && styles.trLast]}
               >
-                <Text
-                  style={[
-                    styles.boardTabText,
-                    active && styles.boardTabTextActive,
-                  ]}
-                >
-                  {b.label}
+                <Text style={styles.rankCell}>{rank}</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.playerLink} numberOfLines={2}>
+                    {row.player_a_name}{" "}
+                    <Text style={styles.vsText}>vs</Text> {row.player_b_name}
+                  </Text>
+                  {lastPlayed ? (
+                    <Text style={styles.rowSub}>Last played {lastPlayed}</Text>
+                  ) : null}
+                </View>
+                <View style={styles.colMd}>
+                  <Badge
+                    label={`${row.player_a_wins}–${row.player_b_wins}`}
+                    variant="neutral"
+                  />
+                </View>
+                <Text style={[styles.numBold, styles.colVal]}>
+                  {row.matches_played}
                 </Text>
               </Pressable>
             );
-          })}
-        </ScrollView>
+          }}
+        />
 
-        {pagedRows.length === 0 ? (
-          <Text style={styles.empty}>No records for this period filter.</Text>
-        ) : activeBoard === "top_rivalries" ? (
-          data.leaderboards.top_rivalries
-            .slice(safePage * pageSize, (safePage + 1) * pageSize)
-            .map((r, idx) => (
-              <Pressable
-                key={`${r.player_a_id}-${r.player_b_id}`}
-                onPress={() =>
-                  setH2HTarget({
-                    playerId: r.player_a_id,
-                    opponentId: r.player_b_id,
-                    title: `${r.player_a_name} vs ${r.player_b_name}`,
-                  })
-                }
-                style={styles.row}
-              >
-                <Text style={styles.rank}>{safePage * pageSize + idx + 1}</Text>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.rowTitle}>
-                    {r.player_a_name} ({r.player_a_wins}) vs {r.player_b_name} (
-                    {r.player_b_wins})
+        {/* 7. Best Centile & Top Finishers (full width at bottom) */}
+        <LeaderboardCard
+          title="Best Centile & Top Finishers"
+          subtitle="Highest overall club standing achieved across divisions (higher % = higher up the club ladder)"
+          badge={data.filter.filter_label}
+          rows={data.leaderboards.best_centile}
+          pageSize={pageSize}
+          resetKey={filterResetKey}
+          emptyMessage="No ladder standings recorded for this period."
+          containerStyle={isDesktop ? styles.gridFull : undefined}
+          headerColumns={
+            <View style={styles.tableHeader}>
+              <Text style={[styles.th, styles.colRank]}>#</Text>
+              <Text style={[styles.th, { flex: 1 }]}>Player</Text>
+              <Text style={[styles.th, styles.colRankCol]}>Rank</Text>
+              <Text style={[styles.th, styles.colSm]}>Avg</Text>
+              <Text style={[styles.th, styles.colVal]}>Best</Text>
+            </View>
+          }
+          renderRow={(row, rank, isLast) => (
+            <View
+              key={row.player_id}
+              style={[styles.tr, isLast && styles.trLast]}
+            >
+              <Text style={styles.rankCell}>{rank}</Text>
+              <View style={{ flex: 1 }}>
+                <Pressable onPress={() => router.push(`/player/${row.player_id}`)}>
+                  <Text style={styles.playerLink} numberOfLines={1}>
+                    {row.player_name}
                   </Text>
-                  <Text style={styles.rowSub}>
-                    {r.last_played ? `Last played ${r.last_played}` : ""}
+                </Pressable>
+                <Pressable
+                  onPress={() =>
+                    router.push(
+                      `/${row.best_year}/round/${row.best_round}/division/${row.best_division}`
+                    )
+                  }
+                >
+                  <Text style={styles.rowSub} numberOfLines={1}>
+                    {row.best_year} R{row.best_round} · Div {row.best_division} ·{" "}
+                    {row.seasons_played} rds
                   </Text>
-                </View>
-                <Badge label={`${r.matches_played} matches`} variant="blue" />
-              </Pressable>
-            ))
-        ) : activeBoard === "most_won" ||
-          activeBoard === "most_played" ||
-          activeBoard === "most_points" ? (
-          data.leaderboards[activeBoard]
-            .slice(safePage * pageSize, (safePage + 1) * pageSize)
-            .map((p, idx) => (
-              <Pressable
-                key={p.player_id}
-                onPress={() => router.push(`/player/${p.player_id}`)}
-                style={styles.row}
-              >
-                <Text style={styles.rank}>{safePage * pageSize + idx + 1}</Text>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.rowTitle}>{p.player_name}</Text>
-                  <Text style={styles.rowSub}>
-                    {p.won}W / {p.played}P · Win {p.win_rate_display} · Avg{" "}
-                    {p.avg_points_display}
-                  </Text>
-                </View>
-                <Text style={styles.primaryVal}>
-                  {activeBoard === "most_won"
-                    ? `${p.won} W`
-                    : activeBoard === "most_played"
-                    ? `${p.played} P`
-                    : `${p.total_points} pts`}
+                </Pressable>
+              </View>
+              <View style={styles.rankColWrap}>
+                <Text style={styles.numMuted}>
+                  #{row.best_rank}/{row.best_total_players}
                 </Text>
-              </Pressable>
-            ))
-        ) : (
-          data.leaderboards[activeBoard]
-            .slice(safePage * pageSize, (safePage + 1) * pageSize)
-            .map((p, idx) => (
-              <Pressable
-                key={p.player_id}
-                onPress={() => router.push(`/player/${p.player_id}`)}
-                style={styles.row}
-              >
-                <Text style={styles.rank}>{safePage * pageSize + idx + 1}</Text>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.rowTitle}>{p.player_name}</Text>
-                  <Text style={styles.rowSub}>
-                    {p.seasons_played} rounds · Avg centile{" "}
-                    {p.avg_centile_display}
-                  </Text>
-                </View>
-                <Text style={styles.primaryVal}>
-                  {activeBoard === "most_titles"
-                    ? `${p.division_titles} title${p.division_titles === 1 ? "" : "s"}`
-                    : activeBoard === "highest_completion"
-                    ? p.completion_rate_display
-                    : `${p.best_centile}%`}
-                </Text>
-              </Pressable>
-            ))
-        )}
+                {row.peak_count > 1 ? (
+                  <Badge label={`×${row.peak_count}`} variant="neutral" />
+                ) : null}
+              </View>
+              <Text style={[styles.numMuted, styles.colSm]}>
+                {row.avg_centile_display}
+              </Text>
+              <Text style={[styles.numBold, styles.colVal]}>
+                {row.best_centile}%
+              </Text>
+            </View>
+          )}
+        />
+      </View>
 
-        {totalPages > 1 ? (
-          <View style={styles.pager}>
-            <Button
-              label="← Prev"
-              variant="outline"
-              size="sm"
-              disabled={safePage === 0}
-              onPress={() => setPage((p) => Math.max(0, p - 1))}
+      {/* Year / Round Picker Modal */}
+      <Modal
+        visible={pickerModal !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setPickerModal(null)}
+      >
+        <Pressable
+          style={styles.modalBackdrop}
+          onPress={() => setPickerModal(null)}
+        >
+          <Pressable style={styles.modalSheet} onPress={() => {}}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>
+                {pickerModal === "year" ? "Filter by Year" : "Filter by Round"}
+              </Text>
+              <Pressable onPress={() => setPickerModal(null)}>
+                <Text style={styles.modalClose}>Done</Text>
+              </Pressable>
+            </View>
+            <FlatList
+              data={pickerModal === "year" ? yearOptions : seasonOptions}
+              keyExtractor={(item) => item.key}
+              renderItem={({ item }) => (
+                <Pressable
+                  onPress={() => {
+                    item.onSelect();
+                    setPickerModal(null);
+                  }}
+                  style={styles.modalRow}
+                >
+                  <Text style={styles.modalRowText}>{item.label}</Text>
+                </Pressable>
+              )}
             />
-            <Text style={styles.pageNum}>
-              Page {safePage + 1} of {totalPages}
-            </Text>
-            <Button
-              label="Next →"
-              variant="outline"
-              size="sm"
-              disabled={safePage >= totalPages - 1}
-              onPress={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
-            />
-          </View>
-        ) : null}
-      </Card>
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       <H2HSheet target={h2hTarget} onClose={() => setH2HTarget(null)} />
     </PageScroll>
   );
 }
 
-function KpiCard({ label, value }: { label: string; value: number }) {
+function KpiTile({
+  label,
+  value,
+  isDesktop,
+}: {
+  label: string;
+  value: number;
+  isDesktop: boolean;
+}) {
   return (
-    <Card style={styles.kpiCard}>
+    <View
+      style={[
+        styles.kpiBox,
+        isDesktop ? styles.kpiBoxDesktop : styles.kpiBoxMobile,
+      ]}
+    >
+      <Text style={styles.kpiLabel}>{label}</Text>
       <Text style={styles.kpiVal}>{value}</Text>
-      <Text style={styles.kpiLbl}>{label}</Text>
+    </View>
+  );
+}
+
+function LeaderboardCard<T>({
+  title,
+  subtitle,
+  badge,
+  rows,
+  pageSize,
+  resetKey,
+  emptyMessage,
+  headerColumns,
+  renderRow,
+  containerStyle,
+}: {
+  title: string;
+  subtitle?: string;
+  badge: string;
+  rows: T[];
+  pageSize: number;
+  resetKey: string;
+  emptyMessage: string;
+  headerColumns: React.ReactNode;
+  renderRow: (row: T, rank: number, isLast: boolean) => React.ReactNode;
+  containerStyle?: object;
+}) {
+  const [page, setPage] = useState(0);
+
+  useEffect(() => {
+    setPage(0);
+  }, [resetKey]);
+
+  const total = rows.length;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const safePage = Math.min(page, totalPages - 1);
+  const start = safePage * pageSize;
+  const end = Math.min(start + pageSize, total);
+  const pagedRows = rows.slice(start, end);
+
+  return (
+    <Card style={[styles.compactCard, containerStyle]}>
+      <SectionHeader
+        title={title}
+        subtitle={subtitle}
+        right={<Badge label={badge} variant="neutral" />}
+      />
+
+      {total === 0 ? (
+        <Text style={styles.empty}>{emptyMessage}</Text>
+      ) : (
+        <>
+          {headerColumns}
+          {pagedRows.map((row, idx) =>
+            renderRow(row, start + idx + 1, idx === pagedRows.length - 1)
+          )}
+        </>
+      )}
+
+      {total > pageSize ? (
+        <View style={styles.pager}>
+          <Text style={styles.pageStatus}>
+            Showing {start + 1}–{end} of {total}
+          </Text>
+          <View style={styles.pagerBtns}>
+            <Button
+              label={`« Prev ${pageSize}`}
+              variant="outline"
+              size="sm"
+              disabled={safePage === 0}
+              onPress={() => setPage((p) => Math.max(0, p - 1))}
+            />
+            <Button
+              label={`Next ${pageSize} »`}
+              variant="outline"
+              size="sm"
+              disabled={safePage >= totalPages - 1}
+              onPress={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+            />
+          </View>
+        </View>
+      ) : null}
     </Card>
   );
 }
 
 const styles = StyleSheet.create({
+  compactCard: {
+    padding: spacing.md,
+  },
+  pageTitle: {
+    fontSize: 24,
+    fontWeight: "800",
+    color: colors.text,
+  },
+  showingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: spacing.xs,
+    marginTop: 4,
+    marginBottom: spacing.md,
+  },
+  showingText: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: colors.textMuted,
+  },
   filterGroup: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: spacing.sm,
+    gap: spacing.xs,
     marginBottom: spacing.sm,
   },
   filterChip: {
@@ -362,116 +784,195 @@ const styles = StyleSheet.create({
     backgroundColor: colors.navy,
   },
   filterText: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: "700",
     color: colors.textSecondary,
   },
   filterTextActive: {
     color: colors.white,
   },
-  yearChips: {
+  selectRow: {
+    flexDirection: "row",
     gap: spacing.sm,
-    paddingVertical: 4,
   },
-  subChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: radii.pill,
+  selectBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.borderStrong,
+    borderRadius: radii.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 8,
     backgroundColor: colors.surface,
   },
-  subChipActive: {
-    backgroundColor: colors.clubBlueSoft,
+  selectBtnActive: {
     borderColor: colors.navy,
+    backgroundColor: colors.clubBlueSoft,
   },
-  subChipText: {
+  selectBtnText: {
     fontSize: 14,
     fontWeight: "600",
     color: colors.textSecondary,
+    flexShrink: 1,
   },
-  subChipTextActive: {
+  selectBtnTextActive: {
     color: colors.navy,
-    fontWeight: "800",
+    fontWeight: "700",
   },
-  kpiRow: {
+  caret: {
+    fontSize: 12,
+    color: colors.textMuted,
+    marginLeft: 6,
+  },
+  kpiGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: spacing.sm,
   },
-  kpiCard: {
-    flex: 1,
-    minWidth: 110,
+  kpiBox: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    paddingVertical: 10,
+    paddingHorizontal: spacing.sm,
     alignItems: "center",
-    paddingVertical: spacing.md,
+    ...cardShadow,
   },
-  kpiVal: {
-    fontSize: 24,
-    fontWeight: "800",
-    color: colors.navy,
+  kpiBoxMobile: {
+    flexBasis: "47%",
+    flexGrow: 1,
   },
-  kpiLbl: {
-    fontSize: 13,
+  kpiBoxDesktop: {
+    flexBasis: "23%",
+    flexGrow: 1,
+  },
+  kpiLabel: {
+    fontSize: 11,
     fontWeight: "700",
     color: colors.textMuted,
+    letterSpacing: 0.4,
+    textAlign: "center",
+  },
+  kpiVal: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: colors.text,
     marginTop: 2,
+    fontVariant: ["tabular-nums"],
   },
-  boardTabs: {
-    gap: spacing.sm,
-    marginBottom: spacing.md,
-    paddingBottom: 4,
+  boardsGrid: {
+    gap: spacing.lg,
   },
-  boardTab: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: 8,
-    borderRadius: radii.pill,
-    backgroundColor: colors.surfaceMuted,
+  boardsGridDesktop: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "stretch",
   },
-  boardTabActive: {
-    backgroundColor: colors.courtGreen,
+  gridHalf: {
+    flexBasis: "48%",
+    flexGrow: 1,
   },
-  boardTabText: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: colors.textSecondary,
+  gridFull: {
+    flexBasis: "100%",
   },
-  boardTabTextActive: {
-    color: colors.white,
-  },
-  row: {
+  tableHeader: {
     flexDirection: "row",
     alignItems: "center",
-    gap: spacing.md,
-    paddingVertical: 11,
+    gap: 6,
+    paddingVertical: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  th: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: colors.textMuted,
+    textTransform: "uppercase",
+  },
+  tr: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingVertical: 9,
     borderBottomWidth: 1,
     borderBottomColor: colors.surfaceMuted,
   },
-  rank: {
-    width: 30,
-    fontSize: 15,
-    fontWeight: "800",
-    color: colors.textMuted,
+  trLast: {
+    borderBottomWidth: 0,
+    paddingBottom: 2,
+  },
+  colRank: {
+    width: 24,
     textAlign: "center",
   },
-  rowTitle: {
-    fontSize: 16,
+  colSm: {
+    width: 54,
+    textAlign: "center",
+  },
+  colMd: {
+    width: 64,
+    textAlign: "center",
+    alignItems: "center",
+  },
+  colVal: {
+    width: 62,
+    textAlign: "right",
+  },
+  colRankCol: {
+    width: 72,
+    textAlign: "center",
+  },
+  rankCell: {
+    width: 24,
+    fontSize: 13,
     fontWeight: "700",
-    color: colors.navy,
+    color: colors.textMuted,
+    textAlign: "center",
+    fontVariant: ["tabular-nums"],
+  },
+  playerLink: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: colors.linkBlue,
+  },
+  vsText: {
+    fontWeight: "400",
+    color: colors.textMuted,
   },
   rowSub: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: "500",
     color: colors.textMuted,
     marginTop: 2,
   },
-  primaryVal: {
-    fontSize: 16,
+  divBadgesWrap: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 4,
+    marginTop: 4,
+  },
+  rankColWrap: {
+    width: 72,
+    alignItems: "center",
+    gap: 2,
+  },
+  numMuted: {
+    fontSize: 13,
+    fontWeight: "500",
+    color: colors.textMuted,
+    fontVariant: ["tabular-nums"],
+  },
+  numBold: {
+    fontSize: 15,
     fontWeight: "800",
-    color: colors.courtGreen,
+    color: colors.text,
     fontVariant: ["tabular-nums"],
   },
   empty: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: "500",
     color: colors.textMuted,
     textAlign: "center",
@@ -479,13 +980,65 @@ const styles = StyleSheet.create({
   },
   pager: {
     flexDirection: "row",
+    flexWrap: "wrap",
     alignItems: "center",
     justifyContent: "space-between",
+    gap: spacing.sm,
     marginTop: spacing.md,
+    paddingTop: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.surfaceMuted,
   },
-  pageNum: {
-    fontSize: 14,
-    fontWeight: "600",
+  pageStatus: {
+    fontSize: 12,
+    fontWeight: "500",
     color: colors.textMuted,
+  },
+  pagerBtns: {
+    flexDirection: "row",
+    gap: spacing.xs,
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(15, 23, 42, 0.45)",
+    justifyContent: "center",
+    padding: spacing.lg,
+  },
+  modalSheet: {
+    backgroundColor: colors.surface,
+    borderRadius: radii.lg,
+    maxHeight: "70%",
+    overflow: "hidden",
+    ...cardShadow,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  modalTitle: {
+    fontSize: 17,
+    fontWeight: "700",
+    color: colors.text,
+  },
+  modalClose: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: colors.linkBlue,
+  },
+  modalRow: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: 13,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.surfaceMuted,
+  },
+  modalRowText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: colors.text,
   },
 });
