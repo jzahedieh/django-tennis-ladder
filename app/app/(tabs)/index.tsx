@@ -13,8 +13,8 @@ import {
   Card,
   ErrorState,
   LoadingState,
-  OutcomeBadge,
   PageScroll,
+  RecentResultsList,
   SectionHeader,
 } from "../../src/components/ui";
 import { colors, radii, spacing, useResponsive } from "../../src/theme/tokens";
@@ -151,56 +151,25 @@ export default function HomeScreen() {
       <View style={[styles.splitGrid, isDesktop && styles.splitGridDesktop]}>
         <Card style={isDesktop ? styles.colResults : undefined}>
           <SectionHeader
-            title="Latest Results"
-            subtitle={`Most recent ${recent_results.length} matches`}
+            title="Recent Results"
+            right={
+              <Badge
+                label={
+                  recent_results.length > 0
+                    ? `Last ${recent_results.length} match${recent_results.length === 1 ? "" : "es"}`
+                    : "0 matches"
+                }
+              />
+            }
           />
           {visibleResults.length === 0 ? (
             <Text style={styles.emptyMsg}>No matches recorded in this round yet.</Text>
           ) : (
-            <View style={styles.list}>
-              {visibleResults.map((m, idx) => (
-                <View
-                  key={`${m.winner_id}-${m.loser_id}-${idx}`}
-                  style={styles.resultRow}
-                >
-                  <OutcomeBadge
-                    code={m.is_incomplete ? "I" : m.is_injury ? "R" : "W"}
-                  />
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.resultPlayers} numberOfLines={1}>
-                      <Text
-                        onPress={() => router.push(`/player/${m.winner_id}`)}
-                        style={styles.playerLink}
-                      >
-                        {m.winner_name}
-                      </Text>{" "}
-                      <Text style={styles.vsWord}>vs</Text>{" "}
-                      <Text
-                        onPress={() => router.push(`/player/${m.loser_id}`)}
-                        style={styles.playerLink}
-                      >
-                        {m.loser_name}
-                      </Text>
-                    </Text>
-                    <Text style={styles.resultMeta}>
-                      Div {m.division} · {m.date_display}
-                    </Text>
-                  </View>
-                  <Pressable
-                    onPress={() =>
-                      setH2HTarget({
-                        playerId: m.winner_id,
-                        opponentId: m.loser_id,
-                        title: `${m.winner_name} vs ${m.loser_name}`,
-                      })
-                    }
-                    style={styles.scorePill}
-                  >
-                    <Text style={styles.scorePillText}>{m.score_display}</Text>
-                  </Pressable>
-                </View>
-              ))}
-            </View>
+            <RecentResultsList
+              matches={visibleResults}
+              showDivisionBadge
+              onSelectH2H={setH2HTarget}
+            />
           )}
 
           {recent_results.length > resultsLimit ? (
@@ -387,43 +356,6 @@ const styles = StyleSheet.create({
     width: 44,
     textAlign: "right",
     fontVariant: ["tabular-nums"],
-  },
-  resultRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.md,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.surfaceMuted,
-  },
-  resultPlayers: {
-    fontSize: 16,
-    fontWeight: "500",
-    color: colors.text,
-  },
-  playerLink: {
-    fontWeight: "700",
-    color: colors.navy,
-  },
-  vsWord: {
-    color: colors.textMuted,
-  },
-  resultMeta: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: colors.textMuted,
-    marginTop: 2,
-  },
-  scorePill: {
-    backgroundColor: colors.courtGreenSoft,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: radii.pill,
-  },
-  scorePillText: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: colors.courtGreen,
   },
   emptyMsg: {
     fontSize: 15,

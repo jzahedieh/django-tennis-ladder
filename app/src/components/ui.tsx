@@ -1,3 +1,4 @@
+import { useRouter } from "expo-router";
 import React from "react";
 import {
   ActivityIndicator,
@@ -11,6 +12,7 @@ import {
   ViewStyle,
 } from "react-native";
 
+import type { RecentMatchOut } from "../api/types";
 import {
   MAX_CONTENT_WIDTH,
   cardShadow,
@@ -269,6 +271,99 @@ export function EmptyState({
   );
 }
 
+/** Renders recent match rows matching the web layout (`[Div X] Winner def. Loser` + score pill). */
+export function RecentResultsList({
+  matches,
+  showDivisionBadge = false,
+  onSelectH2H,
+}: {
+  matches: RecentMatchOut[];
+  showDivisionBadge?: boolean;
+  onSelectH2H: (target: {
+    playerId: number;
+    opponentId: number;
+    title?: string;
+  }) => void;
+}) {
+  const router = useRouter();
+
+  return (
+    <View style={styles.recentList}>
+      {matches.map((m, idx) => (
+        <View
+          key={`${m.division}-${m.winner_id}-${m.loser_id}-${m.date_added}-${idx}`}
+          style={[
+            styles.recentRow,
+            idx === matches.length - 1 && styles.recentRowLast,
+          ]}
+        >
+          <View style={styles.recentLeftCol}>
+            <View style={styles.recentTopLine}>
+              {showDivisionBadge ? (
+                <Pressable
+                  onPress={() =>
+                    router.push(
+                      `/${m.year}/round/${m.season_round}/division/${m.division}`
+                    )
+                  }
+                  style={styles.recentDivBadge}
+                >
+                  <Text style={styles.recentDivBadgeText}>Div {m.division}</Text>
+                </Pressable>
+              ) : null}
+              <Text style={styles.recentPlayersLine} numberOfLines={1}>
+                <Text
+                  onPress={() => router.push(`/player/${m.winner_id}`)}
+                  style={styles.recentWinnerName}
+                >
+                  {m.winner_name}
+                </Text>{" "}
+                <Text style={styles.recentDefWord}>
+                  {m.is_incomplete ? "vs" : "def."}
+                </Text>{" "}
+                <Text
+                  onPress={() => router.push(`/player/${m.loser_id}`)}
+                  style={
+                    m.is_incomplete
+                      ? styles.recentWinnerName
+                      : styles.recentLoserName
+                  }
+                >
+                  {m.loser_name}
+                </Text>
+              </Text>
+            </View>
+            <Text style={styles.recentDateText}>{m.date_display}</Text>
+          </View>
+
+          <Pressable
+            onPress={() =>
+              onSelectH2H({
+                playerId: m.winner_id,
+                opponentId: m.loser_id,
+                title: `${m.winner_name} vs ${m.loser_name}`,
+              })
+            }
+            style={[
+              styles.recentScorePill,
+              m.is_incomplete && styles.recentScorePillIncomplete,
+            ]}
+          >
+            <Text
+              style={[
+                styles.recentScoreText,
+                m.is_incomplete && styles.recentScoreTextIncomplete,
+              ]}
+            >
+              {m.score_display}
+            </Text>
+          </Pressable>
+        </View>
+      ))}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   pageScroll: {
     flex: 1,
@@ -411,5 +506,89 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     marginTop: 4,
     textAlign: "center",
+  },
+  recentList: {
+    gap: 2,
+  },
+  recentRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    paddingVertical: 9,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.surfaceMuted,
+  },
+  recentRowLast: {
+    borderBottomWidth: 0,
+    paddingBottom: 2,
+  },
+  recentLeftCol: {
+    flex: 1,
+    minWidth: 0,
+  },
+  recentTopLine: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  recentDivBadge: {
+    backgroundColor: colors.surfaceMuted,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.sm,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    flexShrink: 0,
+  },
+  recentDivBadgeText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: colors.textSecondary,
+  },
+  recentPlayersLine: {
+    flex: 1,
+    fontSize: 15,
+    color: colors.text,
+  },
+  recentWinnerName: {
+    fontWeight: "700",
+    color: colors.text,
+  },
+  recentDefWord: {
+    fontSize: 13,
+    fontWeight: "500",
+    color: colors.textMuted,
+  },
+  recentLoserName: {
+    fontWeight: "500",
+    color: colors.textMuted,
+  },
+  recentDateText: {
+    fontSize: 13,
+    fontWeight: "500",
+    color: colors.textMuted,
+    marginTop: 3,
+  },
+  recentScorePill: {
+    backgroundColor: colors.clubBlueSoft,
+    borderWidth: 1,
+    borderColor: colors.clubBlue,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: radii.pill,
+    flexShrink: 0,
+  },
+  recentScorePillIncomplete: {
+    backgroundColor: colors.surfaceMuted,
+    borderColor: colors.border,
+  },
+  recentScoreText: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: colors.linkBlue,
+    fontVariant: ["tabular-nums"],
+  },
+  recentScoreTextIncomplete: {
+    color: colors.textSecondary,
   },
 });

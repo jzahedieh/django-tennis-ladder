@@ -13,8 +13,8 @@ import {
   Card,
   ErrorState,
   LoadingState,
-  OutcomeBadge,
   PageScroll,
+  RecentResultsList,
   SectionHeader,
 } from "../../../../../src/components/ui";
 import { colors, radii, spacing, useResponsive } from "../../../../../src/theme/tokens";
@@ -286,53 +286,21 @@ export default function DivisionDetailScreen() {
       <Card>
         <SectionHeader
           title="Latest Results"
-          subtitle={`${recent_results.length} matches`}
+          right={
+            <Badge
+              label={`${recent_results.length} match${recent_results.length === 1 ? "" : "es"}`}
+            />
+          }
         />
         {recent_results.length === 0 ? (
           <Text style={styles.emptyText}>
             No matches recorded yet for this division.
           </Text>
         ) : (
-          recent_results.map((m, idx) => (
-            <View
-              key={`${m.winner_id}-${m.loser_id}-${idx}`}
-              style={styles.resultRow}
-            >
-              <OutcomeBadge
-                code={m.is_incomplete ? "I" : m.is_injury ? "R" : "W"}
-              />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.resultLine} numberOfLines={1}>
-                  <Text
-                    onPress={() => router.push(`/player/${m.winner_id}`)}
-                    style={styles.playerLink}
-                  >
-                    {m.winner_name}
-                  </Text>{" "}
-                  <Text style={{ color: colors.textMuted }}>vs</Text>{" "}
-                  <Text
-                    onPress={() => router.push(`/player/${m.loser_id}`)}
-                    style={styles.playerLink}
-                  >
-                    {m.loser_name}
-                  </Text>
-                </Text>
-                <Text style={styles.resultDate}>{m.date_display}</Text>
-              </View>
-              <Pressable
-                onPress={() =>
-                  setH2HTarget({
-                    playerId: m.winner_id,
-                    opponentId: m.loser_id,
-                    title: `${m.winner_name} vs ${m.loser_name}`,
-                  })
-                }
-                style={styles.scorePill}
-              >
-                <Text style={styles.scorePillText}>{m.score_display}</Text>
-              </Pressable>
-            </View>
-          ))
+          <RecentResultsList
+            matches={recent_results}
+            onSelectH2H={setH2HTarget}
+          />
         )}
       </Card>
 
@@ -461,39 +429,5 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     textAlign: "center",
     paddingVertical: spacing.lg,
-  },
-  resultRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.md,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.surfaceMuted,
-  },
-  resultLine: {
-    fontSize: 16,
-    fontWeight: "500",
-    color: colors.text,
-  },
-  playerLink: {
-    fontWeight: "700",
-    color: colors.linkBlue,
-  },
-  resultDate: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: colors.textMuted,
-    marginTop: 2,
-  },
-  scorePill: {
-    backgroundColor: colors.courtGreenSoft,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: radii.pill,
-  },
-  scorePillText: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: colors.courtGreen,
   },
 });
