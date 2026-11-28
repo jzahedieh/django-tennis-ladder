@@ -30,6 +30,11 @@ export function formatDate(iso: string | null | undefined): string {
   return `${parsed.getDate()} ${MONTHS[parsed.getMonth()]} ${parsed.getFullYear()}`;
 }
 
+export function formatMonthYear(iso: string | null | undefined): string {
+  const full = formatDate(iso);
+  return full ? full.replace(/^\d+\s+/, "") : "";
+}
+
 export function formatDateRange(
   startIso: string | null | undefined,
   endIso: string | null | undefined
