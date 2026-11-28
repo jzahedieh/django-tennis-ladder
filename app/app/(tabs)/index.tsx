@@ -147,57 +147,9 @@ export default function HomeScreen() {
         <SeasonProgressChart progress={progress} />
       </Card>
 
-      {/* Leaders + Recent Results two-column on desktop, stacked on mobile */}
+      {/* Recent Results + Leaders two-column on desktop, stacked on mobile */}
       <View style={[styles.splitGrid, isDesktop && styles.splitGridDesktop]}>
-        <Card style={isDesktop ? styles.colLeft : undefined}>
-          <SectionHeader
-            title="Division Leaders"
-            right={
-              <Pressable onPress={() => router.push("/ladder")}>
-                <Text style={styles.linkText}>All Grids →</Text>
-              </Pressable>
-            }
-          />
-          <View style={styles.list}>
-            {leaders.map((leader) => (
-              <View key={leader.division} style={styles.leaderRow}>
-                <Pressable
-                  onPress={() =>
-                    router.push(
-                      `/${season.year}/round/${season.season_round}/division/${leader.division}`
-                    )
-                  }
-                  style={styles.divPill}
-                >
-                  <Text style={styles.divPillText}>Div {leader.division}</Text>
-                </Pressable>
-                <Pressable
-                  disabled={!leader.player_id}
-                  onPress={() => {
-                    if (leader.player_id) {
-                      router.push(`/player/${leader.player_id}`);
-                    }
-                  }}
-                  style={{ flex: 1 }}
-                >
-                  <Text
-                    style={[
-                      styles.leaderName,
-                      !leader.player_id && styles.mutedName,
-                    ]}
-                    numberOfLines={1}
-                  >
-                    {leader.player}
-                  </Text>
-                </Pressable>
-                <Text style={styles.leaderPts}>{String(leader.total)} pts</Text>
-                <Text style={styles.leaderPct}>{leader.played.toFixed(0)}%</Text>
-              </View>
-            ))}
-          </View>
-        </Card>
-
-        <Card style={isDesktop ? styles.colRight : undefined}>
+        <Card style={isDesktop ? styles.colResults : undefined}>
           <SectionHeader
             title="Latest Results"
             subtitle={`Most recent ${recent_results.length} matches`}
@@ -260,6 +212,54 @@ export default function HomeScreen() {
               style={{ marginTop: spacing.md }}
             />
           ) : null}
+        </Card>
+
+        <Card style={isDesktop ? styles.colLeaders : undefined}>
+          <SectionHeader
+            title="Division Leaders"
+            right={
+              <Pressable onPress={() => router.push("/ladder")}>
+                <Text style={styles.linkText}>All Grids →</Text>
+              </Pressable>
+            }
+          />
+          <View style={styles.list}>
+            {leaders.map((leader) => (
+              <View key={leader.division} style={styles.leaderRow}>
+                <Pressable
+                  onPress={() =>
+                    router.push(
+                      `/${season.year}/round/${season.season_round}/division/${leader.division}`
+                    )
+                  }
+                  style={styles.divPill}
+                >
+                  <Text style={styles.divPillText}>Div {leader.division}</Text>
+                </Pressable>
+                <Pressable
+                  disabled={!leader.player_id}
+                  onPress={() => {
+                    if (leader.player_id) {
+                      router.push(`/player/${leader.player_id}`);
+                    }
+                  }}
+                  style={{ flex: 1 }}
+                >
+                  <Text
+                    style={[
+                      styles.leaderName,
+                      !leader.player_id && styles.mutedName,
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {leader.player}
+                  </Text>
+                </Pressable>
+                <Text style={styles.leaderPts}>{String(leader.total)} pts</Text>
+                <Text style={styles.leaderPct}>{leader.played.toFixed(0)}%</Text>
+              </View>
+            ))}
+          </View>
         </Card>
       </View>
 
@@ -330,11 +330,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
   },
-  colLeft: {
-    flex: 5,
-  },
-  colRight: {
+  colResults: {
     flex: 6,
+  },
+  colLeaders: {
+    flex: 5,
   },
   linkText: {
     fontSize: 15,
