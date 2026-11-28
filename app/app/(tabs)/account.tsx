@@ -1,7 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import Constants from "expo-constants";
 import { useRouter } from "expo-router";
+import * as Updates from "expo-updates";
 import React, { useEffect, useState } from "react";
-import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 
 import { apiClient, extractApiError } from "../../src/api/client";
 import type { SubscriptionRef } from "../../src/api/types";
@@ -158,6 +160,7 @@ export default function AccountScreen() {
             </View>
           }
         />
+        <AppUpdateCard />
       </PageScroll>
     );
   }
@@ -169,6 +172,7 @@ export default function AccountScreen() {
           message={(error as Error)?.message || "Could not load account."}
           onRetry={() => void refetch()}
         />
+        <AppUpdateCard />
       </PageScroll>
     );
   }
@@ -327,7 +331,118 @@ export default function AccountScreen() {
           onPress={() => passwordMutation.mutate()}
         />
       </Card>
+
+      <AppUpdateCard />
     </PageScroll>
+  );
+}
+
+/** Card for checking, downloading, and applying EAS OTA updates on native builds. */
+function AppUpdateCard() {
+  const {
+    currentlyRunning,
+    isUpdateAvailable,
+    isUpdatePending,
+    isChecking,
+    isDownloading,
+    isRestarting,
+  } = Updates.useUpdates();
+  const [isBusy, setIsBusy] = useState(false);
+  const [status, setStatus] = useState<{
+    tone: "neutral" | "ok" | "err";
+    text: string;
+  } | null>(null);
+
+  if (Platform.OS === "web") {
+    return null;
+  }
+
+  const busy = isBusy || isChecking || isDownloading || isRestarting;
+  const appVersion = Constants.expoConfig?.version ?? "1.0.0";
+  const buildDetails = [
+    `v${appVersion}`,
+    currentlyRunning.channel,
+    currentlyRunning.updateId
+      ? currentlyRunning.updateId.slice(0, 8)
+      : currentlyRunning.isEmbeddedLaunch
+      ? "embedded"
+      : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+  async function handleUpdatePress() {
+    if (__DEV__ || !Updates.isEnabled) {
+      setStatus({
+        tone: "neutral",
+        text: "OTA updates are only available in installed release builds.",
+      });
+      return;
+    }
+
+    setIsBusy(true);
+    setStatus(null);
+    try {
+      if (isUpdatePending) {
+        await Updates.reloadAsync();
+        return;
+      }
+
+      const check = await Updates.checkForUpdateAsync();
+      if (!check.isAvailable && !check.isRollBackToEmbedded) {
+        setStatus({ tone: "ok", text: "You are on the latest version." });
+        return;
+      }
+
+      setStatus({ tone: "neutral", text: "Downloading update..." });
+      const fetched = await Updates.fetchUpdateAsync();
+      if (fetched.isNew || fetched.isRollBackToEmbedded) {
+        await Updates.reloadAsync();
+        return;
+      }
+
+      setStatus({ tone: "ok", text: "You are on the latest version." });
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Could not check for updates.";
+      setStatus({ tone: "err", text: message });
+    } finally {
+      setIsBusy(false);
+    }
+  }
+
+  const buttonLabel = isUpdatePending
+    ? "Restart to Update"
+    : isUpdateAvailable
+    ? "Download & Update App"
+    : "Update App";
+
+  return (
+    <Card>
+      <SectionHeader title="App Updates" subtitle={buildDetails} />
+      {status ? (
+        <Text
+          style={[
+            styles.updateStatus,
+            status.tone === "ok" && styles.updateStatusOk,
+            status.tone === "err" && styles.updateStatusErr,
+          ]}
+        >
+          {status.text}
+        </Text>
+      ) : isUpdatePending ? (
+        <Text style={[styles.updateStatus, styles.updateStatusOk]}>
+          An update has been downloaded and is ready to install.
+        </Text>
+      ) : null}
+      <Button
+        label={buttonLabel}
+        variant={isUpdatePending || isUpdateAvailable ? "primary" : "outline"}
+        size="sm"
+        loading={busy}
+        onPress={() => void handleUpdatePress()}
+      />
+    </Card>
   );
 }
 
@@ -428,5 +543,17 @@ const styles = StyleSheet.create({
     color: colors.text,
     backgroundColor: colors.surface,
     marginBottom: spacing.md,
+  },
+  updateStatus: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: colors.textSecondary,
+    marginBottom: spacing.sm,
+  },
+  updateStatusOk: {
+    color: colors.courtGreen,
+  },
+  updateStatusErr: {
+    color: colors.danger,
   },
 });

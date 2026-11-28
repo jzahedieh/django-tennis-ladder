@@ -1,12 +1,15 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useMemo, useState } from "react";
 import {
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import type { DivisionGridOut, GridCellOut, GridRowOut } from "../api/types";
 import { colors, radii, spacing, useResponsive } from "../theme/tokens";
@@ -15,7 +18,7 @@ import type { H2HTarget } from "./H2HSheet";
 type SortKey = "default" | "total" | "average";
 type SortDir = "desc" | "asc";
 
-const ROW_HEIGHT = 44;
+const ROW_HEIGHT = 36;
 const DESKTOP_ROW_HEIGHT = 46;
 const DESKTOP_RANK_W = 50;
 const DESKTOP_NAME_W = 205;
@@ -25,49 +28,6 @@ const DESKTOP_MIN_CELL_W = 40;
 function parseAverage(val: string | number): number {
   const n = parseFloat(String(val));
   return Number.isFinite(n) ? n : 0;
-}
-
-function buildPlayerInitials(rows: GridRowOut[]): Map<number, string> {
-  const baseCandidates = rows.map((row) => {
-    const parts = row.player_name.trim().split(/\s+/).filter(Boolean);
-    const first = (parts[0] || "?").replace(/[^a-zA-Z]/g, "");
-    const last = (parts.length > 1 ? parts[parts.length - 1] : "").replace(
-      /[^a-zA-Z]/g,
-      ""
-    );
-    const f1 = (first[0] || "?").toUpperCase();
-    const l1 = (last[0] || first[1] || "").toUpperCase();
-    const l2 = (last[1] || "").toLowerCase();
-    return {
-      playerId: row.player_id,
-      base: `${f1}${l1}`,
-      extended: l2 ? `${f1}${l1}${l2}` : `${f1}${l1}`,
-    };
-  });
-
-  const baseCounts = new Map<string, number>();
-  for (const item of baseCandidates) {
-    baseCounts.set(item.base, (baseCounts.get(item.base) ?? 0) + 1);
-  }
-
-  const used = new Set<string>();
-  const result = new Map<number, string>();
-
-  for (const item of baseCandidates) {
-    let label =
-      (baseCounts.get(item.base) ?? 0) > 1 ? item.extended : item.base;
-    if (used.has(label)) {
-      let suffix = 2;
-      while (used.has(`${item.base}${suffix}`)) {
-        suffix += 1;
-      }
-      label = `${item.base}${suffix}`;
-    }
-    used.add(label);
-    result.set(item.playerId, label);
-  }
-
-  return result;
 }
 
 function SortGlyph({ active, dir }: { active: boolean; dir: SortDir }) {
@@ -87,13 +47,11 @@ export function LadderCrossTable({
   onPressCell: (target: H2HTarget) => void;
 }) {
   const router = useRouter();
-  const { width, isDesktop } = useResponsive();
-  const [mobileMode, setMobileMode] = useState<"standings" | "matrix">(
-    "matrix"
-  );
-  const [compactNames, setCompactNames] = useState(false);
+  const { width, height, isDesktop } = useResponsive();
+  const insets = useSafeAreaInsets();
   const [sortBy, setSortBy] = useState<SortKey>("default");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
+  const [landscapeOpen, setLandscapeOpen] = useState(false);
   const [hoveredPair, setHoveredPair] = useState<{
     playerId: number;
     opponentId: number;
@@ -134,11 +92,6 @@ export function LadderCrossTable({
         a.position - b.position
     );
   }, [grid.rows, sortBy, sortDir]);
-
-  const initialsMap = useMemo(
-    () => buildPlayerInitials(grid.rows),
-    [grid.rows]
-  );
 
   const cellMapsByPlayer = useMemo(() => {
     const outer = new Map<number, Map<number, GridCellOut>>();
@@ -359,18 +312,27 @@ export function LadderCrossTable({
     );
   }
 
-  // Mobile layout
-  const showStandings = mobileMode === "standings";
-  const nameColWidth = compactNames ? 66 : 138;
-  const cellWidth = compactNames ? 38 : 44;
-  const statColWidth = compactNames ? 50 : 58;
+  // Mobile layout (clean matrix directly, matching web)
+  const nameColWidth = 144;
+  const cellWidth = 36;
+  const statColWidth = 54;
 
-  const renderMobileCell = (row: GridRowOut, colRow: GridRowOut) => {
+  const renderMobileCell = (
+    row: GridRowOut,
+    colRow: GridRowOut,
+    colCellW: number,
+    rowH: number,
+    closeBeforeAction: boolean
+  ) => {
     if (row.player_id === colRow.player_id) {
       return (
         <View
           key={`self-${row.player_id}-${colRow.player_id}`}
-          style={[styles.cell, { width: cellWidth }, styles.selfCell]}
+          style={[
+            styles.cell,
+            { width: colCellW, height: rowH },
+            styles.selfCell,
+          ]}
         />
       );
     }
@@ -382,28 +344,23 @@ export function LadderCrossTable({
     return (
       <Pressable
         key={`${row.player_id}-${colRow.player_id}`}
-        onPress={() =>
+        onPress={() => {
+          if (closeBeforeAction) setLandscapeOpen(false);
           onPressCell({
             playerId: row.player_id,
             opponentId: colRow.player_id,
             title: `${row.player_name} vs ${colRow.player_name}`,
-          })
-        }
+          });
+        }}
         style={({ pressed }) => [
           styles.cell,
-          { width: cellWidth },
+          { width: colCellW, height: rowH },
           row.is_current_user && styles.currentUserCell,
           pressed && styles.pressedCell,
         ]}
       >
         {score !== null && score !== undefined ? (
-          <Text
-            style={[
-              styles.cellText,
-              compactNames && styles.cellTextCompact,
-              isWin && styles.winScoreBold,
-            ]}
-          >
+          <Text style={[styles.cellText, isWin && styles.winScoreBold]}>
             {String(score)}
           </Text>
         ) : null}
@@ -411,285 +368,214 @@ export function LadderCrossTable({
     );
   };
 
-  return (
-    <View>
-      {/* Mobile Controls Toolbar */}
-      <View style={styles.toolbar}>
-        <View style={styles.toggleWrap}>
+  const renderMatrix = ({
+    colNameW,
+    colCellW,
+    colStatW,
+    rowH,
+    closeBeforeAction = false,
+  }: {
+    colNameW: number;
+    colCellW: number;
+    colStatW: number;
+    rowH: number;
+    closeBeforeAction?: boolean;
+  }) => (
+    <View style={styles.matrixOuter}>
+      {/* Fixed sticky left player column */}
+      <View style={[styles.stickyCol, { width: colNameW }]}>
+        <Pressable
+          onPress={() => handleSort("default")}
+          style={[styles.stickyHeader, styles.headerBg, { height: rowH }]}
+          accessibilityLabel="Sort by ladder order"
+        >
+          <SortGlyph active={sortBy === "default"} dir="asc" />
+          <Text style={styles.headerText} numberOfLines={1}>
+            Name
+          </Text>
+        </Pressable>
+
+        {sortedRows.map((row, idx) => (
           <Pressable
-            onPress={() => setMobileMode("matrix")}
+            key={row.player_id}
+            onPress={() => {
+              if (closeBeforeAction) setLandscapeOpen(false);
+              router.push(`/player/${row.player_id}`);
+            }}
             style={[
-              styles.toggleBtn,
-              mobileMode === "matrix" && styles.toggleBtnActive,
+              styles.stickyNameCell,
+              { height: rowH },
+              row.is_current_user && styles.currentUserRowBg,
             ]}
           >
+            <Text style={styles.posBadge}>{idx + 1}</Text>
             <Text
               style={[
-                styles.toggleText,
-                mobileMode === "matrix" && styles.toggleTextActive,
+                styles.playerLinkText,
+                row.is_current_user && styles.currentUserNameText,
               ]}
+              numberOfLines={1}
             >
-              Matrix
+              {row.player_name}
             </Text>
           </Pressable>
-          <Pressable
-            onPress={() => setMobileMode("standings")}
-            style={[
-              styles.toggleBtn,
-              mobileMode === "standings" && styles.toggleBtnActive,
-            ]}
-          >
-            <Text
-              style={[
-                styles.toggleText,
-                mobileMode === "standings" && styles.toggleTextActive,
-              ]}
-            >
-              Standings
-            </Text>
-          </Pressable>
-        </View>
-
-        {!showStandings ? (
-          <View style={styles.toggleWrap}>
-            <Pressable
-              onPress={() => setCompactNames(false)}
-              style={[
-                styles.toggleBtn,
-                !compactNames && styles.toggleBtnActive,
-              ]}
-            >
-              <Text
-                style={[
-                  styles.toggleText,
-                  !compactNames && styles.toggleTextActive,
-                ]}
-              >
-                Names
-              </Text>
-            </Pressable>
-            <Pressable
-              onPress={() => setCompactNames(true)}
-              style={[
-                styles.toggleBtn,
-                compactNames && styles.toggleBtnActive,
-              ]}
-            >
-              <Text
-                style={[
-                  styles.toggleText,
-                  compactNames && styles.toggleTextActive,
-                ]}
-              >
-                Initials
-              </Text>
-            </Pressable>
-          </View>
-        ) : null}
-
-        <View style={styles.sortPills}>
-          {(
-            [
-              ["default", "Order"],
-              ["average", `Avg${sortArrow("average")}`],
-              ["total", `Total${sortArrow("total")}`],
-            ] as const
-          ).map(([key, label]) => {
-            const active = sortBy === key;
-            return (
-              <Pressable
-                key={key}
-                onPress={() => handleSort(key)}
-                style={[styles.sortPill, active && styles.sortPillActive]}
-              >
-                <Text
-                  style={[
-                    styles.sortPillText,
-                    active && styles.sortPillTextActive,
-                  ]}
-                >
-                  {label}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
+        ))}
       </View>
 
-      {showStandings ? (
-        <View style={styles.standingsTable}>
-          <View style={[styles.standingsRow, styles.headerBg]}>
-            <Text style={[styles.headerText, { width: 28 }]}>#</Text>
-            <Text style={[styles.headerText, { flex: 1 }]}>Name</Text>
-            <Text style={[styles.headerText, styles.numCol]}>Pl</Text>
+      {/* Scrollable matrix columns + clickable Avg / Total */}
+      <ScrollView horizontal showsHorizontalScrollIndicator>
+        <View>
+          <View
+            style={[styles.scrollHeaderRow, styles.headerBg, { height: rowH }]}
+          >
+            {sortedRows.map((colRow, colIdx) => (
+              <View
+                key={`hdr-${colRow.player_id}`}
+                style={[styles.colHeaderCell, { width: colCellW, height: rowH }]}
+              >
+                <Text style={styles.headerText} numberOfLines={1}>
+                  {String(colIdx + 1)}
+                </Text>
+              </View>
+            ))}
             <Pressable
               onPress={() => handleSort("average")}
-              style={styles.numColBtn}
+              style={[styles.statHeaderCell, { width: colStatW, height: rowH }]}
             >
               <Text
                 style={[
                   styles.headerText,
                   sortBy === "average" && styles.activeHeaderText,
                 ]}
+                numberOfLines={1}
               >
                 Avg{sortArrow("average")}
               </Text>
             </Pressable>
             <Pressable
               onPress={() => handleSort("total")}
-              style={styles.numColBtn}
+              style={[styles.statHeaderCell, { width: colStatW, height: rowH }]}
             >
               <Text
                 style={[
                   styles.headerText,
                   sortBy === "total" && styles.activeHeaderText,
                 ]}
+                numberOfLines={1}
               >
                 Total{sortArrow("total")}
               </Text>
             </Pressable>
           </View>
 
-          {sortedRows.map((row, idx) => (
-            <Pressable
-              key={row.player_id}
-              onPress={() => router.push(`/player/${row.player_id}`)}
-              style={[
-                styles.standingsRow,
-                row.is_current_user && styles.currentUserRowBg,
-              ]}
+          {sortedRows.map((row) => (
+            <View
+              key={`row-${row.player_id}`}
+              style={[styles.scrollDataRow, { height: rowH }]}
             >
-              <Text style={[styles.rankText, { width: 28 }]}>{idx + 1}</Text>
-              <Text
+              {sortedRows.map((colRow) =>
+                renderMobileCell(row, colRow, colCellW, rowH, closeBeforeAction)
+              )}
+              <View
                 style={[
-                  styles.playerLinkText,
-                  row.is_current_user && styles.currentUserNameText,
-                  { flex: 1 },
+                  styles.statCell,
+                  { width: colStatW, height: rowH },
+                  row.is_current_user && styles.currentUserCell,
                 ]}
-                numberOfLines={1}
               >
-                {row.player_name}
-              </Text>
-              <Text style={[styles.statText, styles.numCol]}>
-                {row.matches_played}
-              </Text>
-              <Text style={[styles.statText, styles.numCol]}>
-                {String(row.average)}
-              </Text>
-              <Text style={[styles.ptsText, styles.numCol]}>{row.total}</Text>
-            </Pressable>
+                <Text style={styles.statText}>{String(row.average)}</Text>
+              </View>
+              <View
+                style={[
+                  styles.statCell,
+                  { width: colStatW, height: rowH },
+                  row.is_current_user && styles.currentUserCell,
+                ]}
+              >
+                <Text style={styles.ptsText}>{row.total}</Text>
+              </View>
+            </View>
           ))}
         </View>
-      ) : (
-        <View style={styles.matrixOuter}>
-          {/* Fixed sticky left player column */}
-          <View style={[styles.stickyCol, { width: nameColWidth }]}>
-            <Pressable
-              onPress={() => setCompactNames((prev) => !prev)}
-              style={[styles.stickyHeader, styles.headerBg]}
-            >
-              <Text style={styles.headerText} numberOfLines={1}>
-                {compactNames ? "Init ▶" : "Name ◀"}
+      </ScrollView>
+    </View>
+  );
+
+  // Landscape modal dimensions (rotated 90deg so long axis is horizontal)
+  const landscapeW = Math.max(320, height - insets.top - insets.bottom - 16);
+  const landscapeH = Math.max(280, width - insets.left - insets.right - 8);
+  const lNameW = 148;
+  const lStatW = 54;
+  const lInnerW = landscapeW - spacing.md * 2;
+  const lCellW = Math.max(
+    34,
+    Math.floor((lInnerW - lNameW - lStatW * 2 - 2) / Math.max(1, sortedRows.length))
+  );
+
+  return (
+    <View>
+      {renderMatrix({
+        colNameW: nameColWidth,
+        colCellW: cellWidth,
+        colStatW: statColWidth,
+        rowH: ROW_HEIGHT,
+      })}
+
+      <View style={styles.landscapeBtnRow}>
+        <Pressable
+          onPress={() => setLandscapeOpen(true)}
+          style={styles.landscapeBtn}
+        >
+          <Ionicons
+            name="phone-landscape-outline"
+            size={15}
+            color={colors.navy}
+          />
+          <Text style={styles.landscapeBtnText}>Horizontal View</Text>
+        </Pressable>
+      </View>
+
+      <Modal
+        visible={landscapeOpen}
+        animationType="fade"
+        statusBarTranslucent
+        onRequestClose={() => setLandscapeOpen(false)}
+      >
+        <View style={styles.landscapeBackdrop}>
+          <View
+            style={[
+              styles.landscapeStage,
+              {
+                width: landscapeW,
+                height: landscapeH,
+                transform: [{ rotate: "90deg" }],
+              },
+            ]}
+          >
+            <View style={styles.landscapeTopBar}>
+              <Text style={styles.landscapeTitle}>
+                Division {grid.division}
               </Text>
-            </Pressable>
-
-            {sortedRows.map((row, idx) => (
               <Pressable
-                key={row.player_id}
-                onPress={() => router.push(`/player/${row.player_id}`)}
-                style={[
-                  styles.stickyNameCell,
-                  row.is_current_user && styles.currentUserRowBg,
-                ]}
+                onPress={() => setLandscapeOpen(false)}
+                style={styles.landscapeCloseBtn}
               >
-                <Text style={styles.posBadge}>{idx + 1}</Text>
-                <Text
-                  style={[
-                    styles.playerLinkText,
-                    row.is_current_user && styles.currentUserNameText,
-                    compactNames && styles.compactInitialText,
-                  ]}
-                  numberOfLines={1}
-                >
-                  {compactNames
-                    ? initialsMap.get(row.player_id)
-                    : row.player_name}
-                </Text>
+                <Ionicons name="close" size={18} color={colors.navy} />
+                <Text style={styles.landscapeCloseText}>Close</Text>
               </Pressable>
-            ))}
-          </View>
-
-          {/* Scrollable matrix columns + clickable Avg / Total */}
-          <ScrollView horizontal showsHorizontalScrollIndicator>
-            <View>
-              <View style={[styles.scrollHeaderRow, styles.headerBg]}>
-                {sortedRows.map((colRow, colIdx) => (
-                  <View
-                    key={`hdr-${colRow.player_id}`}
-                    style={[styles.colHeaderCell, { width: cellWidth }]}
-                  >
-                    <Text style={styles.headerText} numberOfLines={1}>
-                      {String(colIdx + 1)}
-                    </Text>
-                  </View>
-                ))}
-                <Pressable
-                  onPress={() => handleSort("average")}
-                  style={[styles.statHeaderCell, { width: statColWidth }]}
-                >
-                  <Text
-                    style={[
-                      styles.headerText,
-                      sortBy === "average" && styles.activeHeaderText,
-                    ]}
-                    numberOfLines={1}
-                  >
-                    Avg{sortArrow("average")}
-                  </Text>
-                </Pressable>
-                <Pressable
-                  onPress={() => handleSort("total")}
-                  style={[styles.statHeaderCell, { width: statColWidth }]}
-                >
-                  <Text
-                    style={[
-                      styles.headerText,
-                      sortBy === "total" && styles.activeHeaderText,
-                    ]}
-                    numberOfLines={1}
-                  >
-                    Total{sortArrow("total")}
-                  </Text>
-                </Pressable>
-              </View>
-
-              {sortedRows.map((row) => (
-                <View key={`row-${row.player_id}`} style={styles.scrollDataRow}>
-                  {sortedRows.map((colRow) => renderMobileCell(row, colRow))}
-                  <View
-                    style={[
-                      styles.statCell,
-                      { width: statColWidth },
-                      row.is_current_user && styles.currentUserCell,
-                    ]}
-                  >
-                    <Text style={styles.statText}>{String(row.average)}</Text>
-                  </View>
-                  <View
-                    style={[
-                      styles.statCell,
-                      { width: statColWidth },
-                      row.is_current_user && styles.currentUserCell,
-                    ]}
-                  >
-                    <Text style={styles.ptsText}>{row.total}</Text>
-                  </View>
-                </View>
-              ))}
             </View>
-          </ScrollView>
+            <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator>
+              {renderMatrix({
+                colNameW: lNameW,
+                colCellW: lCellW,
+                colStatW: lStatW,
+                rowH: 32,
+                closeBeforeAction: true,
+              })}
+            </ScrollView>
+          </View>
         </View>
-      )}
+      </Modal>
     </View>
   );
 }
@@ -906,7 +792,9 @@ const styles = StyleSheet.create({
   },
   stickyHeader: {
     height: ROW_HEIGHT,
-    justifyContent: "center",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
     paddingHorizontal: spacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: GRID_BORDER,
@@ -1051,5 +939,64 @@ const styles = StyleSheet.create({
   numColBtn: {
     width: 54,
     alignItems: "flex-end",
+  },
+  landscapeBtnRow: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    marginTop: spacing.xs,
+  },
+  landscapeBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: radii.sm,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    backgroundColor: colors.surface,
+  },
+  landscapeBtnText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: colors.navy,
+  },
+  landscapeBackdrop: {
+    flex: 1,
+    backgroundColor: colors.bg,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  landscapeStage: {
+    backgroundColor: colors.bg,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+  },
+  landscapeTopBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: spacing.xs,
+  },
+  landscapeTitle: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: colors.text,
+  },
+  landscapeCloseBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: radii.sm,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    backgroundColor: colors.surface,
+  },
+  landscapeCloseText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: colors.navy,
   },
 });
