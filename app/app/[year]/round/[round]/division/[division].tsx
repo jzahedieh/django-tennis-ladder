@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
 import { apiClient, extractApiError } from "../../../../../src/api/client";
 import { useAuth } from "../../../../../src/auth/AuthContext";
@@ -124,108 +124,49 @@ export default function DivisionDetailScreen() {
   const headerBody = (
     <View style={[styles.headerRow, !isDesktop && styles.headerRowMobile]}>
       <View style={isDesktop ? styles.headerLeftDesktop : undefined}>
-        {isDesktop ? (
-          <>
-            <Text style={styles.titleDesktop}>
-              <Text
-                onPress={() => router.push(`/${year}/round/${seasonRound}`)}
-                style={styles.roundBreadcrumb}
-              >
-                {season.year} Round {season.season_round}
-              </Text>
-              {" - Division: "}
-              {data.division}
-            </Text>
-            <Text style={styles.subtitleDesktop}>{dateRange}</Text>
-          </>
-        ) : (
-          <>
-            <Pressable
-              onPress={() => router.push(`/${year}/round/${seasonRound}`)}
-            >
-              <Text style={styles.eyebrow}>{season.name}</Text>
-            </Pressable>
-            <Text style={styles.title}>Division {data.division}</Text>
-            <Text style={styles.subtitleMobile}>{dateRange}</Text>
-            <View style={styles.badgeRow}>
-              {data.ladder_type ? <Badge label={data.ladder_type} /> : null}
-              <Badge label={`${stats.players_count} Players`} />
-              {data.is_closed ? (
-                <Badge label="Round Closed" variant="amber" />
-              ) : (
-                <Badge label="Open" variant="green" />
-              )}
-            </View>
-          </>
-        )}
+        <Text style={isDesktop ? styles.titleDesktop : styles.titleMobile}>
+          <Text
+            onPress={() => router.push(`/${year}/round/${seasonRound}`)}
+            style={styles.roundBreadcrumb}
+          >
+            {season.year} Round {season.season_round}
+          </Text>
+          {" - Division: "}
+          {data.division}
+        </Text>
+        <Text style={isDesktop ? styles.subtitleDesktop : styles.subtitleMobile}>
+          {dateRange}
+        </Text>
       </View>
 
-      <View
-        style={[
-          styles.rightControls,
-          !isDesktop && styles.rightControlsMobile,
-        ]}
-      >
-        <View style={styles.navBtns}>
-          {data.has_prev_division ? (
-            <Button
-              label={`← Div ${data.division - 1}`}
-              variant="outline"
-              size="sm"
-              onPress={() =>
-                router.replace(
-                  `/${year}/round/${seasonRound}/division/${data.division - 1}`
-                )
-              }
-            />
-          ) : null}
-          {data.has_next_division ? (
-            <Button
-              label={`Div ${data.division + 1} →`}
-              variant="outline"
-              size="sm"
-              onPress={() =>
-                router.replace(
-                  `/${year}/round/${seasonRound}/division/${data.division + 1}`
-                )
-              }
-            />
-          ) : null}
-          {user ? (
+      {user ? (
+        <View
+          style={[
+            styles.rightControls,
+            !isDesktop && styles.rightControlsMobile,
+          ]}
+        >
+          <View style={styles.navBtns}>
             <Button
               label={data.subscribed ? "Unsubscribe" : "Subscribe"}
-              variant={data.subscribed ? "outline" : "secondary"}
+              variant={data.subscribed ? "outline" : "outline"}
               size="sm"
               loading={subMutation.isPending}
               onPress={() => subMutation.mutate()}
             />
-          ) : null}
+          </View>
+          {subNotice ? <Text style={styles.subNotice}>{subNotice}</Text> : null}
         </View>
-        {subNotice ? <Text style={styles.subNotice}>{subNotice}</Text> : null}
-      </View>
+      ) : null}
     </View>
   );
 
   return (
     <PageScroll desktopClean={isDesktop}>
-      {isDesktop ? (
-        <View style={styles.desktopHeader}>{headerBody}</View>
-      ) : (
-        <Card>{headerBody}</Card>
-      )}
+      <View style={styles.desktopHeader}>{headerBody}</View>
 
-      {/* Cross Table */}
-      {isDesktop ? (
-        <LadderCrossTable grid={grid} onPressCell={setH2HTarget} />
-      ) : (
-        <Card>
-          <SectionHeader
-            title="Division Table"
-            subtitle="Tap any player for profile or any score cell for Head-to-Head"
-          />
-          <LadderCrossTable grid={grid} onPressCell={setH2HTarget} />
-        </Card>
-      )}
+      {/* Cross Table directly below header */}
+      <LadderCrossTable grid={grid} onPressCell={setH2HTarget} />
 
       {/* Division Stats */}
       <Card>
@@ -323,21 +264,16 @@ const styles = StyleSheet.create({
   headerRowMobile: {
     flexDirection: "column",
     alignItems: "stretch",
+    gap: spacing.sm,
   },
   headerLeftDesktop: {
     flex: 1,
     minWidth: 260,
   },
-  eyebrow: {
-    fontSize: 14,
+  titleMobile: {
+    fontSize: 22,
     fontWeight: "700",
-    color: colors.linkBlue,
-  },
-  title: {
-    fontSize: 25,
-    fontWeight: "800",
     color: colors.text,
-    marginTop: 2,
   },
   titleDesktop: {
     fontSize: 32,
@@ -349,7 +285,7 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   subtitleMobile: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: "500",
     color: colors.textMuted,
     marginTop: 2,
@@ -359,12 +295,6 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     color: colors.textMuted,
     marginTop: 4,
-  },
-  badgeRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: spacing.sm,
-    marginTop: spacing.sm,
   },
   rightControls: {
     alignItems: "flex-end",
